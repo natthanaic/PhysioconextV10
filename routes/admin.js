@@ -2228,6 +2228,24 @@ router.post('/bills', authenticateToken, async (req, res) => {
             payment_notes
         } = req.body;
 
+        // Generate bill_code: BILL-{year}-{sequence}
+        const currentYear = new Date().getFullYear();
+        const [lastBill] = await connection.execute(`
+            SELECT bill_code FROM bills
+            WHERE bill_code LIKE ?
+            ORDER BY bill_code DESC
+            LIMIT 1
+        `, [`BILL-${currentYear}-%`]);
+
+        let sequence = 1;
+        if (lastBill.length > 0) {
+            const lastCode = lastBill[0].bill_code;
+            const lastSequence = parseInt(lastCode.split('-')[2]);
+            sequence = lastSequence + 1;
+        }
+        const bill_code = `BILL-${currentYear}-${String(sequence).padStart(3, '0')}`;
+        console.log('[BILLS] Generated bill_code:', bill_code);
+
         // Calculate totals from items
         let subtotal = 0;
         if (items && items.length > 0) {
@@ -2239,12 +2257,13 @@ router.post('/bills', authenticateToken, async (req, res) => {
         console.log('[BILLS] Inserting bill into database...');
         const [result] = await connection.execute(`
             INSERT INTO bills (
-                patient_id, clinic_id, pn_case_id, appointment_id, bill_date,
+                bill_code, patient_id, clinic_id, pn_case_id, appointment_id, bill_date,
                 subtotal, discount, tax, total_amount,
                 payment_status, payment_method, notes, payment_notes,
                 walk_in_name, walk_in_phone, created_by
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, [
+            bill_code,
             patient_id || null,
             clinic_id || null,
             pn_case_id || null,
@@ -2293,7 +2312,8 @@ router.post('/bills', authenticateToken, async (req, res) => {
         res.status(201).json({
             success: true,
             message: 'Bill created successfully',
-            id: billId
+            id: billId,
+            bill_code: bill_code
         });
     } catch (error) {
         await connection.rollback();

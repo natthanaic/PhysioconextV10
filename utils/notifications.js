@@ -277,24 +277,37 @@ const sendPatientSMS = async (db, phoneNumber, message) => {
             }
         );
 
-        // Check response
-        if (response.status === 200 && response.data) {
+        // Debug log the response
+        console.log(`📱 SMS API Response for ${cleanPhone}:`, {
+            status: response.status,
+            hasData: !!response.data,
+            data: response.data
+        });
+
+        // Check response - accept any 2xx status code as success
+        if (response.status >= 200 && response.status < 300) {
             console.log(`✅ Patient SMS sent successfully to ${cleanPhone}`);
-            console.log('SMS Response:', {
-                remainingCredit: response.data.remaining_credit,
-                sentTo: response.data.phone_number_list,
-                failed: response.data.bad_phone_number_list
-            });
+            if (response.data) {
+                console.log('SMS Response:', {
+                    remainingCredit: response.data.remaining_credit,
+                    sentTo: response.data.phone_number_list,
+                    failed: response.data.bad_phone_number_list
+                });
+            }
             return true;
         } else {
             console.error(`Patient SMS failed: Status ${response.status}`);
             return false;
         }
     } catch (error) {
-        console.error('Patient SMS error:', error.message);
+        console.error(`❌ Patient SMS error for ${phoneNumber}:`, error.message);
         if (error.response) {
-            console.error('Thai Bulk SMS API error:', error.response.data);
+            console.error('Thai Bulk SMS API error response:', {
+                status: error.response.status,
+                data: error.response.data
+            });
         }
+        console.error('Full error stack:', error.stack);
         return false;
     }
 };

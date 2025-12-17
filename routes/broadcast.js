@@ -270,14 +270,14 @@ router.post('/campaigns/:id/send', authenticateToken, authorize('ADMIN', 'PT'), 
             const [patients] = await db.execute(`
                 SELECT
                     id,
-                    CONCAT(first_name, ' ', last_name) as name,
-                    first_name,
-                    last_name,
+                    CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, '')) as name,
+                    COALESCE(first_name, '') as first_name,
+                    COALESCE(last_name, '') as last_name,
                     email,
                     phone,
-                    address,
-                    emergency_contact,
-                    emergency_phone
+                    COALESCE(address, '') as address,
+                    COALESCE(emergency_contact, '') as emergency_contact,
+                    COALESCE(emergency_phone, '') as emergency_phone
                 FROM patients
                 WHERE (
                     (email IS NOT NULL AND email != '' AND ? IN ('email', 'both'))
@@ -312,14 +312,14 @@ router.post('/campaigns/:id/send', authenticateToken, authorize('ADMIN', 'PT'), 
                 const [patients] = await db.execute(`
                     SELECT
                         id,
-                        CONCAT(first_name, ' ', last_name) as name,
-                        first_name,
-                        last_name,
+                        CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, '')) as name,
+                        COALESCE(first_name, '') as first_name,
+                        COALESCE(last_name, '') as last_name,
                         email,
                         phone,
-                        address,
-                        emergency_contact,
-                        emergency_phone
+                        COALESCE(address, '') as address,
+                        COALESCE(emergency_contact, '') as emergency_contact,
+                        COALESCE(emergency_phone, '') as emergency_phone
                     FROM patients
                     WHERE id IN (${placeholders})
                 `, patientIds);
@@ -562,15 +562,12 @@ router.get('/search-patients', authenticateToken, authorize('ADMIN', 'PT'), asyn
         const [patients] = await db.execute(`
             SELECT
                 id,
-                CONCAT(first_name, ' ', last_name) as name,
+                CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, '')) as name,
                 email,
-                phone,
-                address,
-                emergency_contact,
-                emergency_phone
+                phone
             FROM patients
             WHERE (
-                CONCAT(first_name, ' ', last_name) LIKE ?
+                CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, '')) LIKE ?
                 OR email LIKE ?
                 OR phone LIKE ?
             )

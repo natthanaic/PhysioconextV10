@@ -2210,6 +2210,8 @@ router.post('/bills', authenticateToken, async (req, res) => {
     try {
         await connection.beginTransaction();
 
+        console.log('[BILLS] Creating bill with data:', JSON.stringify(req.body).substring(0, 500));
+
         const {
             patient_id,
             clinic_id,
@@ -2227,6 +2229,7 @@ router.post('/bills', authenticateToken, async (req, res) => {
         } = req.body;
 
         // Insert bill
+        console.log('[BILLS] Inserting bill into database...');
         const [result] = await connection.execute(`
             INSERT INTO bills (
                 patient_id, clinic_id, pn_case_id, bill_date, due_date,
@@ -2240,9 +2243,11 @@ router.post('/bills', authenticateToken, async (req, res) => {
         ]);
 
         const billId = result.insertId;
+        console.log('[BILLS] Bill created with ID:', billId);
 
         // Insert bill items
         if (items && items.length > 0) {
+            console.log('[BILLS] Inserting', items.length, 'bill items...');
             for (const item of items) {
                 await connection.execute(`
                     INSERT INTO bill_items (
@@ -2258,9 +2263,11 @@ router.post('/bills', authenticateToken, async (req, res) => {
                     item.notes
                 ]);
             }
+            console.log('[BILLS] All bill items inserted successfully');
         }
 
         await connection.commit();
+        console.log('[BILLS] Transaction committed successfully');
 
         res.status(201).json({
             success: true,
@@ -2269,8 +2276,14 @@ router.post('/bills', authenticateToken, async (req, res) => {
         });
     } catch (error) {
         await connection.rollback();
-        console.error('Create bill error:', error);
-        res.status(500).json({ error: 'Failed to create bill' });
+        console.error('[BILLS] Create bill error:', error);
+        console.error('[BILLS] Error message:', error.message);
+        console.error('[BILLS] Error code:', error.code);
+        console.error('[BILLS] SQL:', error.sql);
+        res.status(500).json({
+            error: 'Failed to create bill',
+            details: error.message
+        });
     } finally {
         connection.release();
     }

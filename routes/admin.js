@@ -2084,4 +2084,671 @@ router.post('/ai-settings/test', authenticateToken, authorize('ADMIN'), async (r
     }
 });
 
+// ========================================
+// BILLS MANAGEMENT
+// ========================================
+
+// Get all bills
+router.get('/bills', authenticateToken, async (req, res) => {
+    try {
+        const db = req.app.locals.db;
+        const { startDate, endDate, status, patientId, clinicId } = req.query;
+
+        let query = `
+            SELECT
+                b.*,
+                CONCAT(COALESCE(p.first_name, ''), ' ', COALESCE(p.last_name, '')) as patient_name,
+                p.phone as patient_phone,
+                p.email as patient_email,
+                p.hn as patient_hn,
+                c.name as clinic_name,
+                CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as created_by_name
+            FROM bills b
+            LEFT JOIN patients p ON b.patient_id = p.id
+            LEFT JOIN clinics c ON b.clinic_id = c.id
+            LEFT JOIN users u ON b.created_by = u.id
+            WHERE 1=1
+        `;
+        const params = [];
+
+        if (startDate && endDate) {
+            query += ` AND b.bill_date BETWEEN ? AND ?`;
+            params.push(startDate, endDate);
+        }
+
+        if (status) {
+            query += ` AND b.payment_status = ?`;
+            params.push(status);
+        }
+
+        if (patientId) {
+            query += ` AND b.patient_id = ?`;
+            params.push(patientId);
+        }
+
+        if (clinicId) {
+            query += ` AND b.clinic_id = ?`;
+            params.push(clinicId);
+        }
+
+        query += ` ORDER BY b.bill_date DESC, b.created_at DESC`;
+
+        const [bills] = await db.execute(query, params);
+        res.json(bills);
+    } catch (error) {
+        console.error('Get bills error:', error);
+        res.status(500).json({ error: 'Failed to retrieve bills' });
+    }
+});
+
+// Get billing services
+router.get('/bills/services', authenticateToken, async (req, res) => {
+    try {
+        const db = req.app.locals.db;
+        const { clinic_id, active } = req.query;
+
+        let query = `
+            SELECT
+                id,
+                service_name as name,
+                service_code as code,
+                price,
+                category,
+                description,
+                active,
+                clinic_id
+            FROM services
+            WHERE 1=1
+        `;
+        const params = [];
+
+        if (active !== undefined) {
+            query += ` AND active = ?`;
+            params.push(active === 'true' || active === '1' ? 1 : 0);
+        } else {
+            query += ` AND active = 1`;
+        }
+
+        if (clinic_id) {
+            query += ` AND (clinic_id = ? OR clinic_id IS NULL)`;
+            params.push(clinic_id);
+        }
+
+        query += ` ORDER BY category, service_name`;
+
+        const [services] = await db.execute(query, params);
+        res.json(services);
+    } catch (error) {
+        console.error('Get services error:', error);
+        res.status(500).json({ error: 'Failed to retrieve services' });
+    }
+});
+
+// Get single bill
+router.get('/bills/:id', authenticateToken, async (req, res) => {
+    try {
+        const db = req.app.locals.db;
+        const { id } = req.params;
+
+        const [bills] = await db.execute(`
+            SELECT
+                b.*,
+                CONCAT(COALESCE(p.first_name, ''), ' ', COALESCE(p.last_name, '')) as patient_name,
+                p.phone as patient_phone,
+                p.email as patient_email,
+                p.hn as patient_hn,
+                c.name as clinic_name
+            FROM bills b
+            LEFT JOIN patients p ON b.patient_id = p.id
+            LEFT JOIN clinics c ON b.clinic_id = c.id
+            WHERE b.id = ?
+        `, [id]);
+
+        if (bills.length === 0) {
+            return res.status(404).json({ error: 'Bill not found' });
+        }
+
+        // Get bill items
+        const [items] = await db.execute(`
+            SELECT bi.*, s.service_name, s.service_code
+            FROM bill_items bi
+            LEFT JOIN services s ON bi.service_id = s.id
+            WHERE bi.bill_id = ?
+        `, [id]);
+
+        res.json({
+            ...bills[0],
+            items: items
+        });
+    } catch (error) {
+        console.error('Get bill error:', error);
+        res.status(500).json({ error: 'Failed to retrieve bill' });
+    }
+});
+
+// Create new bill
+router.post('/bills', authenticateToken, async (req, res) => {
+    const connection = await req.app.locals.db.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        const {
+            patient_id,
+            clinic_id,
+            pn_case_id,
+            bill_date,
+            due_date,
+            items,
+            subtotal,
+            discount,
+            tax,
+            total_amount,
+            payment_status,
+            payment_method,
+            notes
+        } = req.body;
+
+        // Insert bill
+        const [result] = await connection.execute(`
+            INSERT INTO bills (
+                patient_id, clinic_id, pn_case_id, bill_date, due_date,
+                subtotal, discount, tax, total_amount,
+                payment_status, payment_method, notes, created_by
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [
+            patient_id, clinic_id, pn_case_id, bill_date, due_date,
+            subtotal, discount, tax, total_amount,
+            payment_status || 'PENDING', payment_method, notes, req.user.id
+        ]);
+
+        const billId = result.insertId;
+
+        // Insert bill items
+        if (items && items.length > 0) {
+            for (const item of items) {
+                await connection.execute(`
+                    INSERT INTO bill_items (
+                        bill_id, service_id, service_name, quantity, unit_price, total_price, notes
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                `, [
+                    billId,
+                    item.service_id,
+                    item.service_name,
+                    item.quantity,
+                    item.unit_price,
+                    item.total_price,
+                    item.notes
+                ]);
+            }
+        }
+
+        await connection.commit();
+
+        res.status(201).json({
+            success: true,
+            message: 'Bill created successfully',
+            id: billId
+        });
+    } catch (error) {
+        await connection.rollback();
+        console.error('Create bill error:', error);
+        res.status(500).json({ error: 'Failed to create bill' });
+    } finally {
+        connection.release();
+    }
+});
+
+// Update bill
+router.put('/bills/:id', authenticateToken, async (req, res) => {
+    const connection = await req.app.locals.db.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        const { id } = req.params;
+        const {
+            patient_id,
+            clinic_id,
+            pn_case_id,
+            bill_date,
+            due_date,
+            items,
+            subtotal,
+            discount,
+            tax,
+            total_amount,
+            payment_status,
+            payment_method,
+            payment_date,
+            notes
+        } = req.body;
+
+        // Update bill
+        await connection.execute(`
+            UPDATE bills SET
+                patient_id = ?,
+                clinic_id = ?,
+                pn_case_id = ?,
+                bill_date = ?,
+                due_date = ?,
+                subtotal = ?,
+                discount = ?,
+                tax = ?,
+                total_amount = ?,
+                payment_status = ?,
+                payment_method = ?,
+                payment_date = ?,
+                notes = ?
+            WHERE id = ?
+        `, [
+            patient_id, clinic_id, pn_case_id, bill_date, due_date,
+            subtotal, discount, tax, total_amount,
+            payment_status, payment_method, payment_date, notes, id
+        ]);
+
+        // Delete existing items and insert new ones
+        if (items !== undefined) {
+            await connection.execute('DELETE FROM bill_items WHERE bill_id = ?', [id]);
+
+            if (items.length > 0) {
+                for (const item of items) {
+                    await connection.execute(`
+                        INSERT INTO bill_items (
+                            bill_id, service_id, service_name, quantity, unit_price, total_price, notes
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                    `, [
+                        id,
+                        item.service_id,
+                        item.service_name,
+                        item.quantity,
+                        item.unit_price,
+                        item.total_price,
+                        item.notes
+                    ]);
+                }
+            }
+        }
+
+        await connection.commit();
+
+        res.json({ success: true, message: 'Bill updated successfully' });
+    } catch (error) {
+        await connection.rollback();
+        console.error('Update bill error:', error);
+        res.status(500).json({ error: 'Failed to update bill' });
+    } finally {
+        connection.release();
+    }
+});
+
+// Update bill payment status
+router.put('/bills/:id/payment-status', authenticateToken, async (req, res) => {
+    try {
+        const db = req.app.locals.db;
+        const { id } = req.params;
+        const { payment_status, payment_method, payment_date } = req.body;
+
+        await db.execute(`
+            UPDATE bills SET
+                payment_status = ?,
+                payment_method = ?,
+                payment_date = ?
+            WHERE id = ?
+        `, [payment_status, payment_method, payment_date, id]);
+
+        res.json({ success: true, message: 'Payment status updated successfully' });
+    } catch (error) {
+        console.error('Update payment status error:', error);
+        res.status(500).json({ error: 'Failed to update payment status' });
+    }
+});
+
+// Delete bill
+router.delete('/bills/:id', authenticateToken, authorize('ADMIN'), async (req, res) => {
+    const connection = await req.app.locals.db.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        const { id } = req.params;
+
+        // Delete bill items first
+        await connection.execute('DELETE FROM bill_items WHERE bill_id = ?', [id]);
+
+        // Delete bill
+        await connection.execute('DELETE FROM bills WHERE id = ?', [id]);
+
+        await connection.commit();
+
+        res.json({ success: true, message: 'Bill deleted successfully' });
+    } catch (error) {
+        await connection.rollback();
+        console.error('Delete bill error:', error);
+        res.status(500).json({ error: 'Failed to delete bill' });
+    } finally {
+        connection.release();
+    }
+});
+
+// ========================================
+// INVOICES MANAGEMENT
+// ========================================
+
+// Get all invoices
+router.get('/invoices', authenticateToken, async (req, res) => {
+    try {
+        const db = req.app.locals.db;
+        const { startDate, endDate, status, patientId, clinicId } = req.query;
+
+        let query = `
+            SELECT
+                i.*,
+                CONCAT(COALESCE(p.first_name, ''), ' ', COALESCE(p.last_name, '')) as patient_name,
+                p.phone as patient_phone,
+                p.email as patient_email,
+                p.hn as patient_hn,
+                c.name as clinic_name,
+                CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as created_by_name
+            FROM invoices i
+            LEFT JOIN patients p ON i.patient_id = p.id
+            LEFT JOIN clinics c ON i.clinic_id = c.id
+            LEFT JOIN users u ON i.created_by = u.id
+            WHERE 1=1
+        `;
+        const params = [];
+
+        if (startDate && endDate) {
+            query += ` AND i.invoice_date BETWEEN ? AND ?`;
+            params.push(startDate, endDate);
+        }
+
+        if (status) {
+            query += ` AND i.payment_status = ?`;
+            params.push(status);
+        }
+
+        if (patientId) {
+            query += ` AND i.patient_id = ?`;
+            params.push(patientId);
+        }
+
+        if (clinicId) {
+            query += ` AND i.clinic_id = ?`;
+            params.push(clinicId);
+        }
+
+        query += ` ORDER BY i.invoice_date DESC, i.created_at DESC`;
+
+        const [invoices] = await db.execute(query, params);
+        res.json(invoices);
+    } catch (error) {
+        console.error('Get invoices error:', error);
+        res.status(500).json({ error: 'Failed to retrieve invoices' });
+    }
+});
+
+// Get invoices summary
+router.get('/invoices/summary', authenticateToken, async (req, res) => {
+    try {
+        const db = req.app.locals.db;
+
+        const [summary] = await db.execute(`
+            SELECT
+                COUNT(*) as total_count,
+                COALESCE(SUM(CASE WHEN payment_status = 'PAID' THEN 1 ELSE 0 END), 0) as paid_count,
+                COALESCE(SUM(CASE WHEN payment_status = 'PENDING' THEN 1 ELSE 0 END), 0) as pending_count,
+                COALESCE(SUM(CASE WHEN payment_status = 'OVERDUE' THEN 1 ELSE 0 END), 0) as overdue_count,
+                COALESCE(SUM(total_amount), 0) as total_amount,
+                COALESCE(SUM(CASE WHEN payment_status = 'PAID' THEN total_amount ELSE 0 END), 0) as paid_amount,
+                COALESCE(SUM(CASE WHEN payment_status = 'PENDING' THEN total_amount ELSE 0 END), 0) as pending_amount,
+                COALESCE(SUM(CASE WHEN payment_status = 'OVERDUE' THEN total_amount ELSE 0 END), 0) as overdue_amount
+            FROM invoices
+        `);
+
+        res.json(summary[0]);
+    } catch (error) {
+        console.error('Get invoices summary error:', error);
+        res.status(500).json({ error: 'Failed to retrieve invoices summary' });
+    }
+});
+
+// Get single invoice
+router.get('/invoices/:id', authenticateToken, async (req, res) => {
+    try {
+        const db = req.app.locals.db;
+        const { id } = req.params;
+
+        const [invoices] = await db.execute(`
+            SELECT
+                i.*,
+                CONCAT(COALESCE(p.first_name, ''), ' ', COALESCE(p.last_name, '')) as patient_name,
+                p.phone as patient_phone,
+                p.email as patient_email,
+                p.hn as patient_hn,
+                c.name as clinic_name
+            FROM invoices i
+            LEFT JOIN patients p ON i.patient_id = p.id
+            LEFT JOIN clinics c ON i.clinic_id = c.id
+            WHERE i.id = ?
+        `, [id]);
+
+        if (invoices.length === 0) {
+            return res.status(404).json({ error: 'Invoice not found' });
+        }
+
+        // Get invoice items
+        const [items] = await db.execute(`
+            SELECT ii.*, s.service_name, s.service_code
+            FROM invoice_items ii
+            LEFT JOIN services s ON ii.service_id = s.id
+            WHERE ii.invoice_id = ?
+        `, [id]);
+
+        res.json({
+            ...invoices[0],
+            items: items
+        });
+    } catch (error) {
+        console.error('Get invoice error:', error);
+        res.status(500).json({ error: 'Failed to retrieve invoice' });
+    }
+});
+
+// Create new invoice
+router.post('/invoices', authenticateToken, async (req, res) => {
+    const connection = await req.app.locals.db.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        const {
+            patient_id,
+            clinic_id,
+            invoice_date,
+            due_date,
+            items,
+            subtotal,
+            discount,
+            tax,
+            total_amount,
+            payment_status,
+            payment_method,
+            notes
+        } = req.body;
+
+        // Insert invoice
+        const [result] = await connection.execute(`
+            INSERT INTO invoices (
+                patient_id, clinic_id, invoice_date, due_date,
+                subtotal, discount, tax, total_amount,
+                payment_status, payment_method, notes, created_by
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [
+            patient_id, clinic_id, invoice_date, due_date,
+            subtotal, discount, tax, total_amount,
+            payment_status || 'PENDING', payment_method, notes, req.user.id
+        ]);
+
+        const invoiceId = result.insertId;
+
+        // Insert invoice items
+        if (items && items.length > 0) {
+            for (const item of items) {
+                await connection.execute(`
+                    INSERT INTO invoice_items (
+                        invoice_id, service_id, service_name, quantity, unit_price, total_price, notes
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                `, [
+                    invoiceId,
+                    item.service_id,
+                    item.service_name,
+                    item.quantity,
+                    item.unit_price,
+                    item.total_price,
+                    item.notes
+                ]);
+            }
+        }
+
+        await connection.commit();
+
+        res.status(201).json({
+            success: true,
+            message: 'Invoice created successfully',
+            id: invoiceId
+        });
+    } catch (error) {
+        await connection.rollback();
+        console.error('Create invoice error:', error);
+        res.status(500).json({ error: 'Failed to create invoice' });
+    } finally {
+        connection.release();
+    }
+});
+
+// Update invoice
+router.put('/invoices/:id', authenticateToken, async (req, res) => {
+    const connection = await req.app.locals.db.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        const { id } = req.params;
+        const {
+            patient_id,
+            clinic_id,
+            invoice_date,
+            due_date,
+            items,
+            subtotal,
+            discount,
+            tax,
+            total_amount,
+            payment_status,
+            payment_method,
+            payment_date,
+            notes
+        } = req.body;
+
+        // Update invoice
+        await connection.execute(`
+            UPDATE invoices SET
+                patient_id = ?,
+                clinic_id = ?,
+                invoice_date = ?,
+                due_date = ?,
+                subtotal = ?,
+                discount = ?,
+                tax = ?,
+                total_amount = ?,
+                payment_status = ?,
+                payment_method = ?,
+                payment_date = ?,
+                notes = ?
+            WHERE id = ?
+        `, [
+            patient_id, clinic_id, invoice_date, due_date,
+            subtotal, discount, tax, total_amount,
+            payment_status, payment_method, payment_date, notes, id
+        ]);
+
+        // Delete existing items and insert new ones
+        if (items !== undefined) {
+            await connection.execute('DELETE FROM invoice_items WHERE invoice_id = ?', [id]);
+
+            if (items.length > 0) {
+                for (const item of items) {
+                    await connection.execute(`
+                        INSERT INTO invoice_items (
+                            invoice_id, service_id, service_name, quantity, unit_price, total_price, notes
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                    `, [
+                        id,
+                        item.service_id,
+                        item.service_name,
+                        item.quantity,
+                        item.unit_price,
+                        item.total_price,
+                        item.notes
+                    ]);
+                }
+            }
+        }
+
+        await connection.commit();
+
+        res.json({ success: true, message: 'Invoice updated successfully' });
+    } catch (error) {
+        await connection.rollback();
+        console.error('Update invoice error:', error);
+        res.status(500).json({ error: 'Failed to update invoice' });
+    } finally {
+        connection.release();
+    }
+});
+
+// Update invoice payment status
+router.put('/invoices/:id/payment-status', authenticateToken, async (req, res) => {
+    try {
+        const db = req.app.locals.db;
+        const { id } = req.params;
+        const { payment_status, payment_method, payment_date } = req.body;
+
+        await db.execute(`
+            UPDATE invoices SET
+                payment_status = ?,
+                payment_method = ?,
+                payment_date = ?
+            WHERE id = ?
+        `, [payment_status, payment_method, payment_date, id]);
+
+        res.json({ success: true, message: 'Payment status updated successfully' });
+    } catch (error) {
+        console.error('Update payment status error:', error);
+        res.status(500).json({ error: 'Failed to update payment status' });
+    }
+});
+
+// Delete invoice
+router.delete('/invoices/:id', authenticateToken, authorize('ADMIN'), async (req, res) => {
+    const connection = await req.app.locals.db.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        const { id } = req.params;
+
+        // Delete invoice items first
+        await connection.execute('DELETE FROM invoice_items WHERE invoice_id = ?', [id]);
+
+        // Delete invoice
+        await connection.execute('DELETE FROM invoices WHERE id = ?', [id]);
+
+        await connection.commit();
+
+        res.json({ success: true, message: 'Invoice deleted successfully' });
+    } catch (error) {
+        await connection.rollback();
+        console.error('Delete invoice error:', error);
+        res.status(500).json({ error: 'Failed to delete invoice' });
+    } finally {
+        connection.release();
+    }
+});
+
 module.exports = router;

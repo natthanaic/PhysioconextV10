@@ -9,117 +9,36 @@ const { authenticateToken, authorize } = require('../middleware/auth');
 router.get('/courses', authenticateToken, async (req, res) => {
     try {
         const db = req.app.locals.db;
-        const { patient_id, clinic_id, status } = req.query;
+        console.log('[COURSES] Fetching courses from database');
 
-        // Check if courses table exists
-        const [tables] = await db.execute(`
-            SELECT TABLE_NAME
-            FROM information_schema.TABLES
-            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'courses'
-        `);
+        const [courses] = await db.execute('SELECT * FROM courses ORDER BY created_at DESC');
 
-        if (tables.length === 0) {
-            console.log('Courses table does not exist, returning empty array');
-            return res.json([]);
-        }
-
-        let query = `
-            SELECT
-                c.*,
-                CONCAT(COALESCE(p.first_name, ''), ' ', COALESCE(p.last_name, '')) as patient_name,
-                p.hn as patient_hn,
-                cl.name as clinic_name,
-                CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as created_by_name
-            FROM courses c
-            LEFT JOIN patients p ON c.patient_id = p.id
-            LEFT JOIN clinics cl ON c.clinic_id = cl.id
-            LEFT JOIN users u ON c.created_by = u.id
-            WHERE 1=1
-        `;
-        const params = [];
-
-        if (patient_id) {
-            query += ` AND c.patient_id = ?`;
-            params.push(patient_id);
-        }
-
-        if (clinic_id) {
-            query += ` AND c.clinic_id = ?`;
-            params.push(clinic_id);
-        }
-
-        if (status) {
-            query += ` AND c.status = ?`;
-            params.push(status);
-        }
-
-        query += ` ORDER BY c.created_at DESC`;
-
-        console.log('Courses query:', query);
-        console.log('Courses params:', params);
-
-        const [courses] = await db.execute(query, params);
-
-        console.log('Courses found:', courses.length);
+        console.log('[COURSES] Found', courses.length, 'courses');
         if (courses.length > 0) {
-            console.log('First course sample:', JSON.stringify(courses[0]).substring(0, 200));
+            console.log('[COURSES] Sample:', JSON.stringify(courses[0]).substring(0, 300));
         }
 
         res.json(courses);
     } catch (error) {
-        console.error('Get courses error:', error);
-        console.error('Error details:', error.message);
-        console.error('Error stack:', error.stack);
-        return res.json([]); // Return empty array instead of error
+        console.error('[COURSES] Error:', error);
+        console.error('[COURSES] Error details:', error.message);
+        res.status(500).json({ error: 'Failed to retrieve courses' });
     }
 });
 
 router.get('/course-templates', authenticateToken, async (req, res) => {
     try {
         const db = req.app.locals.db;
-        const { active } = req.query;
+        console.log('[COURSE-TEMPLATES] Fetching templates from database');
 
-        // Check if course_templates table exists
-        const [tables] = await db.execute(`
-            SELECT TABLE_NAME
-            FROM information_schema.TABLES
-            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'course_templates'
-        `);
+        const [templates] = await db.execute('SELECT * FROM course_templates ORDER BY template_name');
 
-        if (tables.length === 0) {
-            console.log('Course templates table does not exist, returning empty array');
-            return res.json([]);
-        }
-
-        let query = `
-            SELECT
-                id,
-                template_name,
-                description,
-                total_sessions,
-                default_price,
-                validity_days,
-                active,
-                created_at,
-                updated_at
-            FROM course_templates
-            WHERE 1=1
-        `;
-        const params = [];
-
-        if (active !== undefined) {
-            query += ` AND active = ?`;
-            params.push(active === 'true' || active === '1' ? 1 : 0);
-        }
-
-        query += ` ORDER BY template_name`;
-
-        const [templates] = await db.execute(query, params);
+        console.log('[COURSE-TEMPLATES] Found', templates.length, 'templates');
         res.json(templates);
     } catch (error) {
-        console.error('Get course templates error:', error);
-        console.error('Error details:', error.message);
-        return res.json([]); // Return empty array instead of error
+        console.error('[COURSE-TEMPLATES] Error:', error);
+        console.error('[COURSE-TEMPLATES] Error details:', error.message);
+        res.status(500).json({ error: 'Failed to retrieve course templates' });
     }
 });
 

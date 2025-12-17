@@ -1236,6 +1236,13 @@
         }
 
         async function testSMSConnection() {
+            const button = event.target.closest('button');
+            if (button.disabled) return; // Prevent double-click
+
+            button.disabled = true;
+            const originalText = button.innerHTML;
+            button.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Sending...';
+
             try {
                 showAlert('Sending test SMS...', 'info');
                 await apiPost('/api/admin/notification/sms/test', {
@@ -1245,6 +1252,9 @@
             } catch (error) {
                 console.error('Error testing SMS:', error);
                 showAlert(error.message || 'Failed to send test SMS. Please check your settings.', 'danger');
+            } finally {
+                button.disabled = false;
+                button.innerHTML = originalText;
             }
         }
 

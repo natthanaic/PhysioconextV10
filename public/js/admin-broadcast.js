@@ -753,9 +753,15 @@ async function searchPatients() {
         searchResults.style.display = 'block';
 
         const response = await fetch(`/api/broadcast/search-patients?q=${encodeURIComponent(searchTerm)}`);
+
+        if (!response.ok) {
+            searchResults.innerHTML = '<div class="text-danger text-center py-2">Search failed. Please try again.</div>';
+            return;
+        }
+
         const patients = await response.json();
 
-        if (patients.length === 0) {
+        if (!Array.isArray(patients) || patients.length === 0) {
             searchResults.innerHTML = '<div class="text-muted text-center py-2">No patients found</div>';
             return;
         }

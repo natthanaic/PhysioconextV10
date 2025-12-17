@@ -276,8 +276,8 @@ router.post('/campaigns/:id/send', authenticateToken, authorize('ADMIN', 'PT'), 
                     email,
                     phone,
                     address,
-                    emergency_contact_name,
-                    emergency_contact_phone
+                    emergency_contact,
+                    emergency_phone
                 FROM patients
                 WHERE active = 1
                 AND (
@@ -319,8 +319,8 @@ router.post('/campaigns/:id/send', authenticateToken, authorize('ADMIN', 'PT'), 
                         email,
                         phone,
                         address,
-                        emergency_contact_name,
-                        emergency_contact_phone
+                        emergency_contact,
+                        emergency_phone
                     FROM patients
                     WHERE id IN (${placeholders}) AND active = 1
                 `, patientIds);
@@ -382,8 +382,8 @@ function replaceTemplateVariables(text, patientData, clinicName = 'PhysioConext'
     result = result.replace(/{phone}/g, patientData.phone || '');
     result = result.replace(/{clinicName}/g, clinicName);
     result = result.replace(/{address}/g, patientData.address || '');
-    result = result.replace(/{emergencyContact}/g, patientData.emergency_contact_name || '');
-    result = result.replace(/{emergencyPhone}/g, patientData.emergency_contact_phone || '');
+    result = result.replace(/{emergencyContact}/g, patientData.emergency_contact || '');
+    result = result.replace(/{emergencyPhone}/g, patientData.emergency_phone || '');
 
     return result;
 }
@@ -567,8 +567,8 @@ router.get('/search-patients', authenticateToken, authorize('ADMIN', 'PT'), asyn
                 email,
                 phone,
                 address,
-                emergency_contact_name,
-                emergency_contact_phone
+                emergency_contact,
+                emergency_phone
             FROM patients
             WHERE active = 1
             AND (

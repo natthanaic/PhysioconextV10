@@ -279,8 +279,7 @@ router.post('/campaigns/:id/send', authenticateToken, authorize('ADMIN', 'PT'), 
                     emergency_contact,
                     emergency_phone
                 FROM patients
-                WHERE active = 1
-                AND (
+                WHERE (
                     (email IS NOT NULL AND email != '' AND ? IN ('email', 'both'))
                     OR (phone IS NOT NULL AND phone != '' AND ? IN ('sms', 'both'))
                 )
@@ -322,7 +321,7 @@ router.post('/campaigns/:id/send', authenticateToken, authorize('ADMIN', 'PT'), 
                         emergency_contact,
                         emergency_phone
                     FROM patients
-                    WHERE id IN (${placeholders}) AND active = 1
+                    WHERE id IN (${placeholders})
                 `, patientIds);
 
                 // Build recipients list based on campaign type
@@ -570,8 +569,7 @@ router.get('/search-patients', authenticateToken, authorize('ADMIN', 'PT'), asyn
                 emergency_contact,
                 emergency_phone
             FROM patients
-            WHERE active = 1
-            AND (
+            WHERE (
                 CONCAT(first_name, ' ', last_name) LIKE ?
                 OR email LIKE ?
                 OR phone LIKE ?

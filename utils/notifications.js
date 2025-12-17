@@ -233,6 +233,14 @@ const sendPatientSMS = async (db, phoneNumber, message) => {
 
         const smsConfig = JSON.parse(settings[0].setting_value);
 
+        console.log('📱 [Broadcast SMS Config]:', {
+            enabled: smsConfig.enabled,
+            smsType: smsConfig.smsType,
+            sender: smsConfig.sender,
+            hasApiKey: !!smsConfig.apiKey,
+            hasApiSecret: !!smsConfig.apiSecret
+        });
+
         // Check if SMS is enabled (strict integer comparison)
         if (smsConfig.enabled !== 1) {
             console.log('Patient SMS: Service is disabled');

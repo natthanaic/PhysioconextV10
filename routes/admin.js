@@ -1174,10 +1174,18 @@ router.get('/notification/sms/credit', authenticateToken, authorize('ADMIN'), as
 
         console.log('✅ Credit API response:', response.data);
 
+        // Parse the nested credit structure
+        const remainingCredit = response.data.remaining_credit || {};
+        const credit = remainingCredit[smsType] || 0;
+
+        console.log(`📊 Credit balance for ${smsType}:`, credit);
+        console.log(`📊 All credits:`, remainingCredit);
+
         res.json({
             success: true,
-            credit: response.data.credit || 0,
-            smsType: response.data.sms_type || 'unknown'
+            credit: credit,
+            smsType: smsType,
+            allCredits: remainingCredit
         });
     } catch (error) {
         console.error('❌ Check SMS credit error:', error.message);

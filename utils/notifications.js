@@ -178,7 +178,8 @@ const sendSMSNotification = async (db, eventType, message) => {
             querystring.stringify({
                 msisdn: smsConfig.recipients,
                 message: message,
-                sender: smsConfig.sender || 'RehabPlus'
+                sender: smsConfig.sender || 'RehabPlus',
+                force: smsConfig.smsType || 'standard'
             }),
             {
                 headers: {
@@ -189,8 +190,8 @@ const sendSMSNotification = async (db, eventType, message) => {
             }
         );
 
-        // Check response
-        if (response.status === 200 && response.data) {
+        // Check response - accept any 2xx status code as success
+        if (response.status >= 200 && response.status < 300) {
             console.log(`✅ SMS notification sent successfully for event: ${eventType}`);
             console.log('SMS Response:', {
                 remainingCredit: response.data.remaining_credit,
@@ -266,7 +267,8 @@ const sendPatientSMS = async (db, phoneNumber, message) => {
             querystring.stringify({
                 msisdn: cleanPhone,
                 message: message,
-                sender: smsConfig.sender || 'RehabPlus'
+                sender: smsConfig.sender || 'RehabPlus',
+                force: smsConfig.smsType || 'standard'
             }),
             {
                 headers: {

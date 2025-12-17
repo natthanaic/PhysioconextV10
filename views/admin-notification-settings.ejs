@@ -554,7 +554,7 @@
                             <div class="card-body">
                                 <form id="smsForm">
                                     <div class="row">
-                                        <div class="col-md-6 mb-3">
+                                        <div class="col-md-4 mb-3">
                                             <label for="smsEnabled" class="form-label">Enable SMS Notifications</label>
                                             <select class="form-select" id="smsEnabled">
                                                 <option value="0">Disabled</option>
@@ -563,7 +563,27 @@
                                             <div class="form-text">Enable/disable Thai Bulk SMS notifications</div>
                                         </div>
 
-                                        <div class="col-md-6 mb-3">
+                                        <div class="col-md-4 mb-3">
+                                            <label for="smsType" class="form-label">SMS Type <span class="text-danger">*</span></label>
+                                            <select class="form-select" id="smsType">
+                                                <option value="standard">Standard</option>
+                                                <option value="corporate">Corporate</option>
+                                            </select>
+                                            <div class="form-text">Select SMS service type</div>
+                                        </div>
+
+                                        <div class="col-md-4 mb-3">
+                                            <label class="form-label">SMS Credit Balance</label>
+                                            <div class="input-group">
+                                                <input type="text" class="form-control" id="smsCredit" readonly placeholder="--">
+                                                <button class="btn btn-outline-secondary" type="button" onclick="checkSMSCredit()">
+                                                    <i class="bi bi-arrow-clockwise"></i>
+                                                </button>
+                                            </div>
+                                            <div class="form-text">Click refresh to check balance</div>
+                                        </div>
+
+                                        <div class="col-md-12 mb-3">
                                             <label for="smsSender" class="form-label">Sender Name <span class="text-danger">*</span></label>
                                             <input type="text" class="form-control" id="smsSender" placeholder="e.g., RehabPlus">
                                             <div class="form-text">Sender name (case-sensitive, max 11 characters)</div>
@@ -1135,6 +1155,7 @@
             if (!settings) return;
 
             document.getElementById('smsEnabled').value = settings.enabled || '0';
+            document.getElementById('smsType').value = settings.smsType || 'standard';
             document.getElementById('smsSender').value = settings.sender || '';
             document.getElementById('smsApiKey').value = settings.apiKey || '';
             document.getElementById('smsApiSecret').value = settings.apiSecret || '';
@@ -1156,6 +1177,11 @@
                 document.getElementById('smsPaymentReceived').checked = events.paymentReceived || false;
             }
             updateStatusBadge('sms', settings.enabled === 1 || settings.enabled === '1');
+
+            // Auto-check credit if API credentials exist
+            if (settings.apiKey && settings.apiSecret) {
+                checkSMSCredit();
+            }
         }
 
         async function saveSMSSettings() {
@@ -1169,6 +1195,7 @@
                 };
                 const settings = {
                     enabled: parseInt(document.getElementById('smsEnabled').value),
+                    smsType: document.getElementById('smsType').value,
                     sender: document.getElementById('smsSender').value.trim(),
                     apiKey: document.getElementById('smsApiKey').value.trim(),
                     apiSecret: document.getElementById('smsApiSecret').value.trim(),
@@ -1218,6 +1245,19 @@
             } catch (error) {
                 console.error('Error testing SMS:', error);
                 showAlert(error.message || 'Failed to send test SMS. Please check your settings.', 'danger');
+            }
+        }
+
+        async function checkSMSCredit() {
+            try {
+                const creditInput = document.getElementById('smsCredit');
+                creditInput.value = 'Checking...';
+                const response = await apiGet('/api/admin/notification/sms/credit');
+                creditInput.value = `${response.credit} credits`;
+            } catch (error) {
+                console.error('Error checking SMS credit:', error);
+                document.getElementById('smsCredit').value = 'Error';
+                showAlert(error.message || 'Failed to check SMS credit. Please verify your API credentials.', 'danger');
             }
         }
 

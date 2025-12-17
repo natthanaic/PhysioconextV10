@@ -1159,10 +1159,11 @@ router.get('/notification/sms/credit', authenticateToken, authorize('ADMIN'), as
         const axios = require('axios');
         const authString = Buffer.from(`${smsConfig.apiKey}:${smsConfig.apiSecret}`).toString('base64');
 
-        console.log('🔄 Calling Thai Bulk SMS credit API...');
+        const smsType = smsConfig.smsType || 'standard';
+        console.log('🔄 Calling Thai Bulk SMS credit API with type:', smsType);
 
         const response = await axios.get(
-            'https://api-v2.thaibulksms.com/credit',
+            `https://api-v2.thaibulksms.com/credit?force=${smsType}`,
             {
                 headers: {
                     'accept': 'application/json',

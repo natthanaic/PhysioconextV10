@@ -1261,8 +1261,12 @@
         async function checkSMSCredit() {
             try {
                 const creditInput = document.getElementById('smsCredit');
+                const currentSmsType = document.getElementById('smsType').value;
+
                 creditInput.value = 'Checking...';
-                const response = await apiGet('/api/admin/notification/sms/credit');
+
+                // Pass the current dropdown value to the API
+                const response = await apiGet(`/api/admin/notification/sms/credit?type=${currentSmsType}`);
                 creditInput.value = `${response.credit} credits`;
             } catch (error) {
                 console.error('Error checking SMS credit:', error);

@@ -1144,10 +1144,15 @@ router.get('/notification/sms/credit', authenticateToken, authorize('ADMIN'), as
 
         const smsConfig = JSON.parse(settings[0].setting_value);
 
+        // Use type from query parameter if provided, otherwise use saved setting
+        const smsType = req.query.type || smsConfig.smsType || 'standard';
+
         console.log('📋 SMS Config loaded:', {
             hasApiKey: !!smsConfig.apiKey,
             hasApiSecret: !!smsConfig.apiSecret,
-            smsType: smsConfig.smsType
+            savedSmsType: smsConfig.smsType,
+            requestedType: req.query.type,
+            usingType: smsType
         });
 
         if (!smsConfig.apiKey || !smsConfig.apiSecret) {
@@ -1159,7 +1164,6 @@ router.get('/notification/sms/credit', authenticateToken, authorize('ADMIN'), as
         const axios = require('axios');
         const authString = Buffer.from(`${smsConfig.apiKey}:${smsConfig.apiSecret}`).toString('base64');
 
-        const smsType = smsConfig.smsType || 'standard';
         console.log('🔄 Calling Thai Bulk SMS credit API with type:', smsType);
 
         const response = await axios.get(

@@ -2415,11 +2415,20 @@ router.put('/bills/:id', authenticateToken, async (req, res) => {
 });
 
 // Update bill payment status
-router.put('/bills/:id/payment-status', authenticateToken, async (req, res) => {
+// Update bill payment status (accepts both PUT and PATCH)
+router.patch('/bills/:id/payment-status', authenticateToken, async (req, res) => {
     try {
         const db = req.app.locals.db;
         const { id } = req.params;
         const { payment_status, payment_method, payment_date } = req.body;
+
+        console.log('[BILLS] Updating payment status for bill ID:', id);
+        console.log('[BILLS] New status:', payment_status, 'Method:', payment_method, 'Date:', payment_date);
+
+        // Set payment_date to now if marking as PAID and no date provided
+        const finalPaymentDate = payment_status === 'PAID' && !payment_date
+            ? new Date().toISOString().split('T')[0]
+            : payment_date;
 
         await db.execute(`
             UPDATE bills SET
@@ -2427,12 +2436,46 @@ router.put('/bills/:id/payment-status', authenticateToken, async (req, res) => {
                 payment_method = ?,
                 payment_date = ?
             WHERE id = ?
-        `, [payment_status, payment_method, payment_date, id]);
+        `, [payment_status, payment_method || null, finalPaymentDate || null, id]);
 
+        console.log('[BILLS] Payment status updated successfully');
         res.json({ success: true, message: 'Payment status updated successfully' });
     } catch (error) {
-        console.error('Update payment status error:', error);
-        res.status(500).json({ error: 'Failed to update payment status' });
+        console.error('[BILLS] Update payment status error:', error);
+        console.error('[BILLS] Error details:', error.message);
+        res.status(500).json({ error: 'Failed to update payment status', details: error.message });
+    }
+});
+
+// Also support PUT for backwards compatibility
+router.put('/bills/:id/payment-status', authenticateToken, async (req, res) => {
+    try {
+        const db = req.app.locals.db;
+        const { id } = req.params;
+        const { payment_status, payment_method, payment_date } = req.body;
+
+        console.log('[BILLS] Updating payment status for bill ID:', id);
+        console.log('[BILLS] New status:', payment_status, 'Method:', payment_method, 'Date:', payment_date);
+
+        // Set payment_date to now if marking as PAID and no date provided
+        const finalPaymentDate = payment_status === 'PAID' && !payment_date
+            ? new Date().toISOString().split('T')[0]
+            : payment_date;
+
+        await db.execute(`
+            UPDATE bills SET
+                payment_status = ?,
+                payment_method = ?,
+                payment_date = ?
+            WHERE id = ?
+        `, [payment_status, payment_method || null, finalPaymentDate || null, id]);
+
+        console.log('[BILLS] Payment status updated successfully');
+        res.json({ success: true, message: 'Payment status updated successfully' });
+    } catch (error) {
+        console.error('[BILLS] Update payment status error:', error);
+        console.error('[BILLS] Error details:', error.message);
+        res.status(500).json({ error: 'Failed to update payment status', details: error.message });
     }
 });
 

@@ -314,6 +314,13 @@ router.get('/public-home', (req, res) => {
 });
 
 // ========================================
+// FAVICON
+// ========================================
+router.get('/favicon.ico', (req, res) => {
+    res.redirect('/public/images/Fav.png');
+});
+
+// ========================================
 // ROOT REDIRECT
 // ========================================
 router.get('/', (req, res) => {

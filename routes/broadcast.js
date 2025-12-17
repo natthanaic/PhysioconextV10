@@ -240,6 +240,10 @@ router.post('/campaigns/:id/send', authenticateToken, authorize('ADMIN', 'PT'), 
         const db = req.app.locals.db;
         const { id } = req.params;
 
+        console.log('========================================');
+        console.log(`[BROADCAST] Starting send for campaign ID: ${id}`);
+        console.log('========================================');
+
         // Get campaign details
         const [campaigns] = await db.execute(
             'SELECT * FROM broadcast_campaigns WHERE id = ?',
@@ -252,6 +256,14 @@ router.post('/campaigns/:id/send', authenticateToken, authorize('ADMIN', 'PT'), 
 
         const campaign = campaigns[0];
 
+        console.log('[BROADCAST] Campaign details:', {
+            id: campaign.id,
+            name: campaign.campaign_name,
+            type: campaign.campaign_type,
+            target: campaign.target_audience,
+            status: campaign.status
+        });
+
         if (campaign.status === 'sent' || campaign.status === 'sending') {
             return res.status(400).json({ error: 'Campaign is already sent or sending' });
         }
@@ -261,6 +273,8 @@ router.post('/campaigns/:id/send', authenticateToken, authorize('ADMIN', 'PT'), 
             'UPDATE broadcast_campaigns SET status = ? WHERE id = ?',
             ['sending', id]
         );
+
+        console.log('[BROADCAST] Status updated to sending');
 
         // Get recipients based on target audience
         let recipients = [];
@@ -338,11 +352,16 @@ router.post('/campaigns/:id/send', authenticateToken, authorize('ADMIN', 'PT'), 
             }
         }
 
+        console.log(`[BROADCAST] Total recipients: ${recipients.length}`);
+        console.log('[BROADCAST] Recipients:', recipients.map(r => ({ type: r.type, value: r.value })));
+
         // Update total recipients
         await db.execute(
             'UPDATE broadcast_campaigns SET total_recipients = ? WHERE id = ?',
             [recipients.length, id]
         );
+
+        console.log('[BROADCAST] Calling sendBroadcastMessages...');
 
         // Send messages asynchronously
         sendBroadcastMessages(db, id, campaign, recipients);
@@ -390,6 +409,12 @@ function replaceTemplateVariables(text, patientData, clinicName = 'PhysioConext'
 // HELPER FUNCTION: SEND BROADCAST MESSAGES
 // ========================================
 async function sendBroadcastMessages(db, campaignId, campaign, recipients) {
+    console.log('========================================');
+    console.log(`[BROADCAST] sendBroadcastMessages called for campaign ${campaignId}`);
+    console.log(`[BROADCAST] Campaign type: ${campaign.campaign_type}`);
+    console.log(`[BROADCAST] Number of recipients: ${recipients.length}`);
+    console.log('========================================');
+
     let sentCount = 0;
     let failedCount = 0;
 

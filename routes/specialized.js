@@ -48,6 +48,20 @@ router.get('/courses', authenticateToken, async (req, res) => {
                 ORDER BY c.created_at DESC
             `);
 
+            // Get shared users count for each course
+            for (let course of courses) {
+                const [sharedCount] = await db.execute(`
+                    SELECT COUNT(*) as count,
+                           GROUP_CONCAT(CONCAT(p.first_name, ' ', p.last_name) SEPARATOR ', ') as shared_with
+                    FROM course_shared_users csu
+                    LEFT JOIN patients p ON csu.patient_id = p.id
+                    WHERE csu.course_id = ? AND csu.is_active = 1
+                `, [course.id]);
+
+                course.shared_count = sharedCount[0].count;
+                course.shared_with_names = sharedCount[0].shared_with;
+            }
+
             console.log('[COURSES] Found', courses.length, 'courses');
             if (courses.length > 0) {
                 console.log('[COURSES] Sample:', JSON.stringify(courses[0]).substring(0, 300));

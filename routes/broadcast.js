@@ -236,6 +236,10 @@ router.delete('/campaigns/:id', authenticateToken, authorize('ADMIN', 'PT'), asy
 // SEND BROADCAST CAMPAIGN
 // ========================================
 router.post('/campaigns/:id/send', authenticateToken, authorize('ADMIN', 'PT'), async (req, res) => {
+    console.log('\n========================================');
+    console.log('🚀🚀🚀 BROADCAST SEND ENDPOINT CALLED! 🚀🚀🚀');
+    console.log('========================================\n');
+
     try {
         const db = req.app.locals.db;
         const { id } = req.params;

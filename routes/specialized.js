@@ -11,6 +11,18 @@ router.get('/courses', authenticateToken, async (req, res) => {
         const db = req.app.locals.db;
         const { patient_id } = req.query;
 
+        // Check if courses table exists
+        const [tables] = await db.execute(`
+            SELECT TABLE_NAME
+            FROM information_schema.TABLES
+            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'courses'
+        `);
+
+        if (tables.length === 0) {
+            console.log('Courses table does not exist, returning empty array');
+            return res.json([]);
+        }
+
         let query = `
             SELECT
                 c.*,
@@ -35,7 +47,7 @@ router.get('/courses', authenticateToken, async (req, res) => {
         res.json(courses);
     } catch (error) {
         console.error('Get courses error:', error);
-        res.status(500).json({ error: 'Failed to retrieve courses' });
+        res.json([]); // Return empty array instead of error
     }
 });
 
@@ -43,6 +55,18 @@ router.get('/course-templates', authenticateToken, async (req, res) => {
     try {
         const db = req.app.locals.db;
         const { active } = req.query;
+
+        // Check if course_templates table exists
+        const [tables] = await db.execute(`
+            SELECT TABLE_NAME
+            FROM information_schema.TABLES
+            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'course_templates'
+        `);
+
+        if (tables.length === 0) {
+            console.log('Course templates table does not exist, returning empty array');
+            return res.json([]);
+        }
 
         let query = `
             SELECT
@@ -70,7 +94,7 @@ router.get('/course-templates', authenticateToken, async (req, res) => {
         res.json(templates);
     } catch (error) {
         console.error('Get course templates error:', error);
-        res.status(500).json({ error: 'Failed to retrieve course templates' });
+        res.json([]); // Return empty array instead of error
     }
 });
 

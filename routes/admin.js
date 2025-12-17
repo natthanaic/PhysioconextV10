@@ -2609,11 +2609,13 @@ router.post('/invoices', authenticateToken, async (req, res) => {
             for (const item of items) {
                 await connection.execute(`
                     INSERT INTO invoice_items (
-                        invoice_id, description, quantity, unit_price, total_price
-                    ) VALUES (?, ?, ?, ?, ?)
+                        invoice_id, service_id, item_name, description, quantity, unit_price, total_price
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?)
                 `, [
                     invoiceId,
-                    item.description || item.service_name,
+                    item.service_id || null,
+                    item.item_name || item.service_name || '',
+                    item.description || '',
                     item.quantity,
                     item.unit_price,
                     item.total_price
@@ -2699,11 +2701,13 @@ router.put('/invoices/:id', authenticateToken, async (req, res) => {
                 for (const item of items) {
                     await connection.execute(`
                         INSERT INTO invoice_items (
-                            invoice_id, description, quantity, unit_price, total_price
-                        ) VALUES (?, ?, ?, ?, ?)
+                            invoice_id, service_id, item_name, description, quantity, unit_price, total_price
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?)
                     `, [
                         id,
-                        item.description || item.service_name,
+                        item.service_id || null,
+                        item.item_name || item.service_name || '',
+                        item.description || '',
                         item.quantity,
                         item.unit_price,
                         item.total_price

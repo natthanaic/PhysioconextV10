@@ -77,17 +77,20 @@ const patientsRoutes = require('./routes/patients');
 const pnCasesRoutes = require('./routes/pn-cases');
 const appointmentsRoutes = require('./routes/appointments');
 const adminRoutes = require('./routes/admin');
-const specializedRoutes = require('./routes/specialized');
 const publicRoutes = require('./routes/public');
 const documentsRoutes = require('./routes/documents');
-const webhooksRoutes = require('./routes/webhooks');
-const viewsRoutes = require('./routes/views');
 const chatRoutes = require('./routes/chat');
-const testRoutes = require('./routes/test');
-const broadcastRoutes = require('./routes/broadcast');
+
+// Optional routes - only load if files exist
+let specializedRoutes, webhooksRoutes, viewsRoutes, testRoutes, broadcastRoutes;
+try { specializedRoutes = require('./routes/specialized'); } catch(e) { specializedRoutes = null; }
+try { webhooksRoutes = require('./routes/webhooks'); } catch(e) { webhooksRoutes = null; }
+try { viewsRoutes = require('./routes/views'); } catch(e) { viewsRoutes = null; }
+try { testRoutes = require('./routes/test'); } catch(e) { testRoutes = null; }
+try { broadcastRoutes = require('./routes/broadcast'); } catch(e) { broadcastRoutes = null; }
 
 // MOUNT ROUTES
-app.use('/webhook', webhooksRoutes);
+if (webhooksRoutes) app.use('/webhook', webhooksRoutes);
 app.use('/api/public', publicRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/auth', tfaRoutes);
@@ -97,8 +100,8 @@ app.use('/api', adminRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api', appointmentsRoutes);
 app.use('/api/chat', chatRoutes);
-app.use('/api', testRoutes);
-app.use('/api', specializedRoutes);
+if (testRoutes) app.use('/api', testRoutes);
+if (specializedRoutes) app.use('/api', specializedRoutes);
 
 // --- THAI CARD API ROUTE ---
 // IMPORTANT: Must be mounted BEFORE pn-cases to avoid /:id catch-all conflict
@@ -111,13 +114,36 @@ app.use('/api/expenses', expensesRoutes);
 
 // --- BROADCAST MARKETING ROUTE ---
 // Admin and PT broadcast marketing for SMS and Email campaigns
-app.use('/api/broadcast', broadcastRoutes);
+if (broadcastRoutes) app.use('/api/broadcast', broadcastRoutes);
 
 app.use('/api/pn', pnCasesRoutes);
 app.use('/api', pnCasesRoutes);
 
 app.use('/', documentsRoutes);
-app.use('/', viewsRoutes);
+if (viewsRoutes) app.use('/', viewsRoutes);
+
+// Fallback view routes if views.js doesn't exist
+if (!viewsRoutes) {
+    const { authenticateToken, authorize } = require('./middleware/auth');
+
+    // Root redirect
+    app.get('/', (req, res) => {
+        if (req.cookies && req.cookies.authToken) {
+            res.redirect('/dashboard');
+        } else {
+            res.redirect('/login');
+        }
+    });
+
+    // Essential view routes
+    app.get('/login', (req, res) => res.render('login', { error: req.query.error, appName: 'PhysioConext' }));
+    app.get('/dashboard', authenticateToken, (req, res) => res.render('dashboard', { user: req.user, activePage: 'dashboard', appName: 'PhysioConext' }));
+    app.get('/patients', authenticateToken, (req, res) => res.render('patients', { user: req.user, activePage: 'patients', appName: 'PhysioConext' }));
+    app.get('/appointments', authenticateToken, authorize('ADMIN', 'PT'), (req, res) => res.render('appointments', { user: req.user, activePage: 'appointments', appName: 'PhysioConext' }));
+    app.get('/broadcast', authenticateToken, authorize('ADMIN', 'PT'), (req, res) => res.render('admin/broadcast', { user: req.user, activePage: 'broadcast', appName: 'PhysioConext' }));
+
+    console.log('⚠️  Using fallback view routes (routes/views.js not found)');
+}
 
 app.use((req, res, next) => {
     console.log(`[FALLTHROUGH] Request not handled: ${req.method} ${req.originalUrl}`);

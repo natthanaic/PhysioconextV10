@@ -126,13 +126,18 @@ if (viewsRoutes) app.use('/', viewsRoutes);
 if (!viewsRoutes) {
     const { authenticateToken, authorize } = require('./middleware/auth');
 
-    // Root redirect
+    // Root redirect - show public booking page
     app.get('/', (req, res) => {
         if (req.cookies && req.cookies.authToken) {
             res.redirect('/dashboard');
         } else {
-            res.redirect('/login');
+            res.redirect('/public-booking');
         }
+    });
+
+    // Shortcut route for /book
+    app.get('/book', (req, res) => {
+        res.redirect('/public-booking');
     });
 
     // Essential view routes

@@ -323,13 +323,21 @@ router.get('/favicon.ico', (req, res) => {
 // ========================================
 // ROOT REDIRECT
 // ========================================
+// ROOT AND PUBLIC ROUTES
+// ========================================
 router.get('/', (req, res) => {
     // Check if user is authenticated
     if (req.cookies && req.cookies.authToken) {
         res.redirect('/dashboard');
     } else {
-        res.redirect('/login');
+        // Show public booking page for non-logged-in users
+        res.redirect('/public-booking');
     }
+});
+
+// Shortcut route for /book
+router.get('/book', (req, res) => {
+    res.redirect('/public-booking');
 });
 
 module.exports = router;

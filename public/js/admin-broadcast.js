@@ -2,6 +2,20 @@
 let quillEditor;
 let campaignModal;
 let currentCampaignId = null;
+let selectedRecipients = [];
+
+// Template variables available for personalization
+const TEMPLATE_VARIABLES = [
+    { name: '{patientName}', desc: 'Patient\'s full name' },
+    { name: '{firstName}', desc: 'Patient\'s first name' },
+    { name: '{lastName}', desc: 'Patient\'s last name' },
+    { name: '{email}', desc: 'Patient\'s email address' },
+    { name: '{phone}', desc: 'Patient\'s phone number' },
+    { name: '{clinicName}', desc: 'Your clinic name' },
+    { name: '{address}', desc: 'Patient\'s address' },
+    { name: '{emergencyContact}', desc: 'Emergency contact name' },
+    { name: '{emergencyPhone}', desc: 'Emergency contact phone' }
+];
 
 // ========================================
 // INITIALIZATION
@@ -51,9 +65,36 @@ function initializeQuillEditor() {
 // EVENT LISTENERS
 // ========================================
 function setupEventListeners() {
+    const messageText = document.getElementById('messageText');
+    const patientSearch = document.getElementById('patientSearch');
+
     // Message text character counter
-    document.getElementById('messageText').addEventListener('input', function() {
+    messageText.addEventListener('input', function() {
         document.getElementById('charCount').textContent = this.value.length;
+    });
+
+    // Template variable autocomplete
+    messageText.addEventListener('input', function(e) {
+        handleTemplateVariableInput(e);
+    });
+
+    messageText.addEventListener('keydown', function(e) {
+        handleTemplateVariableKeydown(e);
+    });
+
+    // Hide dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('#messageText') && !e.target.closest('#templateVarDropdown')) {
+            hideTemplateVarDropdown();
+        }
+    });
+
+    // Patient search on Enter key
+    patientSearch.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            searchPatients();
+        }
     });
 }
 
@@ -251,6 +292,12 @@ async function saveCampaign() {
             return;
         }
 
+        // Validate custom recipients
+        if (targetAudience === 'custom' && selectedRecipients.length === 0) {
+            showAlert('Please select at least one recipient', 'warning');
+            return;
+        }
+
         // Get HTML content from Quill editor
         const messageHtml = quillEditor.root.innerHTML;
 
@@ -262,7 +309,7 @@ async function saveCampaign() {
             message_text: messageText,
             message_html: messageHtml !== '<p><br></p>' ? messageHtml : null,
             target_audience: targetAudience,
-            custom_recipients: null,
+            custom_recipients: targetAudience === 'custom' ? JSON.stringify(selectedRecipients) : null,
             schedule_type: scheduleType,
             scheduled_time: scheduledTime || null
         };
@@ -533,4 +580,247 @@ function getCampaignTypeIcon(type) {
         'both': '<i class="bi bi-broadcast me-1"></i>'
     };
     return icons[type] || '';
+}
+
+// ========================================
+// TEMPLATE VARIABLE AUTOCOMPLETE
+// ========================================
+let selectedVarIndex = -1;
+
+function handleTemplateVariableInput(e) {
+    const textarea = e.target;
+    const cursorPos = textarea.selectionStart;
+    const textBeforeCursor = textarea.value.substring(0, cursorPos);
+
+    // Check if user just typed {
+    const lastChar = textBeforeCursor[textBeforeCursor.length - 1];
+    if (lastChar === '{') {
+        showTemplateVarDropdown(textarea);
+        return;
+    }
+
+    // Check if we're inside a { } and filter variables
+    const lastOpenBrace = textBeforeCursor.lastIndexOf('{');
+    const lastCloseBrace = textBeforeCursor.lastIndexOf('}');
+
+    if (lastOpenBrace > lastCloseBrace) {
+        const searchTerm = textBeforeCursor.substring(lastOpenBrace + 1).toLowerCase();
+        filterTemplateVars(searchTerm, textarea);
+    } else {
+        hideTemplateVarDropdown();
+    }
+}
+
+function handleTemplateVariableKeydown(e) {
+    const dropdown = document.getElementById('templateVarDropdown');
+    if (dropdown.style.display === 'none') return;
+
+    const items = dropdown.querySelectorAll('.template-var-item');
+
+    if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        selectedVarIndex = Math.min(selectedVarIndex + 1, items.length - 1);
+        highlightSelectedVar(items);
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        selectedVarIndex = Math.max(selectedVarIndex - 1, 0);
+        highlightSelectedVar(items);
+    } else if (e.key === 'Enter' || e.key === 'Tab') {
+        if (selectedVarIndex >= 0 && selectedVarIndex < items.length) {
+            e.preventDefault();
+            const varName = items[selectedVarIndex].dataset.varName;
+            insertTemplateVar(varName, e.target);
+        }
+    } else if (e.key === 'Escape') {
+        hideTemplateVarDropdown();
+    }
+}
+
+function showTemplateVarDropdown(textarea) {
+    const dropdown = document.getElementById('templateVarDropdown');
+    selectedVarIndex = -1;
+
+    dropdown.innerHTML = TEMPLATE_VARIABLES.map(v => `
+        <div class="template-var-item" data-var-name="${v.name}" onclick="insertTemplateVar('${v.name}', document.getElementById('messageText'))">
+            <div class="var-name">${v.name}</div>
+            <div class="var-desc">${v.desc}</div>
+        </div>
+    `).join('');
+
+    // Position dropdown
+    const rect = textarea.getBoundingClientRect();
+    dropdown.style.display = 'block';
+    dropdown.style.top = (textarea.offsetTop + textarea.offsetHeight) + 'px';
+    dropdown.style.left = textarea.offsetLeft + 'px';
+}
+
+function filterTemplateVars(searchTerm, textarea) {
+    const dropdown = document.getElementById('templateVarDropdown');
+    const filtered = TEMPLATE_VARIABLES.filter(v =>
+        v.name.toLowerCase().includes(searchTerm) ||
+        v.desc.toLowerCase().includes(searchTerm)
+    );
+
+    if (filtered.length === 0) {
+        hideTemplateVarDropdown();
+        return;
+    }
+
+    selectedVarIndex = -1;
+    dropdown.innerHTML = filtered.map(v => `
+        <div class="template-var-item" data-var-name="${v.name}" onclick="insertTemplateVar('${v.name}', document.getElementById('messageText'))">
+            <div class="var-name">${v.name}</div>
+            <div class="var-desc">${v.desc}</div>
+        </div>
+    `).join('');
+
+    dropdown.style.display = 'block';
+}
+
+function highlightSelectedVar(items) {
+    items.forEach((item, index) => {
+        if (index === selectedVarIndex) {
+            item.style.background = '#f8f9fa';
+        } else {
+            item.style.background = 'white';
+        }
+    });
+
+    // Scroll into view
+    if (items[selectedVarIndex]) {
+        items[selectedVarIndex].scrollIntoView({ block: 'nearest' });
+    }
+}
+
+function insertTemplateVar(varName, textarea) {
+    const cursorPos = textarea.selectionStart;
+    const textBeforeCursor = textarea.value.substring(0, cursorPos);
+    const textAfterCursor = textarea.value.substring(cursorPos);
+
+    // Find the last { before cursor
+    const lastOpenBrace = textBeforeCursor.lastIndexOf('{');
+
+    // Replace from { to cursor with the variable name
+    const newTextBefore = textBeforeCursor.substring(0, lastOpenBrace) + varName;
+    textarea.value = newTextBefore + textAfterCursor;
+
+    // Update cursor position
+    const newCursorPos = newTextBefore.length;
+    textarea.setSelectionRange(newCursorPos, newCursorPos);
+    textarea.focus();
+
+    // Update char count
+    document.getElementById('charCount').textContent = textarea.value.length;
+
+    hideTemplateVarDropdown();
+}
+
+function hideTemplateVarDropdown() {
+    document.getElementById('templateVarDropdown').style.display = 'none';
+    selectedVarIndex = -1;
+}
+
+// ========================================
+// TARGET AUDIENCE CHANGE
+// ========================================
+function handleTargetAudienceChange() {
+    const targetAudience = document.getElementById('targetAudience').value;
+    const customRecipientsGroup = document.getElementById('customRecipientsGroup');
+
+    if (targetAudience === 'custom') {
+        customRecipientsGroup.style.display = 'block';
+    } else {
+        customRecipientsGroup.style.display = 'none';
+        selectedRecipients = [];
+        updateSelectedRecipientsDisplay();
+    }
+}
+
+// ========================================
+// PATIENT SEARCH
+// ========================================
+async function searchPatients() {
+    const searchTerm = document.getElementById('patientSearch').value.trim();
+    const searchResults = document.getElementById('searchResults');
+
+    if (!searchTerm) {
+        searchResults.style.display = 'none';
+        return;
+    }
+
+    try {
+        searchResults.innerHTML = '<div class="text-center py-2"><div class="spinner-border spinner-border-sm" role="status"></div></div>';
+        searchResults.style.display = 'block';
+
+        const response = await fetch(`/api/broadcast/search-patients?q=${encodeURIComponent(searchTerm)}`);
+        const patients = await response.json();
+
+        if (patients.length === 0) {
+            searchResults.innerHTML = '<div class="text-muted text-center py-2">No patients found</div>';
+            return;
+        }
+
+        searchResults.innerHTML = patients.map(p => `
+            <div class="search-result-item" onclick="addRecipient(${p.id}, '${escapeHtml(p.name)}', '${escapeHtml(p.email || '')}', '${escapeHtml(p.phone || '')}')">
+                <div><strong>${escapeHtml(p.name)}</strong></div>
+                <div class="small text-muted">
+                    ${p.email ? `<i class="bi bi-envelope me-1"></i>${escapeHtml(p.email)}` : ''}
+                    ${p.phone ? `<i class="bi bi-phone ms-2 me-1"></i>${escapeHtml(p.phone)}` : ''}
+                </div>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Patient search error:', error);
+        searchResults.innerHTML = '<div class="text-danger text-center py-2">Search failed</div>';
+    }
+}
+
+function addRecipient(id, name, email, phone) {
+    // Check if already selected
+    if (selectedRecipients.find(r => r.id === id)) {
+        showAlert('This patient is already selected', 'warning');
+        return;
+    }
+
+    selectedRecipients.push({ id, name, email, phone });
+    updateSelectedRecipientsDisplay();
+
+    // Clear search
+    document.getElementById('patientSearch').value = '';
+    document.getElementById('searchResults').style.display = 'none';
+}
+
+function removeRecipient(id) {
+    selectedRecipients = selectedRecipients.filter(r => r.id !== id);
+    updateSelectedRecipientsDisplay();
+}
+
+function clearSelectedRecipients() {
+    if (selectedRecipients.length === 0) return;
+
+    if (confirm('Are you sure you want to clear all selected recipients?')) {
+        selectedRecipients = [];
+        updateSelectedRecipientsDisplay();
+    }
+}
+
+function updateSelectedRecipientsDisplay() {
+    const container = document.getElementById('selectedRecipients');
+    const countSpan = document.getElementById('selectedCount');
+
+    countSpan.textContent = selectedRecipients.length;
+
+    if (selectedRecipients.length === 0) {
+        container.innerHTML = '<small class="text-muted">No recipients selected</small>';
+        return;
+    }
+
+    container.innerHTML = selectedRecipients.map(r => `
+        <span class="recipient-badge">
+            <i class="bi bi-person-fill me-1"></i>${escapeHtml(r.name)}
+            ${r.email ? `<i class="bi bi-envelope ms-1" title="${escapeHtml(r.email)}"></i>` : ''}
+            ${r.phone ? `<i class="bi bi-phone ms-1" title="${escapeHtml(r.phone)}"></i>` : ''}
+            <span class="remove-btn" onclick="removeRecipient(${r.id})" title="Remove">×</span>
+        </span>
+    `).join('');
 }

@@ -266,26 +266,83 @@ router.post('/campaigns/:id/send', authenticateToken, authorize('ADMIN', 'PT'), 
         let recipients = [];
 
         if (campaign.target_audience === 'all_patients') {
-            if (campaign.campaign_type === 'email' || campaign.campaign_type === 'both') {
-                const [emails] = await db.execute(`
-                    SELECT DISTINCT email, CONCAT(first_name, ' ', last_name) as name
-                    FROM patients
-                    WHERE email IS NOT NULL AND email != '' AND active = 1
-                `);
-                recipients = [...recipients, ...emails.map(e => ({ type: 'email', value: e.email, name: e.name }))];
-            }
+            // Get all active patients with their full data for template variables
+            const [patients] = await db.execute(`
+                SELECT
+                    id,
+                    CONCAT(first_name, ' ', last_name) as name,
+                    first_name,
+                    last_name,
+                    email,
+                    phone,
+                    address,
+                    emergency_contact_name,
+                    emergency_contact_phone
+                FROM patients
+                WHERE active = 1
+                AND (
+                    (email IS NOT NULL AND email != '' AND ? IN ('email', 'both'))
+                    OR (phone IS NOT NULL AND phone != '' AND ? IN ('sms', 'both'))
+                )
+            `, [campaign.campaign_type, campaign.campaign_type]);
 
-            if (campaign.campaign_type === 'sms' || campaign.campaign_type === 'both') {
-                const [phones] = await db.execute(`
-                    SELECT DISTINCT phone, CONCAT(first_name, ' ', last_name) as name
-                    FROM patients
-                    WHERE phone IS NOT NULL AND phone != '' AND active = 1
-                `);
-                recipients = [...recipients, ...phones.map(p => ({ type: 'phone', value: p.phone, name: p.name }))];
+            // Build recipients list based on campaign type
+            for (const patient of patients) {
+                if ((campaign.campaign_type === 'email' || campaign.campaign_type === 'both') && patient.email) {
+                    recipients.push({
+                        type: 'email',
+                        value: patient.email,
+                        patientData: patient
+                    });
+                }
+                if ((campaign.campaign_type === 'sms' || campaign.campaign_type === 'both') && patient.phone) {
+                    recipients.push({
+                        type: 'phone',
+                        value: patient.phone,
+                        patientData: patient
+                    });
+                }
             }
         } else if (campaign.target_audience === 'custom') {
+            // Get selected patients with full data
             const customList = JSON.parse(campaign.custom_recipients || '[]');
-            recipients = customList;
+            const patientIds = customList.map(r => r.id);
+
+            if (patientIds.length > 0) {
+                const placeholders = patientIds.map(() => '?').join(',');
+                const [patients] = await db.execute(`
+                    SELECT
+                        id,
+                        CONCAT(first_name, ' ', last_name) as name,
+                        first_name,
+                        last_name,
+                        email,
+                        phone,
+                        address,
+                        emergency_contact_name,
+                        emergency_contact_phone
+                    FROM patients
+                    WHERE id IN (${placeholders}) AND active = 1
+                `, patientIds);
+
+                // Build recipients list based on campaign type
+                for (const patient of patients) {
+                    if ((campaign.campaign_type === 'email' || campaign.campaign_type === 'both') && patient.email) {
+                        recipients.push({
+                            type: 'email',
+                            value: patient.email,
+                            patientData: patient
+                        });
+                    }
+                    if ((campaign.campaign_type === 'sms' || campaign.campaign_type === 'both') && patient.phone) {
+                        recipients.push({
+                            type: 'phone',
+                            value: patient.phone,
+                            patientData: patient
+                        });
+                    }
+                }
+            }
         }
 
         // Update total recipients
@@ -310,6 +367,28 @@ router.post('/campaigns/:id/send', authenticateToken, authorize('ADMIN', 'PT'), 
 });
 
 // ========================================
+// HELPER FUNCTION: REPLACE TEMPLATE VARIABLES
+// ========================================
+function replaceTemplateVariables(text, patientData, clinicName = 'PhysioConext') {
+    if (!text || !patientData) return text;
+
+    let result = text;
+
+    // Replace all template variables
+    result = result.replace(/{patientName}/g, patientData.name || '');
+    result = result.replace(/{firstName}/g, patientData.first_name || '');
+    result = result.replace(/{lastName}/g, patientData.last_name || '');
+    result = result.replace(/{email}/g, patientData.email || '');
+    result = result.replace(/{phone}/g, patientData.phone || '');
+    result = result.replace(/{clinicName}/g, clinicName);
+    result = result.replace(/{address}/g, patientData.address || '');
+    result = result.replace(/{emergencyContact}/g, patientData.emergency_contact_name || '');
+    result = result.replace(/{emergencyPhone}/g, patientData.emergency_contact_phone || '');
+
+    return result;
+}
+
+// ========================================
 // HELPER FUNCTION: SEND BROADCAST MESSAGES
 // ========================================
 async function sendBroadcastMessages(db, campaignId, campaign, recipients) {
@@ -328,17 +407,30 @@ async function sendBroadcastMessages(db, campaignId, campaign, recipients) {
             }
         }
 
+        // Get clinic name for template variables
+        const [clinicSettings] = await db.execute(`
+            SELECT setting_value FROM notification_settings WHERE setting_type = 'clinic_info' LIMIT 1
+        `);
+        const clinicName = clinicSettings.length > 0
+            ? (JSON.parse(clinicSettings[0].setting_value).name || 'PhysioConext')
+            : 'PhysioConext';
+
         // Process each recipient
         for (const recipient of recipients) {
             try {
                 let success = false;
 
                 if (recipient.type === 'email' && (campaign.campaign_type === 'email' || campaign.campaign_type === 'both')) {
-                    // Send email
-                    success = await sendBroadcastEmail(db, smtpConfig, recipient, campaign);
+                    // Send email with template variables replaced
+                    success = await sendBroadcastEmail(db, smtpConfig, recipient, campaign, clinicName);
                 } else if (recipient.type === 'phone' && (campaign.campaign_type === 'sms' || campaign.campaign_type === 'both')) {
-                    // Send SMS
-                    success = await sendBroadcastSMS(db, recipient.value, campaign.message_text);
+                    // Send SMS with template variables replaced
+                    const personalizedMessage = replaceTemplateVariables(
+                        campaign.message_text,
+                        recipient.patientData,
+                        clinicName
+                    );
+                    success = await sendBroadcastSMS(db, recipient.value, personalizedMessage);
                 }
 
                 if (success) {
@@ -393,7 +485,7 @@ async function sendBroadcastMessages(db, campaignId, campaign, recipients) {
 // ========================================
 // HELPER: SEND BROADCAST EMAIL
 // ========================================
-async function sendBroadcastEmail(db, smtpConfig, recipient, campaign) {
+async function sendBroadcastEmail(db, smtpConfig, recipient, campaign, clinicName) {
     try {
         if (!smtpConfig || smtpConfig.enabled !== 1) {
             console.log('SMTP not enabled');
@@ -414,13 +506,30 @@ async function sendBroadcastEmail(db, smtpConfig, recipient, campaign) {
             }
         });
 
+        // Replace template variables in subject and content
+        const personalizedSubject = replaceTemplateVariables(
+            campaign.subject,
+            recipient.patientData,
+            clinicName
+        );
+
+        const personalizedText = replaceTemplateVariables(
+            campaign.message_text,
+            recipient.patientData,
+            clinicName
+        );
+
+        const personalizedHtml = campaign.message_html
+            ? replaceTemplateVariables(campaign.message_html, recipient.patientData, clinicName)
+            : personalizedText.replace(/\n/g, '<br>');
+
         // Prepare email
         const mailOptions = {
             from: `"${smtpConfig.fromName || 'Broadcast'}" <${smtpConfig.fromEmail}>`,
             to: recipient.value,
-            subject: campaign.subject,
-            text: campaign.message_text,
-            html: campaign.message_html || campaign.message_text.replace(/\n/g, '<br>')
+            subject: personalizedSubject,
+            text: personalizedText,
+            html: personalizedHtml
         };
 
         // Send email
@@ -438,6 +547,48 @@ async function sendBroadcastEmail(db, smtpConfig, recipient, campaign) {
 async function sendBroadcastSMS(db, phoneNumber, message) {
     return await sendPatientSMS(db, phoneNumber, message);
 }
+
+// ========================================
+// SEARCH PATIENTS FOR BROADCAST
+// ========================================
+router.get('/search-patients', authenticateToken, authorize('ADMIN', 'PT'), async (req, res) => {
+    try {
+        const db = req.app.locals.db;
+        const searchTerm = req.query.q || '';
+
+        if (!searchTerm) {
+            return res.json([]);
+        }
+
+        const [patients] = await db.execute(`
+            SELECT
+                id,
+                CONCAT(first_name, ' ', last_name) as name,
+                email,
+                phone,
+                address,
+                emergency_contact_name,
+                emergency_contact_phone
+            FROM patients
+            WHERE active = 1
+            AND (
+                CONCAT(first_name, ' ', last_name) LIKE ?
+                OR email LIKE ?
+                OR phone LIKE ?
+            )
+            LIMIT 50
+        `, [
+            `%${searchTerm}%`,
+            `%${searchTerm}%`,
+            `%${searchTerm}%`
+        ]);
+
+        res.json(patients);
+    } catch (error) {
+        console.error('Search patients error:', error);
+        res.status(500).json({ error: 'Failed to search patients' });
+    }
+});
 
 // ========================================
 // GET BROADCAST STATISTICS

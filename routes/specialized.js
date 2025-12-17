@@ -47,7 +47,8 @@ router.get('/courses', authenticateToken, async (req, res) => {
         res.json(courses);
     } catch (error) {
         console.error('Get courses error:', error);
-        res.json([]); // Return empty array instead of error
+        console.error('Error details:', error.message);
+        return res.json([]); // Return empty array instead of error
     }
 });
 
@@ -94,7 +95,8 @@ router.get('/course-templates', authenticateToken, async (req, res) => {
         res.json(templates);
     } catch (error) {
         console.error('Get course templates error:', error);
-        res.json([]); // Return empty array instead of error
+        console.error('Error details:', error.message);
+        return res.json([]); // Return empty array instead of error
     }
 });
 

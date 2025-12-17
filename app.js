@@ -85,9 +85,11 @@ const viewsRoutes = require('./routes/views');
 const chatRoutes = require('./routes/chat');
 const testRoutes = require('./routes/test');
 
-// Optional broadcast routes
-let broadcastRoutes;
+// Optional routes - load if they exist
+let broadcastRoutes, billsRoutes, invoicesRoutes;
 try { broadcastRoutes = require('./routes/broadcast'); } catch(e) { console.log('Broadcast routes not found'); }
+try { billsRoutes = require('./routes/bills'); } catch(e) { console.log('Bills routes not found'); }
+try { invoicesRoutes = require('./routes/invoices'); } catch(e) { console.log('Invoices routes not found'); }
 
 // MOUNT ROUTES
 app.use('/webhook', webhooksRoutes);
@@ -115,6 +117,11 @@ app.use('/api/expenses', expensesRoutes);
 // --- BROADCAST MARKETING ROUTE ---
 // Admin and PT broadcast marketing for SMS and Email campaigns
 if (broadcastRoutes) app.use('/api/broadcast', broadcastRoutes);
+
+// --- BILLS & INVOICES ROUTES ---
+// Billing and invoice management
+if (billsRoutes) app.use('/api', billsRoutes);
+if (invoicesRoutes) app.use('/api', invoicesRoutes);
 
 app.use('/api/pn', pnCasesRoutes);
 app.use('/api', pnCasesRoutes);

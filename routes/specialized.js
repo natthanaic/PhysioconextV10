@@ -9,11 +9,68 @@ const { authenticateToken, authorize } = require('../middleware/auth');
 router.get('/courses', authenticateToken, async (req, res) => {
     try {
         const db = req.app.locals.db;
-        const [courses] = await db.execute('SELECT * FROM courses WHERE active = 1 ORDER BY name');
+        const { patient_id } = req.query;
+
+        let query = `
+            SELECT
+                c.*,
+                ct.name as template_name,
+                ct.sessions as template_sessions,
+                CONCAT(COALESCE(p.first_name, ''), ' ', COALESCE(p.last_name, '')) as patient_name
+            FROM courses c
+            LEFT JOIN course_templates ct ON c.template_id = ct.id
+            LEFT JOIN patients p ON c.patient_id = p.id
+            WHERE 1=1
+        `;
+        const params = [];
+
+        if (patient_id) {
+            query += ` AND c.patient_id = ?`;
+            params.push(patient_id);
+        }
+
+        query += ` ORDER BY c.created_at DESC`;
+
+        const [courses] = await db.execute(query, params);
         res.json(courses);
     } catch (error) {
         console.error('Get courses error:', error);
         res.status(500).json({ error: 'Failed to retrieve courses' });
+    }
+});
+
+router.get('/course-templates', authenticateToken, async (req, res) => {
+    try {
+        const db = req.app.locals.db;
+        const { active } = req.query;
+
+        let query = `
+            SELECT
+                id,
+                name,
+                description,
+                sessions,
+                price,
+                duration_weeks,
+                active,
+                created_at
+            FROM course_templates
+            WHERE 1=1
+        `;
+        const params = [];
+
+        if (active !== undefined) {
+            query += ` AND active = ?`;
+            params.push(active === 'true' || active === '1' ? 1 : 0);
+        }
+
+        query += ` ORDER BY name`;
+
+        const [templates] = await db.execute(query, params);
+        res.json(templates);
+    } catch (error) {
+        console.error('Get course templates error:', error);
+        res.status(500).json({ error: 'Failed to retrieve course templates' });
     }
 });
 

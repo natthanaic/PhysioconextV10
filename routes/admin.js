@@ -2449,32 +2449,14 @@ router.delete('/bills/:id', authenticateToken, authorize('ADMIN'), async (req, r
 router.get('/invoices', authenticateToken, async (req, res) => {
     try {
         const db = req.app.locals.db;
-
-        // Check if invoices table exists
-        const [tables] = await db.execute(`
-            SELECT TABLE_NAME
-            FROM information_schema.TABLES
-            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'invoices'
-        `);
-
-        if (tables.length === 0) {
-            console.log('Invoices table does not exist, returning empty array');
-            return res.json([]);
-        }
-
-        const { startDate, endDate, status, patientId, clinicId } = req.query;
+        const { startDate, endDate, status, customer, clinicId } = req.query;
 
         let query = `
             SELECT
                 i.*,
-                CONCAT(COALESCE(p.first_name, ''), ' ', COALESCE(p.last_name, '')) as patient_name,
-                p.phone as patient_phone,
-                p.email as patient_email,
-                p.hn as patient_hn,
                 c.name as clinic_name,
                 CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as created_by_name
             FROM invoices i
-            LEFT JOIN patients p ON i.patient_id = p.id
             LEFT JOIN clinics c ON i.clinic_id = c.id
             LEFT JOIN users u ON i.created_by = u.id
             WHERE 1=1
@@ -2491,9 +2473,10 @@ router.get('/invoices', authenticateToken, async (req, res) => {
             params.push(status);
         }
 
-        if (patientId) {
-            query += ` AND i.patient_id = ?`;
-            params.push(patientId);
+        if (customer) {
+            query += ` AND (i.customer_name LIKE ? OR i.customer_email LIKE ? OR i.customer_phone LIKE ?)`;
+            const searchTerm = `%${customer}%`;
+            params.push(searchTerm, searchTerm, searchTerm);
         }
 
         if (clinicId) {
@@ -2515,27 +2498,6 @@ router.get('/invoices', authenticateToken, async (req, res) => {
 router.get('/invoices/summary', authenticateToken, async (req, res) => {
     try {
         const db = req.app.locals.db;
-
-        // Check if invoices table exists
-        const [tables] = await db.execute(`
-            SELECT TABLE_NAME
-            FROM information_schema.TABLES
-            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'invoices'
-        `);
-
-        if (tables.length === 0) {
-            console.log('Invoices table does not exist, returning zero summary');
-            return res.json({
-                total_count: 0,
-                paid_count: 0,
-                pending_count: 0,
-                overdue_count: 0,
-                total_amount: 0,
-                paid_amount: 0,
-                pending_amount: 0,
-                overdue_amount: 0
-            });
-        }
 
         const [summary] = await db.execute(`
             SELECT
@@ -2575,13 +2537,8 @@ router.get('/invoices/:id', authenticateToken, async (req, res) => {
         const [invoices] = await db.execute(`
             SELECT
                 i.*,
-                CONCAT(COALESCE(p.first_name, ''), ' ', COALESCE(p.last_name, '')) as patient_name,
-                p.phone as patient_phone,
-                p.email as patient_email,
-                p.hn as patient_hn,
                 c.name as clinic_name
             FROM invoices i
-            LEFT JOIN patients p ON i.patient_id = p.id
             LEFT JOIN clinics c ON i.clinic_id = c.id
             WHERE i.id = ?
         `, [id]);
@@ -2592,10 +2549,7 @@ router.get('/invoices/:id', authenticateToken, async (req, res) => {
 
         // Get invoice items
         const [items] = await db.execute(`
-            SELECT ii.*, s.service_name, s.service_code
-            FROM invoice_items ii
-            LEFT JOIN services s ON ii.service_id = s.id
-            WHERE ii.invoice_id = ?
+            SELECT * FROM invoice_items WHERE invoice_id = ?
         `, [id]);
 
         res.json({
@@ -2615,14 +2569,18 @@ router.post('/invoices', authenticateToken, async (req, res) => {
         await connection.beginTransaction();
 
         const {
-            patient_id,
+            invoice_number,
+            customer_name,
+            customer_email,
+            customer_phone,
+            customer_address,
             clinic_id,
             invoice_date,
             due_date,
             items,
             subtotal,
-            discount,
-            tax,
+            discount_amount,
+            tax_amount,
             total_amount,
             payment_status,
             payment_method,
@@ -2632,13 +2590,15 @@ router.post('/invoices', authenticateToken, async (req, res) => {
         // Insert invoice
         const [result] = await connection.execute(`
             INSERT INTO invoices (
-                patient_id, clinic_id, invoice_date, due_date,
-                subtotal, discount, tax, total_amount,
+                invoice_number, customer_name, customer_email, customer_phone, customer_address,
+                clinic_id, invoice_date, due_date,
+                subtotal, discount_amount, tax_amount, total_amount,
                 payment_status, payment_method, notes, created_by
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, [
-            patient_id, clinic_id, invoice_date, due_date,
-            subtotal, discount, tax, total_amount,
+            invoice_number, customer_name, customer_email, customer_phone, customer_address,
+            clinic_id, invoice_date, due_date,
+            subtotal, discount_amount || 0, tax_amount || 0, total_amount,
             payment_status || 'PENDING', payment_method, notes, req.user.id
         ]);
 
@@ -2649,16 +2609,14 @@ router.post('/invoices', authenticateToken, async (req, res) => {
             for (const item of items) {
                 await connection.execute(`
                     INSERT INTO invoice_items (
-                        invoice_id, service_id, service_name, quantity, unit_price, total_price, notes
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                        invoice_id, description, quantity, unit_price, total_price
+                    ) VALUES (?, ?, ?, ?, ?)
                 `, [
                     invoiceId,
-                    item.service_id,
-                    item.service_name,
+                    item.description || item.service_name,
                     item.quantity,
                     item.unit_price,
-                    item.total_price,
-                    item.notes
+                    item.total_price
                 ]);
             }
         }
@@ -2687,14 +2645,18 @@ router.put('/invoices/:id', authenticateToken, async (req, res) => {
 
         const { id } = req.params;
         const {
-            patient_id,
+            invoice_number,
+            customer_name,
+            customer_email,
+            customer_phone,
+            customer_address,
             clinic_id,
             invoice_date,
             due_date,
             items,
             subtotal,
-            discount,
-            tax,
+            discount_amount,
+            tax_amount,
             total_amount,
             payment_status,
             payment_method,
@@ -2705,13 +2667,17 @@ router.put('/invoices/:id', authenticateToken, async (req, res) => {
         // Update invoice
         await connection.execute(`
             UPDATE invoices SET
-                patient_id = ?,
+                invoice_number = ?,
+                customer_name = ?,
+                customer_email = ?,
+                customer_phone = ?,
+                customer_address = ?,
                 clinic_id = ?,
                 invoice_date = ?,
                 due_date = ?,
                 subtotal = ?,
-                discount = ?,
-                tax = ?,
+                discount_amount = ?,
+                tax_amount = ?,
                 total_amount = ?,
                 payment_status = ?,
                 payment_method = ?,
@@ -2719,8 +2685,9 @@ router.put('/invoices/:id', authenticateToken, async (req, res) => {
                 notes = ?
             WHERE id = ?
         `, [
-            patient_id, clinic_id, invoice_date, due_date,
-            subtotal, discount, tax, total_amount,
+            invoice_number, customer_name, customer_email, customer_phone, customer_address,
+            clinic_id, invoice_date, due_date,
+            subtotal, discount_amount || 0, tax_amount || 0, total_amount,
             payment_status, payment_method, payment_date, notes, id
         ]);
 
@@ -2732,16 +2699,14 @@ router.put('/invoices/:id', authenticateToken, async (req, res) => {
                 for (const item of items) {
                     await connection.execute(`
                         INSERT INTO invoice_items (
-                            invoice_id, service_id, service_name, quantity, unit_price, total_price, notes
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                            invoice_id, description, quantity, unit_price, total_price
+                        ) VALUES (?, ?, ?, ?, ?)
                     `, [
                         id,
-                        item.service_id,
-                        item.service_name,
+                        item.description || item.service_name,
                         item.quantity,
                         item.unit_price,
-                        item.total_price,
-                        item.notes
+                        item.total_price
                     ]);
                 }
             }

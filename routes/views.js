@@ -340,4 +340,13 @@ router.get('/book', (req, res) => {
     res.redirect('/public-booking');
 });
 
+// Staff/Admin login shortcuts
+router.get('/admin', (req, res) => {
+    res.redirect('/login');
+});
+
+router.get('/staff', (req, res) => {
+    res.redirect('/login');
+});
+
 module.exports = router;

@@ -140,6 +140,15 @@ if (!viewsRoutes) {
         res.redirect('/public-booking');
     });
 
+    // Staff/Admin login shortcuts
+    app.get('/admin', (req, res) => {
+        res.redirect('/login');
+    });
+
+    app.get('/staff', (req, res) => {
+        res.redirect('/login');
+    });
+
     // Essential view routes
     app.get('/login', (req, res) => res.render('login', { error: req.query.error, appName: 'PhysioConext' }));
     app.get('/dashboard', authenticateToken, (req, res) => res.render('dashboard', { user: req.user, activePage: 'dashboard', appName: 'PhysioConext' }));

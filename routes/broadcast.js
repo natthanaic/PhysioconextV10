@@ -418,9 +418,12 @@ async function sendBroadcastMessages(db, campaignId, campaign, recipients) {
             try {
                 let success = false;
 
+                console.log(`[BROADCAST] Processing recipient type=${recipient.type}, value=${recipient.value}, campaign_type=${campaign.campaign_type}`);
+
                 if (recipient.type === 'email' && (campaign.campaign_type === 'email' || campaign.campaign_type === 'both')) {
                     // Send email with template variables replaced
                     success = await sendBroadcastEmail(db, smtpConfig, recipient, campaign, clinicName);
+                    console.log(`[BROADCAST] Email send result for ${recipient.value}: ${success}`);
                 } else if (recipient.type === 'phone' && (campaign.campaign_type === 'sms' || campaign.campaign_type === 'both')) {
                     // Send SMS with template variables replaced
                     const personalizedMessage = replaceTemplateVariables(
@@ -429,10 +432,14 @@ async function sendBroadcastMessages(db, campaignId, campaign, recipients) {
                         clinicName
                     );
                     success = await sendBroadcastSMS(db, recipient.value, personalizedMessage);
+                    console.log(`[BROADCAST] SMS send result for ${recipient.value}: ${success}`);
+                } else {
+                    console.log(`[BROADCAST] WARNING: No matching send method for recipient type=${recipient.type}, campaign_type=${campaign.campaign_type}`);
                 }
 
                 if (success) {
                     sentCount++;
+                    console.log(`[BROADCAST] ✅ Success logged for ${recipient.value}`);
                     // Log success
                     await db.execute(`
                         INSERT INTO broadcast_logs (campaign_id, recipient_type, recipient, status, sent_at)
@@ -440,6 +447,7 @@ async function sendBroadcastMessages(db, campaignId, campaign, recipients) {
                     `, [campaignId, recipient.type, recipient.value]);
                 } else {
                     failedCount++;
+                    console.log(`[BROADCAST] ❌ Failure logged for ${recipient.value} (success=${success})`);
                     // Log failure
                     await db.execute(`
                         INSERT INTO broadcast_logs (campaign_id, recipient_type, recipient, status, error_message)
@@ -448,7 +456,7 @@ async function sendBroadcastMessages(db, campaignId, campaign, recipients) {
                 }
             } catch (error) {
                 failedCount++;
-                console.error(`Failed to send to ${recipient.value}:`, error);
+                console.error(`[BROADCAST] ❌ Exception for ${recipient.value}:`, error);
                 // Log error
                 await db.execute(`
                     INSERT INTO broadcast_logs (campaign_id, recipient_type, recipient, status, error_message)
@@ -543,7 +551,9 @@ async function sendBroadcastEmail(db, smtpConfig, recipient, campaign, clinicNam
 // HELPER: SEND BROADCAST SMS
 // ========================================
 async function sendBroadcastSMS(db, phoneNumber, message) {
-    return await sendPatientSMS(db, phoneNumber, message);
+    const result = await sendPatientSMS(db, phoneNumber, message);
+    console.log(`[BROADCAST SMS] sendPatientSMS returned: ${result} (type: ${typeof result}) for ${phoneNumber}`);
+    return result;
 }
 
 // ========================================

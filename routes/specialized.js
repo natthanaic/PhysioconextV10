@@ -55,11 +55,21 @@ router.get('/courses', authenticateToken, async (req, res) => {
 
         query += ` ORDER BY c.created_at DESC`;
 
+        console.log('Courses query:', query);
+        console.log('Courses params:', params);
+
         const [courses] = await db.execute(query, params);
+
+        console.log('Courses found:', courses.length);
+        if (courses.length > 0) {
+            console.log('First course sample:', JSON.stringify(courses[0]).substring(0, 200));
+        }
+
         res.json(courses);
     } catch (error) {
         console.error('Get courses error:', error);
         console.error('Error details:', error.message);
+        console.error('Error stack:', error.stack);
         return res.json([]); // Return empty array instead of error
     }
 });

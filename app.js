@@ -84,6 +84,7 @@ const webhooksRoutes = require('./routes/webhooks');
 const viewsRoutes = require('./routes/views');
 const chatRoutes = require('./routes/chat');
 const testRoutes = require('./routes/test');
+const broadcastRoutes = require('./routes/broadcast');
 
 // MOUNT ROUTES
 app.use('/webhook', webhooksRoutes);
@@ -107,6 +108,10 @@ app.use('/api', thaiCardRoute);
 // --- EXPENSE MANAGEMENT ROUTE ---
 // Admin-only expense tracking and financial management
 app.use('/api/expenses', expensesRoutes);
+
+// --- BROADCAST MARKETING ROUTE ---
+// Admin and PT broadcast marketing for SMS and Email campaigns
+app.use('/api/broadcast', broadcastRoutes);
 
 app.use('/api/pn', pnCasesRoutes);
 app.use('/api', pnCasesRoutes);

@@ -2216,30 +2216,51 @@ router.post('/bills', authenticateToken, async (req, res) => {
             patient_id,
             clinic_id,
             pn_case_id,
+            appointment_id,
             bill_date,
-            due_date,
             items,
-            subtotal,
             discount,
             tax,
-            total_amount,
-            payment_status,
+            walk_in_name,
+            walk_in_phone,
             payment_method,
-            notes
+            bill_notes,
+            payment_notes
         } = req.body;
+
+        // Calculate totals from items
+        let subtotal = 0;
+        if (items && items.length > 0) {
+            subtotal = items.reduce((sum, item) => sum + (parseFloat(item.total_price) || 0), 0);
+        }
+        const total_amount = subtotal - (parseFloat(discount) || 0) + (parseFloat(tax) || 0);
 
         // Insert bill
         console.log('[BILLS] Inserting bill into database...');
         const [result] = await connection.execute(`
             INSERT INTO bills (
-                patient_id, clinic_id, pn_case_id, bill_date, due_date,
+                patient_id, clinic_id, pn_case_id, appointment_id, bill_date,
                 subtotal, discount, tax, total_amount,
-                payment_status, payment_method, notes, created_by
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                payment_status, payment_method, notes, payment_notes,
+                walk_in_name, walk_in_phone, created_by
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, [
-            patient_id, clinic_id, pn_case_id, bill_date, due_date,
-            subtotal, discount, tax, total_amount,
-            payment_status || 'PENDING', payment_method, notes, req.user.id
+            patient_id || null,
+            clinic_id || null,
+            pn_case_id || null,
+            appointment_id || null,
+            bill_date,
+            subtotal,
+            discount || 0,
+            tax || 0,
+            total_amount,
+            'UNPAID',
+            payment_method || null,
+            bill_notes || null,
+            payment_notes || null,
+            walk_in_name || null,
+            walk_in_phone || null,
+            req.user.id
         ]);
 
         const billId = result.insertId;
@@ -2255,12 +2276,12 @@ router.post('/bills', authenticateToken, async (req, res) => {
                     ) VALUES (?, ?, ?, ?, ?, ?, ?)
                 `, [
                     billId,
-                    item.service_id,
-                    item.service_name,
+                    item.service_id || null,
+                    item.service_name || null,
                     item.quantity,
                     item.unit_price,
                     item.total_price,
-                    item.notes
+                    item.notes || null
                 ]);
             }
             console.log('[BILLS] All bill items inserted successfully');

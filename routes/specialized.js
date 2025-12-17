@@ -9,16 +9,38 @@ const { authenticateToken, authorize } = require('../middleware/auth');
 router.get('/courses', authenticateToken, async (req, res) => {
     try {
         const db = req.app.locals.db;
-        console.log('[COURSES] Fetching courses from database');
+        const { patient_id } = req.query;
 
-        const [courses] = await db.execute('SELECT * FROM courses ORDER BY created_at DESC');
+        console.log('[COURSES] Fetching courses from database, patient_id:', patient_id);
 
-        console.log('[COURSES] Found', courses.length, 'courses');
-        if (courses.length > 0) {
-            console.log('[COURSES] Sample:', JSON.stringify(courses[0]).substring(0, 300));
+        if (patient_id) {
+            // Get courses owned by patient OR shared with patient
+            const [courses] = await db.execute(`
+                SELECT DISTINCT c.*,
+                    CASE
+                        WHEN c.patient_id = ? THEN 'owner'
+                        ELSE 'shared'
+                    END as access_type
+                FROM courses c
+                LEFT JOIN course_shared_users csu ON c.id = csu.course_id
+                WHERE c.patient_id = ?
+                   OR (csu.patient_id = ? AND csu.is_active = 1)
+                ORDER BY c.created_at DESC
+            `, [patient_id, patient_id, patient_id]);
+
+            console.log('[COURSES] Found', courses.length, 'courses for patient', patient_id);
+            res.json(courses);
+        } else {
+            // Get all courses
+            const [courses] = await db.execute('SELECT * FROM courses ORDER BY created_at DESC');
+
+            console.log('[COURSES] Found', courses.length, 'courses');
+            if (courses.length > 0) {
+                console.log('[COURSES] Sample:', JSON.stringify(courses[0]).substring(0, 300));
+            }
+
+            res.json(courses);
         }
-
-        res.json(courses);
     } catch (error) {
         console.error('[COURSES] Error:', error);
         console.error('[COURSES] Error details:', error.message);

@@ -2257,17 +2257,17 @@ router.post('/bills', authenticateToken, async (req, res) => {
         console.log('[BILLS] Inserting bill into database...');
         const [result] = await connection.execute(`
             INSERT INTO bills (
-                bill_code, patient_id, clinic_id, pn_case_id, appointment_id, bill_date,
+                bill_code, patient_id, walk_in_name, walk_in_phone, clinic_id, bill_date,
                 subtotal, discount, tax, total_amount,
-                payment_status, payment_method, notes, payment_notes,
-                walk_in_name, walk_in_phone, created_by
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                payment_status, payment_method, payment_notes, bill_notes,
+                appointment_id, pn_case_id, course_id, is_course_cutting, created_by
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, [
             bill_code,
             patient_id || null,
+            walk_in_name || null,
+            walk_in_phone || null,
             clinic_id || null,
-            pn_case_id || null,
-            appointment_id || null,
             bill_date,
             subtotal,
             discount || 0,
@@ -2275,10 +2275,12 @@ router.post('/bills', authenticateToken, async (req, res) => {
             total_amount,
             'UNPAID',
             payment_method || null,
-            bill_notes || null,
             payment_notes || null,
-            walk_in_name || null,
-            walk_in_phone || null,
+            bill_notes || null,
+            appointment_id || null,
+            pn_case_id || null,
+            null, // course_id - not used in standard bill creation
+            0,    // is_course_cutting - false for standard bills
             req.user.id
         ]);
 

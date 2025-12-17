@@ -11,10 +11,7 @@ const TEMPLATE_VARIABLES = [
     { name: '{lastName}', desc: 'Patient\'s last name' },
     { name: '{email}', desc: 'Patient\'s email address' },
     { name: '{phone}', desc: 'Patient\'s phone number' },
-    { name: '{clinicName}', desc: 'Your clinic name' },
-    { name: '{address}', desc: 'Patient\'s address' },
-    { name: '{emergencyContact}', desc: 'Emergency contact name' },
-    { name: '{emergencyPhone}', desc: 'Emergency contact phone' }
+    { name: '{clinicName}', desc: 'Your clinic name' }
 ];
 
 // ========================================
@@ -497,7 +494,9 @@ async function sendCampaign(id) {
             loadCampaigns();
             loadStatistics();
         } else {
-            showAlert(result.error || 'Failed to send campaign', 'danger');
+            const errorMsg = result.details ? `${result.error}: ${result.details}` : (result.error || 'Failed to send campaign');
+            showAlert(errorMsg, 'danger');
+            console.error('Campaign send error:', result);
         }
     } catch (error) {
         console.error('Error sending campaign:', error);

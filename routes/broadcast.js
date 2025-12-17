@@ -271,13 +271,10 @@ router.post('/campaigns/:id/send', authenticateToken, authorize('ADMIN', 'PT'), 
                 SELECT
                     id,
                     CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, '')) as name,
-                    COALESCE(first_name, '') as first_name,
-                    COALESCE(last_name, '') as last_name,
+                    first_name,
+                    last_name,
                     email,
-                    phone,
-                    COALESCE(address, '') as address,
-                    COALESCE(emergency_contact, '') as emergency_contact,
-                    COALESCE(emergency_phone, '') as emergency_phone
+                    phone
                 FROM patients
                 WHERE (
                     (email IS NOT NULL AND email != '' AND ? IN ('email', 'both'))
@@ -313,13 +310,10 @@ router.post('/campaigns/:id/send', authenticateToken, authorize('ADMIN', 'PT'), 
                     SELECT
                         id,
                         CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, '')) as name,
-                        COALESCE(first_name, '') as first_name,
-                        COALESCE(last_name, '') as last_name,
+                        first_name,
+                        last_name,
                         email,
-                        phone,
-                        COALESCE(address, '') as address,
-                        COALESCE(emergency_contact, '') as emergency_contact,
-                        COALESCE(emergency_phone, '') as emergency_phone
+                        phone
                     FROM patients
                     WHERE id IN (${placeholders})
                 `, patientIds);
@@ -361,7 +355,11 @@ router.post('/campaigns/:id/send', authenticateToken, authorize('ADMIN', 'PT'), 
 
     } catch (error) {
         console.error('Send broadcast campaign error:', error);
-        res.status(500).json({ error: 'Failed to send campaign' });
+        console.error('Error details:', error.message, error.stack);
+        res.status(500).json({
+            error: 'Failed to send campaign',
+            details: error.message
+        });
     }
 });
 
@@ -380,9 +378,10 @@ function replaceTemplateVariables(text, patientData, clinicName = 'PhysioConext'
     result = result.replace(/{email}/g, patientData.email || '');
     result = result.replace(/{phone}/g, patientData.phone || '');
     result = result.replace(/{clinicName}/g, clinicName);
-    result = result.replace(/{address}/g, patientData.address || '');
-    result = result.replace(/{emergencyContact}/g, patientData.emergency_contact || '');
-    result = result.replace(/{emergencyPhone}/g, patientData.emergency_phone || '');
+    // Optional fields that may not be available
+    result = result.replace(/{address}/g, '');
+    result = result.replace(/{emergencyContact}/g, '');
+    result = result.replace(/{emergencyPhone}/g, '');
 
     return result;
 }

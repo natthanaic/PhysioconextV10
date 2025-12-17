@@ -2811,4 +2811,147 @@ router.delete('/invoices/:id', authenticateToken, authorize('ADMIN'), async (req
     }
 });
 
+// ========================================
+// Statistics Endpoints
+// ========================================
+
+// Get bills summary statistics
+router.get('/statistics/bills/summary', authenticateToken, async (req, res) => {
+    try {
+        const db = req.app.locals.db;
+        const { date_from, date_to } = req.query;
+
+        let dateFilter = '';
+        const params = [];
+
+        if (date_from && date_to) {
+            dateFilter = 'WHERE bill_date BETWEEN ? AND ?';
+            params.push(date_from, date_to);
+        }
+
+        const [summary] = await db.execute(`
+            SELECT
+                COUNT(*) as total_bills,
+                COALESCE(SUM(total_amount), 0) as total_revenue,
+                COALESCE(SUM(CASE WHEN payment_status = 'PAID' THEN total_amount ELSE 0 END), 0) as collected_revenue,
+                COALESCE(SUM(CASE WHEN payment_status != 'PAID' THEN total_amount ELSE 0 END), 0) as outstanding_revenue
+            FROM bills
+            ${dateFilter}
+        `, params);
+
+        res.json(summary[0]);
+    } catch (error) {
+        console.error('[STATISTICS] Bills summary error:', error);
+        res.status(500).json({ error: 'Failed to load bills summary' });
+    }
+});
+
+// Get bills statistics by clinic
+router.get('/statistics/bills/by-clinic', authenticateToken, async (req, res) => {
+    try {
+        const db = req.app.locals.db;
+
+        const [clinicStats] = await db.execute(`
+            SELECT
+                c.name as clinic_name,
+                COUNT(b.id) as total_bills,
+                COALESCE(SUM(b.total_amount), 0) as total_revenue,
+                COALESCE(SUM(CASE WHEN b.payment_status = 'PAID' THEN b.total_amount ELSE 0 END), 0) as collected_revenue
+            FROM clinics c
+            LEFT JOIN bills b ON c.id = b.clinic_id
+            GROUP BY c.id, c.name
+            ORDER BY total_revenue DESC
+        `);
+
+        res.json(clinicStats);
+    } catch (error) {
+        console.error('[STATISTICS] Bills by clinic error:', error);
+        res.status(500).json({ error: 'Failed to load clinic statistics' });
+    }
+});
+
+// Get detailed bills for statistics table
+router.get('/statistics/bills/detailed', authenticateToken, async (req, res) => {
+    try {
+        const db = req.app.locals.db;
+        const { date_from, date_to, limit = 50 } = req.query;
+
+        let dateFilter = '';
+        const params = [];
+
+        if (date_from && date_to) {
+            dateFilter = 'WHERE b.bill_date BETWEEN ? AND ?';
+            params.push(date_from, date_to);
+        }
+
+        params.push(parseInt(limit));
+
+        const [bills] = await db.execute(`
+            SELECT
+                b.id,
+                b.bill_code,
+                b.bill_date,
+                b.total_amount,
+                b.payment_status,
+                CONCAT(COALESCE(p.first_name, ''), ' ', COALESCE(p.last_name, '')) as patient_name,
+                p.hn,
+                c.name as clinic_name,
+                GROUP_CONCAT(DISTINCT s.service_name SEPARATOR ', ') as services
+            FROM bills b
+            LEFT JOIN patients p ON b.patient_id = p.id
+            LEFT JOIN clinics c ON b.clinic_id = c.id
+            LEFT JOIN bill_items bi ON b.id = bi.bill_id
+            LEFT JOIN services s ON bi.service_id = s.id
+            ${dateFilter}
+            GROUP BY b.id
+            ORDER BY b.bill_date DESC
+            LIMIT ?
+        `, params);
+
+        res.json(bills);
+    } catch (error) {
+        console.error('[STATISTICS] Detailed bills error:', error);
+        res.status(500).json({ error: 'Failed to load detailed bills' });
+    }
+});
+
+// Get service ranking by usage and revenue
+router.get('/statistics/services/ranking', authenticateToken, async (req, res) => {
+    try {
+        const db = req.app.locals.db;
+        const { date_from, date_to, limit = 10 } = req.query;
+
+        let dateFilter = '';
+        const params = [];
+
+        if (date_from && date_to) {
+            dateFilter = 'AND b.bill_date BETWEEN ? AND ?';
+            params.push(date_from, date_to);
+        }
+
+        params.push(parseInt(limit));
+
+        const [ranking] = await db.execute(`
+            SELECT
+                s.id,
+                s.service_name,
+                COUNT(DISTINCT bi.bill_id) as usage_count,
+                SUM(bi.quantity) as total_quantity,
+                SUM(bi.total_price) as total_revenue
+            FROM services s
+            INNER JOIN bill_items bi ON s.id = bi.service_id
+            INNER JOIN bills b ON bi.bill_id = b.id
+            WHERE 1=1 ${dateFilter}
+            GROUP BY s.id, s.service_name
+            ORDER BY total_revenue DESC
+            LIMIT ?
+        `, params);
+
+        res.json(ranking);
+    } catch (error) {
+        console.error('[STATISTICS] Service ranking error:', error);
+        res.status(500).json({ error: 'Failed to load service ranking' });
+    }
+});
+
 module.exports = router;

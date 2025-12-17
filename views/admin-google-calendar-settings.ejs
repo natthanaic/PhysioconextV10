@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Calendar Settings - RehabPlus System</title>
+    <link rel="icon" href="/public/images/Fav.png" type="image/x-icon">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body {
+            background: #f5f7fb;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 2px 0 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.85);
+            padding: 0.75rem 1rem;
+            margin: 0.25rem 1rem;
+            border-radius: 0.5rem;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            background: rgba(255, 255, 255, 0.25);
+            color: #fff;
+        }
+
+        main {
+            min-height: 100vh;
+            padding-bottom: 4rem;
+        }
+
+        .page-header {
+            background: white;
+            border-radius: 1.5rem;
+            padding: 2rem;
+            box-shadow: 0 10px 40px rgba(82, 95, 225, 0.12);
+            margin-bottom: 2rem;
+        }
+
+        .page-header h1 {
+            font-weight: 700;
+            color: #2d2f44;
+        }
+
+        .page-header p {
+            color: #6c6f93;
+        }
+
+        .card {
+            border: none;
+            border-radius: 1.25rem;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+            margin-bottom: 1.5rem;
+            background: white;
+        }
+
+        .card-header {
+            background: transparent;
+            border-bottom: 1px solid rgba(102, 126, 234, 0.15);
+            padding: 1.5rem;
+            border-radius: 1.25rem 1.25rem 0 0;
+        }
+
+        .card-header h4 {
+            margin: 0;
+            font-weight: 700;
+            color: #2d2f44;
+            font-size: 1.25rem;
+        }
+
+        .card-body {
+            padding: 2rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            font-weight: 600;
+            padding: 0.6rem 1.6rem;
+            border-radius: 0.75rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.35);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #48c774 0%, #3aa863 100%);
+            border: none;
+            font-weight: 600;
+            padding: 0.6rem 1.6rem;
+            border-radius: 0.75rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn-success:hover {
+            background: linear-gradient(135deg, #3bb562 0%, #2e9251 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(72, 199, 116, 0.35);
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: #2d2f44;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-control,
+        .form-select {
+            border: 2px solid rgba(102, 126, 234, 0.15);
+            border-radius: 0.75rem;
+            padding: 0.65rem 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.15);
+        }
+
+        .form-text {
+            font-size: 0.875rem;
+            color: #6c6f93;
+            margin-top: 0.25rem;
+        }
+
+        .alert {
+            border: none;
+            border-radius: 1rem;
+            padding: 1rem 1.25rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .info-card {
+            background: rgba(102, 126, 234, 0.08);
+            border: 1px solid rgba(102, 126, 234, 0.2);
+            border-radius: 1rem;
+            padding: 1.5rem;
+        }
+
+        .info-card h4 {
+            color: #667eea;
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+        }
+
+        .info-card ol {
+            color: #2d2f44;
+            padding-left: 1.25rem;
+        }
+
+        .info-card li {
+            margin-bottom: 0.5rem;
+        }
+
+        textarea.form-control {
+            font-family: monospace;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <%- include('partials/sidebar', { user, activePage: 'notification-settings' }) %>
+
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+                <div class="page-header">
+                    <h1 class="h3 mb-2">
+                        <i class="bi bi-calendar-event me-2 text-primary"></i>Google Calendar Settings
+                    </h1>
+                    <p class="mb-0">Configure Google Calendar integration for automatic appointment syncing</p>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h4><i class="bi bi-gear me-2"></i>Configuration</h4>
+                    </div>
+                    <div class="card-body">
+                        <form id="googleCalendarForm">
+                            <!-- Enable/Disable -->
+                            <div class="mb-4">
+                                <label for="gcEnabled" class="form-label">
+                                    <i class="bi bi-toggle-on me-2"></i>Enable Google Calendar Integration
+                                </label>
+                                <select class="form-select" id="gcEnabled">
+                                    <option value="0">Disabled</option>
+                                    <option value="1">Enabled</option>
+                                </select>
+                                <div class="form-text">When enabled, appointments will automatically sync to Google Calendar</div>
+                            </div>
+
+                            <!-- Service Account Email -->
+                            <div class="mb-4">
+                                <label for="gcServiceAccountEmail" class="form-label">
+                                    <i class="bi bi-envelope me-2"></i>Service Account Email
+                                </label>
+                                <input type="email" class="form-control" id="gcServiceAccountEmail" placeholder="your-service-account@project-id.iam.gserviceaccount.com">
+                                <div class="form-text">Email address from your Google Service Account JSON file</div>
+                            </div>
+
+                            <!-- Private Key -->
+                            <div class="mb-4">
+                                <label for="gcPrivateKey" class="form-label">
+                                    <i class="bi bi-key me-2"></i>Private Key
+                                </label>
+                                <textarea class="form-control" id="gcPrivateKey" rows="6" placeholder="-----BEGIN PRIVATE KEY-----&#10;...&#10;-----END PRIVATE KEY-----"></textarea>
+                                <div class="form-text">Full private key from your Google Service Account JSON file (including BEGIN and END lines)</div>
+                            </div>
+
+                            <!-- Calendar ID -->
+                            <div class="mb-4">
+                                <label for="gcCalendarId" class="form-label">
+                                    <i class="bi bi-calendar3 me-2"></i>Calendar ID
+                                </label>
+                                <input type="text" class="form-control" id="gcCalendarId" placeholder="your-calendar@group.calendar.google.com">
+                                <div class="form-text">Calendar ID from Google Calendar settings (or use your email for primary calendar)</div>
+                            </div>
+
+                            <!-- Send Invites -->
+                            <div class="mb-4">
+                                <label for="gcSendInvites" class="form-label">
+                                    <i class="bi bi-envelope-paper me-2"></i>Send Email Invites to Patients
+                                </label>
+                                <select class="form-select" id="gcSendInvites">
+                                    <option value="0">No - Don't send email invites</option>
+                                    <option value="1">Yes - Send email invites if patient has email</option>
+                                </select>
+                                <div class="form-text">If enabled, patients with email addresses will receive calendar invitations</div>
+                            </div>
+
+                            <!-- Timezone -->
+                            <div class="mb-4">
+                                <label for="gcTimeZone" class="form-label">
+                                    <i class="bi bi-clock me-2"></i>Timezone
+                                </label>
+                                <select class="form-select" id="gcTimeZone">
+                                    <option value="Asia/Bangkok">Asia/Bangkok (Thailand)</option>
+                                    <option value="Asia/Singapore">Asia/Singapore</option>
+                                    <option value="Asia/Jakarta">Asia/Jakarta</option>
+                                    <option value="Asia/Manila">Asia/Manila</option>
+                                    <option value="UTC">UTC</option>
+                                </select>
+                                <div class="form-text">Timezone for calendar events</div>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-primary" id="saveGoogleCalendarBtn">
+                                    <i class="bi bi-save me-2"></i>Save Settings
+                                </button>
+                                <button type="button" class="btn btn-success" id="testGoogleCalendarBtn">
+                                    <i class="bi bi-check-circle me-2"></i>Test Connection
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Setup Instructions -->
+                <div class="card">
+                    <div class="card-header">
+                        <h4><i class="bi bi-info-circle me-2"></i>Setup Instructions</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="info-card">
+                            <h4>How to Set Up Google Calendar Integration:</h4>
+                            <ol>
+                                <li>Go to <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a></li>
+                                <li>Create a new project or select existing one</li>
+                                <li>Enable <strong>Google Calendar API</strong> (APIs & Services → Library)</li>
+                                <li>Create <strong>Service Account</strong> (APIs & Services → Credentials)</li>
+                                <li>Generate JSON key for the service account</li>
+                                <li>Open the downloaded JSON file and copy:
+                                    <ul>
+                                        <li><code>client_email</code> → Service Account Email</li>
+                                        <li><code>private_key</code> → Private Key</li>
+                                    </ul>
+                                </li>
+                                <li>Go to Google Calendar and share your calendar with the service account email</li>
+                                <li>Give it <strong>"Make changes to events"</strong> permission</li>
+                                <li>Copy the Calendar ID from calendar settings</li>
+                                <li>Fill in the form above and click "Test Connection"</li>
+                            </ol>
+                        </div>
+
+                        <div class="alert alert-info mt-3">
+                            <strong><i class="bi bi-info-circle me-2"></i>Note:</strong>
+                            Once configured, appointments will automatically:
+                            <ul class="mb-0 mt-2">
+                                <li>✅ Create Google Calendar events when appointments are created</li>
+                                <li>✅ Delete Google Calendar events when appointments are cancelled</li>
+                                <li>✅ Include patient, PT, clinic, and reason details</li>
+                                <li>✅ Set reminders (30 minutes before + 24 hours before)</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/public/js/admin-google-calendar-settings.js?v=1765446492000"></script>
+</body>
+</html>

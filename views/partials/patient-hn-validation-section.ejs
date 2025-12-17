@@ -1,0 +1,207 @@
+<!-- HN Creation & Validation Section -->
+<!-- Replace the existing "Patient Identifiers" card with this section -->
+
+<div class="card mb-3">
+    <div class="card-header">
+        <h5 class="card-title mb-0">Patient Identifiers</h5>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <!-- Thai National ID -->
+            <div class="col-md-6">
+                <label class="form-label">Thai National ID</label>
+                <input type="text"
+                       class="form-control"
+                       id="pidInput"
+                       name="pidInput"
+                       placeholder="1234567890123"
+                       maxlength="13">
+                <div class="form-text">13-digit Thai National ID (optional if Passport provided)</div>
+                <div class="invalid-feedback" id="pidErrorText"></div>
+            </div>
+
+            <!-- Passport Number -->
+            <div class="col-md-6">
+                <label class="form-label">Passport Number</label>
+                <input type="text"
+                       class="form-control"
+                       id="passportInput"
+                       name="passportInput"
+                       placeholder="AB1234567"
+                       maxlength="20">
+                <div class="form-text">6-20 alphanumeric (optional if Thai ID provided)</div>
+                <div class="invalid-feedback" id="passportErrorText"></div>
+            </div>
+
+            <!-- Check ID Button (Full Width) -->
+            <div class="col-12">
+                <div class="alert alert-info mb-0">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <strong>Required:</strong> Provide at least Thai ID or Passport, then click the button below to verify.
+                </div>
+                <button class="btn btn-primary btn-lg w-100 mt-2"
+                        type="button"
+                        id="btnCheckID">
+                    <i class="bi bi-search"></i> Check ID & Generate HN
+                </button>
+            </div>
+
+            <!-- Verification Status & PTHN Preview -->
+            <div class="col-12" id="verificationSection" style="display: none;">
+                <div class="alert" role="alert" id="verificationAlert"></div>
+            </div>
+
+            <!-- HN (PTHN) Field - Read-Only (Auto-generated) -->
+            <div class="col-md-6">
+                <label for="hn" class="form-label">
+                    HN (Hospital Number) <span class="text-danger">*</span>
+                </label>
+                <input type="text"
+                       class="form-control"
+                       id="hn"
+                       name="hn"
+                       placeholder="PT25XXXX"
+                       readonly
+                       required>
+                <div class="form-text">Auto-generated after ID verification</div>
+            </div>
+
+            <!-- PT# Field (Keep existing auto-generation) -->
+            <div class="col-md-6">
+                <label for="pt_number" class="form-label">PT# (Physical Therapy Number)</label>
+                <input type="text"
+                       class="form-control"
+                       id="pt_number"
+                       name="pt_number"
+                       readonly>
+                <div class="form-text">Auto-generated on save</div>
+            </div>
+
+            <!-- Hidden fields for Thai ID and Passport -->
+            <input type="hidden" id="pid" name="pid">
+            <input type="hidden" id="passport" name="passport">
+
+            <!-- Other ID (SSN) -->
+            <div class="col-md-6">
+                <label for="ssn" class="form-label">Other ID (SSN)</label>
+                <input type="text" class="form-control" id="ssn" name="ssn">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Workflow Progress Indicator -->
+<div class="card mb-3 bg-light">
+    <div class="card-body py-2">
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center" id="step1">
+                <span class="badge rounded-pill bg-primary me-2">1</span>
+                <small>Verify ID</small>
+            </div>
+            <div class="border-top flex-grow-1 mx-2"></div>
+            <div class="d-flex align-items-center" id="step2">
+                <span class="badge rounded-pill bg-secondary me-2">2</span>
+                <small class="text-muted">Fill Patient Details</small>
+            </div>
+            <div class="border-top flex-grow-1 mx-2"></div>
+            <div class="d-flex align-items-center" id="step3">
+                <span class="badge rounded-pill bg-secondary me-2">3</span>
+                <small class="text-muted">Submit & Create</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Alert Templates (Hidden) -->
+
+<!-- Template: ID Available -->
+<template id="templateIdAvailable">
+    <div class="alert alert-success" role="alert">
+        <div class="d-flex align-items-start">
+            <i class="bi bi-check-circle-fill me-2 fs-4"></i>
+            <div class="flex-grow-1">
+                <h6 class="alert-heading mb-1">ID Verified - Ready to Create Patient</h6>
+                <p class="mb-2">This ID is not registered in the system.</p>
+                <div class="bg-white p-2 rounded border">
+                    <strong>New PTHN will be:</strong>
+                    <span class="badge bg-primary fs-6" id="previewPTHN">PT250001</span>
+                </div>
+                <small class="text-muted d-block mt-2">
+                    You can now fill in patient details and submit the form.
+                </small>
+            </div>
+        </div>
+    </div>
+</template>
+
+<!-- Template: ID Already Exists -->
+<template id="templateIdExists">
+    <div class="alert alert-warning" role="alert">
+        <div class="d-flex align-items-start">
+            <i class="bi bi-exclamation-triangle-fill me-2 fs-4"></i>
+            <div class="flex-grow-1">
+                <h6 class="alert-heading mb-1">Duplicate ID Detected</h6>
+                <p class="mb-2">This ID is already registered in the system:</p>
+
+                <div class="card bg-white mb-3">
+                    <div class="card-body p-2">
+                        <div class="row g-2 small">
+                            <div class="col-md-6">
+                                <strong>HN:</strong> <span id="existingHN">-</span>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>PT#:</strong> <span id="existingPT">-</span>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Name:</strong> <span id="existingName">-</span>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>DOB:</strong> <span id="existingDOB">-</span>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Clinic:</strong> <span id="existingClinic">-</span>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Registered:</strong> <span id="existingDate">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="button"
+                            class="btn btn-sm btn-outline-primary"
+                            id="btnViewPatient">
+                        <i class="bi bi-eye"></i> View Patient Details
+                    </button>
+                    <button type="button"
+                            class="btn btn-sm btn-warning"
+                            id="btnCreatePN">
+                        <i class="bi bi-plus-circle"></i> Create New PN Case Instead
+                    </button>
+                </div>
+
+                <small class="text-muted d-block mt-2">
+                    <strong>Note:</strong> If you need to create a new treatment case (PN)
+                    for this existing patient, click "Create New PN Case Instead".
+                </small>
+            </div>
+        </div>
+    </div>
+</template>
+
+<!-- Template: Verification Error -->
+<template id="templateVerificationError">
+    <div class="alert alert-danger" role="alert">
+        <div class="d-flex align-items-start">
+            <i class="bi bi-x-circle-fill me-2 fs-4"></i>
+            <div class="flex-grow-1">
+                <h6 class="alert-heading mb-1">Verification Failed</h6>
+                <p class="mb-0" id="errorMessage">Unable to verify ID. Please try again.</p>
+            </div>
+        </div>
+    </div>
+</template>
+
+<!-- Load HN Validation JavaScript -->
+<script src="/js/hn-validation.js"></script>

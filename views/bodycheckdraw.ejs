@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Draw <%= regionName %> - RehabPlus</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --theme-primary: #667eea;
+            --theme-secondary: #764ba2;
+            --theme-bg: #f3f6f9;
+        }
+
+        body {
+            background-color: var(--theme-bg);
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            color: #4a5568;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .drawing-container {
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .drawing-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1.5rem;
+            z-index: 1000;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .drawing-header h5 {
+            margin: 0;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+        }
+
+        .btn-back-header {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 1rem;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .btn-back-header:hover {
+            background: rgba(255, 255, 255, 0.3);
+            color: white;
+            transform: translateX(-3px);
+        }
+
+        .tools-sidebar {
+            width: 280px;
+            background: white;
+            border-right: 1px solid #e2e8f0;
+            padding: 1.5rem;
+            overflow-y: auto;
+            margin-top: 60px;
+            height: calc(100vh - 60px);
+        }
+
+        .canvas-area {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8f9fa;
+            padding: 2rem;
+            margin-top: 60px;
+            height: calc(100vh - 60px);
+            overflow: hidden;
+        }
+
+        .drawing-canvas {
+            border: 2px solid #e2e8f0;
+            border-radius: 0.75rem;
+            cursor: crosshair;
+            touch-action: none;
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .symptom-tool {
+            cursor: pointer;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            border: 2px solid #e2e8f0;
+            transition: all 0.2s;
+            text-align: center;
+            background: white;
+            margin-bottom: 0.5rem;
+        }
+
+        .symptom-tool.active {
+            border-color: var(--theme-primary);
+            background: rgba(102, 126, 234, 0.1);
+            transform: scale(1.02);
+        }
+
+        .symptom-tool:hover {
+            border-color: var(--theme-primary);
+        }
+
+        .tool-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .tool-section h6 {
+            color: #64748b;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.75rem;
+        }
+
+        .stats-box {
+            background: #f8fafc;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            border: 1px solid #e2e8f0;
+        }
+
+        .stats-box h6 {
+            font-size: 0.875rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            color: #475569;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .drawing-container {
+                flex-direction: column;
+            }
+
+            .tools-sidebar {
+                width: 100%;
+                height: auto;
+                max-height: 200px;
+                margin-top: 60px;
+            }
+
+            .canvas-area {
+                margin-top: 0;
+                height: calc(100vh - 260px);
+            }
+        }
+
+        /* Custom scrollbar */
+        .tools-sidebar::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .tools-sidebar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 10px;
+        }
+
+        .tools-sidebar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+
+        .tools-sidebar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="drawing-header">
+        <div class="d-flex align-items-center">
+            <a href="/bodycheck/<%= bodycheckId %>" class="btn-back-header">
+                <i class="bi bi-arrow-left fs-5"></i>
+            </a>
+            <h5>
+                <i class="bi bi-pencil-square me-2"></i>
+                <%= regionName %>
+            </h5>
+        </div>
+        <div class="action-buttons">
+            <button class="btn btn-light" onclick="window.location.href='/bodycheck/<%= bodycheckId %>'">
+                <i class="bi bi-x-lg me-1"></i> Cancel
+            </button>
+            <button class="btn btn-success" onclick="saveDrawing()">
+                <i class="bi bi-check-lg me-1"></i> Save & Continue
+            </button>
+        </div>
+    </div>
+
+    <!-- Drawing Container -->
+    <div class="drawing-container">
+        <!-- Tools Sidebar -->
+        <div class="tools-sidebar">
+            <div class="tool-section">
+                <h6>Symptoms</h6>
+                <div class="symptom-tool active" data-symptom="pain" data-color="#FF0000" onclick="selectSymptom('pain', '#FF0000')">
+                    <i class="bi bi-x-circle-fill text-danger fs-4"></i>
+                    <div class="fw-bold mt-2">Pain</div>
+                    <small class="text-muted">Red marks</small>
+                </div>
+                <div class="symptom-tool" data-symptom="spasm" data-color="#FFA500" onclick="selectSymptom('spasm', '#FFA500')">
+                    <i class="bi bi-lightning-fill text-warning fs-4"></i>
+                    <div class="fw-bold mt-2">Spasm</div>
+                    <small class="text-muted">Orange marks</small>
+                </div>
+                <div class="symptom-tool" data-symptom="radicular" data-color="#0000FF" onclick="selectSymptom('radicular', '#0000FF')">
+                    <i class="bi bi-arrow-right-circle-fill text-primary fs-4"></i>
+                    <div class="fw-bold mt-2">Radicular</div>
+                    <small class="text-muted">Blue arrows</small>
+                </div>
+                <div class="symptom-tool" data-symptom="numbness" data-color="#808080" onclick="selectSymptom('numbness', '#808080')">
+                    <i class="bi bi-circle-fill text-secondary fs-4"></i>
+                    <div class="fw-bold mt-2">Numbness</div>
+                    <small class="text-muted">Gray dots</small>
+                </div>
+            </div>
+
+            <div class="tool-section">
+                <h6>Stroke Width</h6>
+                <input type="range" class="form-range" min="1" max="10" value="3" id="strokeWidth">
+                <div class="text-center"><span id="strokeWidthDisplay">3</span>px</div>
+            </div>
+
+            <div class="tool-section">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-warning" onclick="undoStroke()">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i> Undo
+                    </button>
+                    <button class="btn btn-outline-danger" onclick="clearCanvas()">
+                        <i class="bi bi-trash me-1"></i> Clear All
+                    </button>
+                </div>
+            </div>
+
+            <div class="tool-section">
+                <div class="stats-box">
+                    <h6>Symptom Counts</h6>
+                    <div class="stat-row">
+                        <span>Pain:</span>
+                        <span class="badge bg-danger" id="painCount">0</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>Spasm:</span>
+                        <span class="badge bg-warning" id="spasmCount">0</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>Radicular:</span>
+                        <span class="badge bg-primary" id="radicularCount">0</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>Numbness:</span>
+                        <span class="badge bg-secondary" id="numbnessCount">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Canvas Area -->
+        <div class="canvas-area">
+            <canvas id="drawingCanvas" class="drawing-canvas" width="600" height="900"></canvas>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const bodycheckId = <%= bodycheckId %>;
+        const regionName = '<%= regionName %>';
+
+        let canvas, ctx;
+        let isDrawing = false;
+        let currentSymptom = 'pain';
+        let currentColor = '#FF0000';
+        let currentWidth = 3;
+        let strokes = [];
+        let currentStroke = null;
+        let radicalStartPoint = null;
+        let bodyImage = new Image();
+        let imageLoaded = false;
+        let symptomCounts = { pain: 0, spasm: 0, radicular: 0, numbness: 0 };
+
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+        }
+
+        async function loadExistingData() {
+            try {
+                const response = await fetch(`/api/bodychecks/${bodycheckId}`, {
+                    headers: {}
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const regionData = data.regions?.find(r => r.region_name === regionName);
+
+                    if (regionData && regionData.strokes_json) {
+                        strokes = JSON.parse(regionData.strokes_json);
+                        redrawCanvas();
+                        updateSymptomCounts();
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading data:', error);
+            }
+        }
+
+        function initializeCanvas() {
+            canvas = document.getElementById('drawingCanvas');
+            ctx = canvas.getContext('2d');
+
+            // Load body image
+            bodyImage.src = '/uploads/body.png';
+            bodyImage.onload = function() {
+                imageLoaded = true;
+                redrawCanvas();
+            };
+            bodyImage.onerror = function() {
+                console.warn('Body image not found, using blank canvas');
+            };
+
+            // Mouse events
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDrawing);
+            canvas.addEventListener('mouseout', stopDrawing);
+
+            // Touch events
+            canvas.addEventListener('touchstart', handleTouch, { passive: false });
+            canvas.addEventListener('touchmove', handleTouch, { passive: false });
+            canvas.addEventListener('touchend', stopDrawing, { passive: false });
+
+            // Stroke width slider
+            const widthSlider = document.getElementById('strokeWidth');
+            if (widthSlider) {
+                widthSlider.addEventListener('input', (e) => {
+                    currentWidth = parseInt(e.target.value);
+                    document.getElementById('strokeWidthDisplay').textContent = currentWidth;
+                });
+            }
+        }
+
+        function selectSymptom(symptom, color) {
+            currentSymptom = symptom;
+            currentColor = color;
+
+            document.querySelectorAll('.symptom-tool').forEach(tool => {
+                tool.classList.remove('active');
+            });
+            event.target.closest('.symptom-tool').classList.add('active');
+        }
+
+        function getCanvasCoords(e) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+
+            if (e.type.startsWith('touch')) {
+                const touch = e.touches[0] || e.changedTouches[0];
+                return {
+                    x: ((touch.clientX - rect.left) * scaleX) / canvas.width,
+                    y: ((touch.clientY - rect.top) * scaleY) / canvas.height
+                };
+            } else {
+                return {
+                    x: ((e.clientX - rect.left) * scaleX) / canvas.width,
+                    y: ((e.clientY - rect.top) * scaleY) / canvas.height
+                };
+            }
+        }
+
+        function handleTouch(e) {
+            e.preventDefault();
+            if (!e.touches || e.touches.length === 0) return;
+
+            const touch = e.touches[0];
+            const mouseEvent = new MouseEvent(e.type === 'touchstart' ? 'mousedown' : 'mousemove', {
+                clientX: touch.clientX,
+                clientY: touch.clientY
+            });
+            canvas.dispatchEvent(mouseEvent);
+        }
+
+        function startDrawing(e) {
+            const coords = getCanvasCoords(e);
+
+            if (currentSymptom === 'radicular') {
+                if (!radicalStartPoint) {
+                    radicalStartPoint = coords;
+                } else {
+                    strokes.push({
+                        type: 'radicular',
+                        color: currentColor,
+                        width: currentWidth,
+                        start: radicalStartPoint,
+                        end: coords
+                    });
+                    radicalStartPoint = null;
+                    symptomCounts.radicular++;
+                    redrawCanvas();
+                    updateSymptomCounts();
+                }
+            } else {
+                isDrawing = true;
+                currentStroke = {
+                    type: currentSymptom,
+                    color: currentColor,
+                    width: currentWidth,
+                    points: [coords]
+                };
+            }
+        }
+
+        function draw(e) {
+            if (!isDrawing || currentSymptom === 'radicular') return;
+
+            const coords = getCanvasCoords(e);
+            currentStroke.points.push(coords);
+            redrawCanvas();
+
+            ctx.strokeStyle = currentColor;
+            ctx.lineWidth = currentWidth;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            const lastPoint = currentStroke.points[currentStroke.points.length - 2];
+            ctx.beginPath();
+            ctx.moveTo(lastPoint.x * canvas.width, lastPoint.y * canvas.height);
+            ctx.lineTo(coords.x * canvas.width, coords.y * canvas.height);
+            ctx.stroke();
+        }
+
+        function stopDrawing() {
+            if (isDrawing && currentStroke) {
+                strokes.push(currentStroke);
+                symptomCounts[currentSymptom]++;
+                updateSymptomCounts();
+                currentStroke = null;
+            }
+            isDrawing = false;
+        }
+
+        function redrawCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (imageLoaded) {
+                ctx.drawImage(bodyImage, 0, 0, canvas.width, canvas.height);
+            }
+
+            strokes.forEach(stroke => {
+                if (stroke.type === 'radicular') {
+                    const startX = stroke.start.x * canvas.width;
+                    const startY = stroke.start.y * canvas.height;
+                    const endX = stroke.end.x * canvas.width;
+                    const endY = stroke.end.y * canvas.height;
+
+                    ctx.strokeStyle = stroke.color;
+                    ctx.lineWidth = stroke.width;
+                    ctx.beginPath();
+                    ctx.moveTo(startX, startY);
+                    ctx.lineTo(endX, endY);
+                    ctx.stroke();
+
+                    const angle = Math.atan2(endY - startY, endX - startX);
+                    ctx.beginPath();
+                    ctx.moveTo(endX, endY);
+                    ctx.lineTo(endX - 15 * Math.cos(angle - Math.PI / 6), endY - 15 * Math.sin(angle - Math.PI / 6));
+                    ctx.moveTo(endX, endY);
+                    ctx.lineTo(endX - 15 * Math.cos(angle + Math.PI / 6), endY - 15 * Math.sin(angle + Math.PI / 6));
+                    ctx.stroke();
+                } else {
+                    if (stroke.points.length < 2) return;
+
+                    ctx.strokeStyle = stroke.color;
+                    ctx.lineWidth = stroke.width;
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+
+                    ctx.beginPath();
+                    ctx.moveTo(stroke.points[0].x * canvas.width, stroke.points[0].y * canvas.height);
+
+                    for (let i = 1; i < stroke.points.length; i++) {
+                        ctx.lineTo(stroke.points[i].x * canvas.width, stroke.points[i].y * canvas.height);
+                    }
+                    ctx.stroke();
+                }
+            });
+        }
+
+        function undoStroke() {
+            if (strokes.length > 0) {
+                const removed = strokes.pop();
+                if (symptomCounts[removed.type] > 0) {
+                    symptomCounts[removed.type]--;
+                }
+                redrawCanvas();
+                updateSymptomCounts();
+            }
+        }
+
+        function clearCanvas() {
+            if (confirm('Clear all drawings for this region?')) {
+                strokes = [];
+                symptomCounts = { pain: 0, spasm: 0, radicular: 0, numbness: 0 };
+                redrawCanvas();
+                updateSymptomCounts();
+            }
+        }
+
+        function updateSymptomCounts() {
+            document.getElementById('painCount').textContent = symptomCounts.pain;
+            document.getElementById('spasmCount').textContent = symptomCounts.spasm;
+            document.getElementById('radicularCount').textContent = symptomCounts.radicular;
+            document.getElementById('numbnessCount').textContent = symptomCounts.numbness;
+        }
+
+        async function saveDrawing() {
+            try {
+                const response = await fetch(`/api/bodychecks/${bodycheckId}/regions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'                    },
+                    body: JSON.stringify({
+                        region_name: regionName,
+                        pain_count: symptomCounts.pain,
+                        spasm_count: symptomCounts.spasm,
+                        radicular_count: symptomCounts.radicular,
+                        numbness_count: symptomCounts.numbness,
+                        strokes_json: JSON.stringify(strokes),
+                        image_width: canvas.width,
+                        image_height: canvas.height
+                    })
+                });
+
+                if (response.ok) {
+                    window.location.href = `/bodycheck/${bodycheckId}`;
+                } else {
+                    alert('Failed to save region');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to save region');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeCanvas();
+            loadExistingData();
+        });
+    </script>
+</body>
+</html>

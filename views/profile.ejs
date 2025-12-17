@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - RehabPlus System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    
+    <!-- Design System -->
+    <link href="/public/css/variables.css" rel="stylesheet">
+    <link href="/public/css/base.css" rel="stylesheet">
+    <link href="/public/css/accessibility.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --theme-primary: #667eea;
+            --theme-secondary: #764ba2;
+            --theme-bg: #f3f6f9;
+            --card-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
+            --input-bg: #f8fafc;
+        }
+
+        body {
+            background-color: var(--theme-bg);
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            color: #4a5568;
+            min-height: 100vh;
+        }
+
+        /* --- SIDEBAR (ORIGINAL STYLE PRESERVED) --- */
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 2px 0 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.85);
+            padding: 0.75rem 1rem;
+            margin: 0.25rem 1rem;
+            border-radius: 0.5rem;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            background: rgba(255, 255, 255, 0.25);
+            color: #fff;
+        }
+
+        /* --- MAIN CONTENT LAYOUT --- */
+        main {
+            padding-top: 2rem;
+            padding-bottom: 4rem;
+        }
+
+        /* Page Header */
+        .page-header {
+            margin-bottom: 2.5rem;
+            position: relative;
+        }
+        
+        .page-header h1 {
+            font-weight: 800;
+            color: #2d3748;
+            letter-spacing: -0.5px;
+            font-size: 2rem;
+        }
+
+        /* Profile Header Card */
+        .profile-header-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 1.5rem;
+            padding: 3rem 2rem;
+            color: white;
+            box-shadow: 0 20px 25px -5px rgba(118, 75, 162, 0.4);
+            margin-bottom: 2.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .profile-header-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            background: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23ffffff' fill-opacity='0.1' fill-rule='evenodd'/%3E%3C/svg%3E");
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .profile-avatar {
+            width: 110px;
+            height: 110px;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: white;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+        }
+
+        .profile-info h3 {
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.5px;
+        }
+
+        .profile-badge {
+            background: rgba(255, 255, 255, 0.25);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            padding: 0.35em 0.8em;
+            border-radius: 2rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            backdrop-filter: blur(4px);
+        }
+
+        /* Modern Cards */
+        .content-card {
+            background: #ffffff;
+            border-radius: 1.25rem;
+            border: none;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 2rem;
+            position: relative;
+            overflow: hidden;
+            padding: 2rem;
+            transition: transform 0.2s ease;
+        }
+
+        .content-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
+        }
+
+        /* Decorative top border */
+        .content-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 6px;
+            background: linear-gradient(90deg, var(--theme-primary), var(--theme-secondary));
+            opacity: 0.8;
+        }
+        
+        .content-card.card-danger::before { background: linear-gradient(90deg, #ff9a9e, #fecfef); }
+
+        .card-header-custom {
+            display: flex;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .card-header-custom h5 {
+            font-weight: 700;
+            color: #2d3748;
+            margin: 0;
+            font-size: 1.25rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .card-header-custom h5 i {
+            margin-right: 12px;
+            color: var(--theme-primary);
+            background: rgba(102, 126, 234, 0.1);
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            font-size: 1.1rem;
+        }
+
+        /* Form Controls */
+        .form-label {
+            font-weight: 600;
+            color: #4a5568;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-control {
+            background-color: var(--input-bg);
+            border: 2px solid transparent;
+            border-radius: 0.75rem;
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+            color: #2d3748;
+        }
+
+        .form-control:focus {
+            background-color: #fff;
+            border-color: var(--theme-primary);
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+        
+        .form-control:disabled {
+            background-color: #edf2f7;
+            opacity: 0.8;
+        }
+
+        /* Buttons */
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 0.8rem 2rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            box-shadow: 0 4px 6px rgba(102, 126, 234, 0.25);
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 7px 14px rgba(102, 126, 234, 0.3);
+            color: white;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+            border: none;
+            padding: 0.8rem 2rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            color: white;
+            width: 100%;
+        }
+        
+        .btn-warning:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 7px 14px rgba(253, 160, 133, 0.4);
+            color: white;
+        }
+
+        /* Access List */
+        #grantsList {
+            list-style: none;
+            padding: 0;
+            margin-top: 1rem;
+        }
+
+        #grantsList li {
+            padding: 0.75rem 1rem;
+            background: #f8fafc;
+            border-radius: 0.5rem;
+            margin-bottom: 0.5rem;
+            border: 1px solid #e2e8f0;
+            color: #4a5568;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+        }
+        
+        #grantsList li::before {
+            content: '\F26B'; /* Bootstrap Icons: building */
+            font-family: 'bootstrap-icons';
+            margin-right: 10px;
+            color: var(--theme-primary);
+        }
+    </style>
+</head>
+<body>
+    <!-- Mobile navbar toggle -->
+    <nav class="navbar navbar-dark bg-dark d-md-none">
+        <div class="container-fluid">
+            <span class="navbar-brand">RehabPlus System</span>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <%- include('partials/sidebar', { user, activePage: 'profile' }) %>
+
+            <!-- Main content -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                
+                <!-- Page Header -->
+                <div class="page-header d-flex justify-content-between align-items-center pt-3 pb-2 border-bottom">
+                    <h1 class="h2 mb-0">My Profile</h1>
+                </div>
+
+                <!-- Profile Header Card -->
+                <div class="profile-header-card">
+                    <div class="row align-items-center g-4">
+                        <div class="col-auto">
+                            <div class="profile-avatar" id="profileAvatar">
+                                <i class="bi bi-person-fill" id="profileAvatarIcon"></i>
+                                <img id="profileAvatarImage" src="" alt="Profile" style="display: none; width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
+                            </div>
+                        </div>
+                        <div class="col profile-info">
+                            <h3 id="profileName" class="display-6">Loading...</h3>
+                            <div class="d-flex flex-wrap align-items-center gap-3 mb-2">
+                                <span class="profile-badge" id="profileRole">Role</span>
+                                <span class="d-flex align-items-center text-white-50">
+                                    <i class="bi bi-envelope me-2"></i> <span id="profileEmail">email@example.com</span>
+                                </span>
+                            </div>
+                            <div class="text-white-50 small">
+                                <i class="bi bi-calendar-check me-1"></i> Member since: <span id="memberSince">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-4">
+                    <!-- Left Column: Profile Form -->
+                    <div class="col-lg-7">
+                        <div class="content-card h-100">
+                            <div class="card-header-custom">
+                                <h5><i class="bi bi-person-gear"></i> Profile Information</h5>
+                            </div>
+                            <form id="profileForm">
+                                <div class="row g-3 mb-3">
+                                    <div class="col-md-6">
+                                        <label for="firstName" class="form-label">First Name</label>
+                                        <input type="text" class="form-control" id="firstName" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="lastName" class="form-label">Last Name</label>
+                                        <input type="text" class="form-control" id="lastName" required>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="email" class="form-label">Email Address</label>
+                                    <input type="email" class="form-control" id="email" disabled style="cursor: not-allowed;">
+                                    <div class="form-text"><i class="bi bi-lock-fill me-1"></i> Email cannot be changed. Contact admin for assistance.</div>
+                                </div>
+
+                                <div class="row g-3 mb-4">
+                                    <div class="col-md-6">
+                                        <label for="phone" class="form-label">Phone Number</label>
+                                        <input type="tel" class="form-control" id="phone" placeholder="08x-xxx-xxxx">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="licenseNumber" class="form-label">License Number</label>
+                                        <input type="text" class="form-control" id="licenseNumber" placeholder="PT-XXXXX">
+                                    </div>
+                                </div>
+
+                                <div class="mt-auto">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-check-lg me-2"></i> Update Profile
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Security & Access -->
+                    <div class="col-lg-5">
+                        <!-- Access Information -->
+                        <div class="content-card mb-4">
+                            <div class="card-header-custom">
+                                <h5><i class="bi bi-shield-lock"></i> Access Information</h5>
+                            </div>
+                            <div class="mb-4">
+                                <label class="form-label text-muted small">Primary Clinic</label>
+                                <div class="d-flex align-items-center p-3 bg-light rounded border border-primary bg-opacity-10">
+                                    <div class="bg-primary text-white rounded p-2 me-3"><i class="bi bi-hospital-fill"></i></div>
+                                    <div>
+                                        <h6 class="mb-0 fw-bold text-primary" id="primaryClinic">Loading...</h6>
+                                        <small class="text-muted">Main Assignment</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="clinicGrants">
+                                <label class="form-label text-muted small">Additional Clinic Access</label>
+                                <ul id="grantsList">
+                                    <li>Loading...</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Google Account Connection -->
+                        <div class="content-card mb-4">
+                            <div class="card-header-custom">
+                                <h5><i class="bi bi-google" style="color: #ea4335; background: rgba(234, 67, 53, 0.1);"></i> Google Account</h5>
+                            </div>
+
+                            <!-- Connected Status -->
+                            <div id="googleConnected" style="display: none;">
+                                <div class="alert alert-success d-flex align-items-start">
+                                    <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+                                    <div class="flex-grow-1">
+                                        <strong>Connected to Google</strong>
+                                        <p class="mb-0 mt-1 small" id="googleConnectedEmail">Loading...</p>
+                                    </div>
+                                </div>
+
+                                <div class="d-flex align-items-center mb-3 p-3 bg-light rounded">
+                                    <img id="googleProfilePicture" src="" alt="Google Profile" class="rounded-circle me-3" style="width: 48px; height: 48px; display: none;">
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-0" id="googleProfileName">-</h6>
+                                        <small class="text-muted" id="googleProfileEmail">-</small>
+                                    </div>
+                                </div>
+
+                                <small class="text-muted d-block mb-3">
+                                    <i class="bi bi-calendar-check me-1"></i> Connected: <span id="googleConnectedAt">-</span>
+                                </small>
+
+                                <button type="button" id="disconnectGoogleBtn" class="btn btn-outline-danger w-100">
+                                    <i class="bi bi-x-circle me-2"></i> Disconnect Google Account
+                                </button>
+                            </div>
+
+                            <!-- Not Connected Status -->
+                            <div id="googleNotConnected" style="display: none;">
+                                <div class="alert alert-info">
+                                    <i class="bi bi-info-circle me-2"></i>
+                                    <strong>Connect your Google Account</strong>
+                                    <p class="mb-0 mt-1 small">Link your Google account to access additional features in the future.</p>
+                                </div>
+
+                                <ul class="small text-muted mb-3">
+                                    <li>View your Google profile information</li>
+                                    <li>Potential Google Sign-In support (coming soon)</li>
+                                    <li>Sync with Google services</li>
+                                </ul>
+
+                                <button type="button" id="connectGoogleBtn" class="btn btn-primary w-100">
+                                    <i class="bi bi-google me-2"></i> Connect with Google
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Change Password -->
+                        <div class="content-card card-danger">
+                            <div class="card-header-custom">
+                                <h5><i class="bi bi-key-fill text-warning" style="background: rgba(253, 160, 133, 0.1);"></i> Security</h5>
+                            </div>
+                            <form id="passwordForm">
+                                <div class="mb-3">
+                                    <label for="currentPassword" class="form-label">Current Password</label>
+                                    <input type="password" class="form-control" id="currentPassword" autocomplete="current-password" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="newPassword" class="form-label">New Password</label>
+                                    <input type="password" class="form-control" id="newPassword" autocomplete="new-password" required minlength="6">
+                                    <div class="form-text small">Min. 6 characters</div>
+                                </div>
+                                <div class="mb-4">
+                                    <label for="confirmPassword" class="form-label">Confirm Password</label>
+                                    <input type="password" class="form-control" id="confirmPassword" autocomplete="new-password" required>
+                                </div>
+                                <button type="submit" class="btn btn-warning">
+                                    <i class="bi bi-shield-check me-2"></i> Change Password
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Two-Factor Authentication -->
+                        <div class="content-card" id="twoFactorCard" style="display: none;">
+                            <div class="card-header-custom">
+                                <h5><i class="bi bi-shield-lock-fill" style="color: #10b981; background: rgba(16, 185, 129, 0.1);"></i> Two-Factor Authentication</h5>
+                            </div>
+
+                            <!-- 2FA Status Display -->
+                            <div id="twoFactorStatus">
+                                <div class="alert alert-info" id="twoFactorDisabled" style="display: none;">
+                                    <i class="bi bi-info-circle me-2"></i>
+                                    <strong>2FA is not enabled</strong>
+                                    <p class="mb-0 mt-1 small">Add an extra layer of security to your account using Google Authenticator.</p>
+                                </div>
+
+                                <div class="alert alert-success" id="twoFactorEnabled" style="display: none;">
+                                    <i class="bi bi-shield-check me-2"></i>
+                                    <strong>2FA is enabled</strong>
+                                    <p class="mb-0 mt-1 small">Your account is protected with two-factor authentication.</p>
+                                    <div class="mt-2 small">
+                                        <i class="bi bi-calendar-check me-1"></i> Enabled: <span id="twoFactorEnabledAt">-</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Enable 2FA Flow -->
+                            <div id="enableTwoFactorFlow" style="display: none;">
+                                <div class="text-center mb-4">
+                                    <p class="mb-3"><strong>Step 1:</strong> Scan this QR code with Google Authenticator app</p>
+                                    <div id="qrCodeDisplay" class="bg-light p-3 rounded d-inline-block"></div>
+                                    <div class="mt-2">
+                                        <small class="text-muted">Or enter this secret manually:</small><br>
+                                        <code id="totpSecret" class="user-select-all"></code>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="verifyTotpCode" class="form-label">Step 2: Enter verification code</label>
+                                    <input type="text" class="form-control" id="verifyTotpCode"
+                                           placeholder="000000" maxlength="6" pattern="[0-9]{6}"
+                                           autocomplete="off" inputmode="numeric">
+                                </div>
+
+                                <button type="button" id="confirmEnable2FABtn" class="btn btn-primary mb-2">
+                                    <i class="bi bi-check-lg me-2"></i> Enable 2FA
+                                </button>
+                                <button type="button" id="cancelEnable2FABtn" class="btn btn-outline-secondary w-100">
+                                    <i class="bi bi-x-lg me-2"></i> Cancel
+                                </button>
+                            </div>
+
+                            <!-- Backup Codes Display -->
+                            <div id="backupCodesDisplay" style="display: none;">
+                                <div class="alert alert-warning">
+                                    <i class="bi bi-exclamation-triangle me-2"></i>
+                                    <strong>Save these backup codes!</strong>
+                                    <p class="mb-2 small">You can use these codes to access your account if you lose your authenticator device.</p>
+                                </div>
+                                <div class="bg-light p-3 rounded mb-3">
+                                    <pre id="backupCodesList" class="mb-0" style="font-family: monospace; font-size: 0.9rem;"></pre>
+                                </div>
+                                <button type="button" id="acknowledgeBackupCodesBtn" class="btn btn-primary w-100">
+                                    <i class="bi bi-check-lg me-2"></i> I've Saved These Codes
+                                </button>
+                            </div>
+
+                            <!-- Action Buttons (when 2FA is disabled) -->
+                            <div id="twoFactorActions">
+                                <button type="button" id="setupTwoFactorBtn" class="btn btn-primary" style="display: none;">
+                                    <i class="bi bi-plus-lg me-2"></i> Set Up 2FA
+                                </button>
+                            </div>
+
+                            <!-- Manage 2FA (when enabled) -->
+                            <div id="twoFactorManage" style="display: none;">
+                                <button type="button" id="regenerateBackupCodesBtn" class="btn btn-primary w-100 mb-2">
+                                    <i class="bi bi-arrow-clockwise me-2"></i> Regenerate Backup Codes
+                                </button>
+                                <button type="button" id="disableTwoFactorBtn" class="btn btn-outline-danger w-100">
+                                    <i class="bi bi-x-circle me-2"></i> Disable 2FA
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let userData = null;
+
+        async function loadProfile() {
+            try {
+                const response = await fetch('/api/auth/me', {
+                    headers: {}
+                });
+
+                if (response.ok) {
+                    userData = await response.json();
+                    displayProfile();
+                    // Load 2FA status after user data is loaded
+                    await load2FAStatus();
+                } else if (response.status === 401) {
+                    window.location.href = '/login';
+                }
+            } catch (error) {
+                console.error('Error loading profile:', error);
+            }
+        }
+
+        function displayProfile() {
+            // Header
+            document.getElementById('profileName').textContent = `${userData.first_name} ${userData.last_name}`;
+            document.getElementById('profileRole').textContent = userData.role;
+            document.getElementById('profileEmail').textContent = userData.email;
+
+            // Update localStorage with latest user data
+            localStorage.setItem('user', JSON.stringify(userData));
+
+            // Profile Avatar - Show Google picture if available
+            if (userData.google_picture) {
+                const avatarIcon = document.getElementById('profileAvatarIcon');
+                const avatarImage = document.getElementById('profileAvatarImage');
+                if (avatarIcon && avatarImage) {
+                    avatarIcon.style.display = 'none';
+                    avatarImage.src = userData.google_picture;
+                    avatarImage.style.display = 'block';
+                }
+            } else {
+                // No Google picture - show default icon
+                const avatarIcon = document.getElementById('profileAvatarIcon');
+                const avatarImage = document.getElementById('profileAvatarImage');
+                if (avatarIcon && avatarImage) {
+                    avatarIcon.style.display = 'block';
+                    avatarImage.style.display = 'none';
+                }
+            }
+
+            // Refresh header profile picture
+            if (typeof loadHeaderProfilePicture === 'function') {
+                loadHeaderProfilePicture();
+            }
+            
+            // Form fields
+            document.getElementById('firstName').value = userData.first_name || '';
+            document.getElementById('lastName').value = userData.last_name || '';
+            document.getElementById('email').value = userData.email || '';
+            document.getElementById('phone').value = userData.phone || '';
+            document.getElementById('licenseNumber').value = userData.license_number || '';
+            
+            // Hide license number field if not PT
+            if (userData.role !== 'PT' && userData.role !== 'PT_ADMIN') {
+                document.getElementById('licenseNumber').parentElement.style.display = 'none';
+            }
+            
+            // Clinic information
+            document.getElementById('primaryClinic').textContent = userData.clinic_name || 'Not assigned';
+            
+            // Clinic grants
+            if (userData.clinic_grants && userData.clinic_grants.length > 0) {
+                const grantsList = document.getElementById('grantsList');
+                grantsList.innerHTML = userData.clinic_grants.map(grant => 
+                    `<li>${grant.clinic_name}</li>`
+                ).join('');
+            } else {
+                document.getElementById('clinicGrants').style.display = 'none';
+            }
+            
+            // Member since (Optional display if data available)
+            if(userData.created_at) {
+                const date = new Date(userData.created_at);
+                document.getElementById('memberSince').textContent = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+            }
+        }
+
+        // Update profile
+        document.getElementById('profileForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const updateData = {
+                first_name: document.getElementById('firstName').value,
+                last_name: document.getElementById('lastName').value,
+                phone: document.getElementById('phone').value,
+                license_number: document.getElementById('licenseNumber').value
+            };
+            
+            try {
+                const response = await fetch('/api/auth/update-profile', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'                    },
+                    body: JSON.stringify(updateData)
+                });
+                
+                if (response.ok) {
+                    alert('Profile updated successfully!');
+                    loadProfile();
+                } else {
+                    const error = await response.json();
+                    alert('Error: ' + error.error);
+                }
+            } catch (error) {
+                alert('Network error. Please try again.');
+            }
+        });
+
+        // Change password
+        document.getElementById('passwordForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            if (newPassword !== confirmPassword) {
+                alert('New passwords do not match!');
+                return;
+            }
+            
+            const passwordData = {
+                current_password: document.getElementById('currentPassword').value,
+                new_password: newPassword
+            };
+            
+            try {
+                const response = await fetch('/api/auth/change-password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'                    },
+                    body: JSON.stringify(passwordData)
+                });
+                
+                if (response.ok) {
+                    alert('Password changed successfully!');
+                    document.getElementById('passwordForm').reset();
+                } else {
+                    const error = await response.json();
+                    alert('Error: ' + error.error);
+                }
+            } catch (error) {
+                alert('Network error. Please try again.');
+            }
+        });
+
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+        }
+
+        function logout() {
+            document.cookie = 'authToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+            localStorage.clear();
+            window.location.href = '/login';
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadProfile();
+        });
+
+        // ===== TWO-FACTOR AUTHENTICATION =====
+        let currentTotpSecret = null;
+
+        async function load2FAStatus() {
+            // Only show 2FA for ADMIN and PT roles
+            if (!userData || (userData.role !== 'ADMIN' && userData.role !== 'PT')) {
+                document.getElementById('twoFactorCard').style.display = 'none';
+                return;
+            }
+
+            document.getElementById('twoFactorCard').style.display = 'block';
+
+            try {
+                const response = await fetch('/api/auth/2fa/status');
+                if (response.ok) {
+                    const data = await response.json();
+                    display2FAStatus(data);
+                }
+            } catch (error) {
+                console.error('Error loading 2FA status:', error);
+            }
+        }
+
+        function display2FAStatus(data) {
+            if (data.enabled) {
+                // 2FA is enabled
+                document.getElementById('twoFactorDisabled').style.display = 'none';
+                document.getElementById('twoFactorEnabled').style.display = 'block';
+                document.getElementById('twoFactorActions').style.display = 'none';
+                document.getElementById('twoFactorManage').style.display = 'block';
+
+                if (data.enabledAt) {
+                    const date = new Date(data.enabledAt);
+                    document.getElementById('twoFactorEnabledAt').textContent =
+                        date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+                }
+            } else {
+                // 2FA is disabled
+                document.getElementById('twoFactorDisabled').style.display = 'block';
+                document.getElementById('twoFactorEnabled').style.display = 'none';
+                document.getElementById('twoFactorActions').style.display = 'block';
+                document.getElementById('setupTwoFactorBtn').style.display = 'inline-block';
+                document.getElementById('twoFactorManage').style.display = 'none';
+            }
+        }
+
+        // Setup 2FA
+        document.getElementById('setupTwoFactorBtn')?.addEventListener('click', async () => {
+            try {
+                const response = await fetch('/api/auth/2fa/setup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    currentTotpSecret = data.secret;
+
+                    // Display QR code
+                    document.getElementById('qrCodeDisplay').innerHTML =
+                        `<img src="${data.qrCode}" alt="QR Code" class="img-fluid" style="max-width: 250px;">`;
+                    document.getElementById('totpSecret').textContent = data.secret;
+
+                    // Show enable flow
+                    document.getElementById('twoFactorStatus').style.display = 'none';
+                    document.getElementById('twoFactorActions').style.display = 'none';
+                    document.getElementById('enableTwoFactorFlow').style.display = 'block';
+                } else {
+                    const error = await response.json();
+                    alert(error.error || 'Failed to setup 2FA');
+                }
+            } catch (error) {
+                console.error('2FA setup error:', error);
+                alert('Network error. Please try again.');
+            }
+        });
+
+        // Confirm enable 2FA
+        document.getElementById('confirmEnable2FABtn')?.addEventListener('click', async () => {
+            const code = document.getElementById('verifyTotpCode').value.trim();
+
+            if (!code || code.length !== 6) {
+                alert('Please enter a valid 6-digit code');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/auth/2fa/enable', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: code })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+
+                    // Display backup codes
+                    document.getElementById('backupCodesList').textContent =
+                        data.backupCodes.join('\n');
+
+                    // Hide enable flow, show backup codes
+                    document.getElementById('enableTwoFactorFlow').style.display = 'none';
+                    document.getElementById('backupCodesDisplay').style.display = 'block';
+                } else {
+                    const error = await response.json();
+                    alert(error.error || 'Invalid verification code');
+                }
+            } catch (error) {
+                console.error('2FA enable error:', error);
+                alert('Network error. Please try again.');
+            }
+        });
+
+        // Acknowledge backup codes
+        document.getElementById('acknowledgeBackupCodesBtn')?.addEventListener('click', () => {
+            // Reset view and reload status
+            document.getElementById('backupCodesDisplay').style.display = 'none';
+            document.getElementById('twoFactorStatus').style.display = 'block';
+            document.getElementById('verifyTotpCode').value = '';
+            currentTotpSecret = null;
+
+            alert('✅ Two-Factor Authentication is now enabled!');
+            load2FAStatus();
+        });
+
+        // Cancel enable 2FA
+        document.getElementById('cancelEnable2FABtn')?.addEventListener('click', () => {
+            document.getElementById('enableTwoFactorFlow').style.display = 'none';
+            document.getElementById('twoFactorStatus').style.display = 'block';
+            document.getElementById('twoFactorActions').style.display = 'block';
+            document.getElementById('verifyTotpCode').value = '';
+            currentTotpSecret = null;
+        });
+
+        // Regenerate backup codes
+        document.getElementById('regenerateBackupCodesBtn')?.addEventListener('click', async () => {
+            const code = prompt('Enter a verification code from your Google Authenticator app:');
+
+            if (!code || code.length !== 6) {
+                alert('Invalid code');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/auth/2fa/regenerate-backup-codes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: code })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+
+                    // Display new backup codes
+                    document.getElementById('backupCodesList').textContent =
+                        data.backupCodes.join('\n');
+
+                    // Show backup codes display
+                    document.getElementById('twoFactorStatus').style.display = 'none';
+                    document.getElementById('twoFactorManage').style.display = 'none';
+                    document.getElementById('backupCodesDisplay').style.display = 'block';
+                } else {
+                    const error = await response.json();
+                    alert(error.error || 'Failed to regenerate backup codes');
+                }
+            } catch (error) {
+                console.error('Regenerate backup codes error:', error);
+                alert('Network error. Please try again.');
+            }
+        });
+
+        // Disable 2FA
+        document.getElementById('disableTwoFactorBtn')?.addEventListener('click', async () => {
+            if (!confirm('Are you sure you want to disable Two-Factor Authentication? This will make your account less secure.')) {
+                return;
+            }
+
+            const password = prompt('Enter your password to confirm:');
+
+            if (!password) {
+                alert('Password is required');
+                return;
+            }
+
+            const code = prompt('Enter a verification code from your Google Authenticator app (optional):');
+
+            try {
+                const response = await fetch('/api/auth/2fa/disable', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password, token: code || undefined })
+                });
+
+                if (response.ok) {
+                    alert('✅ Two-Factor Authentication has been disabled');
+                    load2FAStatus();
+                } else {
+                    const error = await response.json();
+                    alert(error.error || 'Failed to disable 2FA');
+                }
+            } catch (error) {
+                console.error('Disable 2FA error:', error);
+                alert('Network error. Please try again.');
+            }
+        });
+
+        // ===== GOOGLE OAUTH INTEGRATION =====
+        async function loadGoogleStatus() {
+            try {
+                const response = await fetch('/api/google/status');
+                if (response.ok) {
+                    const data = await response.json();
+                    displayGoogleStatus(data);
+                } else {
+                    console.warn('Google status API not available (404). Showing default state.');
+                    // Show not connected state as default when API is not available
+                    displayGoogleStatus({ connected: false });
+                }
+            } catch (error) {
+                console.error('Error loading Google status:', error);
+                // Show not connected state as default on error
+                displayGoogleStatus({ connected: false });
+            }
+        }
+
+        function displayGoogleStatus(data) {
+            if (data.connected) {
+                // Google is connected
+                document.getElementById('googleNotConnected').style.display = 'none';
+                document.getElementById('googleConnected').style.display = 'block';
+
+                // Display Google profile info
+                if (data.googleName) {
+                    document.getElementById('googleProfileName').textContent = data.googleName;
+                }
+                if (data.googleEmail) {
+                    document.getElementById('googleProfileEmail').textContent = data.googleEmail;
+                    document.getElementById('googleConnectedEmail').textContent = data.googleEmail;
+                }
+                if (data.googlePicture) {
+                    const picElement = document.getElementById('googleProfilePicture');
+                    picElement.src = data.googlePicture;
+                    picElement.style.display = 'block';
+                }
+                if (data.connectedAt) {
+                    const date = new Date(data.connectedAt);
+                    document.getElementById('googleConnectedAt').textContent =
+                        date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+                }
+            } else {
+                // Google is not connected
+                document.getElementById('googleNotConnected').style.display = 'block';
+                document.getElementById('googleConnected').style.display = 'none';
+            }
+        }
+
+        // Connect Google Account
+        document.getElementById('connectGoogleBtn')?.addEventListener('click', async () => {
+            try {
+                const response = await fetch('/api/google/auth-url');
+                if (response.ok) {
+                    const data = await response.json();
+                    // Redirect to Google OAuth page
+                    window.location.href = data.authUrl;
+                } else {
+                    alert('Failed to initiate Google connection');
+                }
+            } catch (error) {
+                console.error('Google connection error:', error);
+                alert('Network error. Please try again.');
+            }
+        });
+
+        // Disconnect Google Account
+        document.getElementById('disconnectGoogleBtn')?.addEventListener('click', async () => {
+            if (!confirm('Are you sure you want to disconnect your Google account?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/google/disconnect', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                if (response.ok) {
+                    alert('✅ Google account disconnected successfully');
+                    // Reload Google status and user profile to update avatar
+                    await loadProfile();
+                    loadGoogleStatus();
+                } else {
+                    const error = await response.json();
+                    alert('Error: ' + error.error);
+                }
+            } catch (error) {
+                console.error('Google disconnect error:', error);
+                alert('Network error. Please try again.');
+            }
+        });
+
+        // Load Google status on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadProfile();
+            loadGoogleStatus();
+        });
+
+        // Handle OAuth callback success/error messages
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('success') === 'google_connected') {
+            alert('✅ Google account connected successfully!');
+            // Reload profile to get updated Google data
+            setTimeout(() => {
+                loadProfile();
+                loadGoogleStatus();
+            }, 500);
+            // Remove query params from URL
+            window.history.replaceState({}, document.title, '/profile');
+        } else if (urlParams.get('error') === 'google_auth_failed') {
+            alert('❌ Google authentication failed. Please try again.');
+            window.history.replaceState({}, document.title, '/profile');
+        } else if (urlParams.get('error') === 'google_account_already_linked') {
+            alert('❌ This Google account is already linked to another user.');
+            window.history.replaceState({}, document.title, '/profile');
+        }
+    </script>
+</body>
+</html>

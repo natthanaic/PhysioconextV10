@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loyalty & Membership - RehabPlus System</title>
+    <link rel="icon" href="/public/images/Fav.png" type="image/x-icon">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            background: #f5f7fb;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 2px 0 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.85);
+            padding: 0.75rem 1rem;
+            margin: 0.25rem 1rem;
+            border-radius: 0.5rem;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            background: rgba(255, 255, 255, 0.25);
+            color: #fff;
+        }
+
+        main {
+            min-height: 100vh;
+            padding-bottom: 4rem;
+        }
+
+        .page-header {
+            background: white;
+            border-radius: 1.5rem;
+            padding: 2rem;
+            box-shadow: 0 10px 40px rgba(82, 95, 225, 0.12);
+            margin-bottom: 2rem;
+        }
+
+        .page-header h1 {
+            font-weight: 700;
+            color: #2d2f44;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            font-weight: 600;
+            padding: 0.6rem 1.6rem;
+            border-radius: 0.75rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.35);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            border: none;
+            font-weight: 600;
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, #17a2b8 0%, #00c9db 100%);
+            border: none;
+            font-weight: 600;
+        }
+
+        .card {
+            border: none;
+            border-radius: 1.25rem;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+        }
+
+        .card-header {
+            background: transparent;
+            border-bottom: 1px solid rgba(102, 126, 234, 0.15);
+            font-weight: 600;
+            color: #2d2f44;
+            border-radius: 1.25rem 1.25rem 0 0;
+        }
+
+        .stats-card {
+            text-align: center;
+            padding: 1.5rem;
+            border-radius: 1.25rem;
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .stats-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+        }
+
+        .stats-card.bronze {
+            background: linear-gradient(135deg, #cd7f32 0%, #b8860b 100%);
+        }
+
+        .stats-card.silver {
+            background: linear-gradient(135deg, #c0c0c0 0%, #808080 100%);
+        }
+
+        .stats-card.gold {
+            background: linear-gradient(135deg, #ffd700 0%, #daa520 100%);
+        }
+
+        .stats-card.platinum {
+            background: linear-gradient(135deg, #e5e4e2 0%, #b9b8b5 100%);
+        }
+
+        .tier-badge {
+            display: inline-block;
+            padding: 0.35rem 0.8rem;
+            border-radius: 2rem;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .tier-bronze {
+            background: linear-gradient(135deg, #cd7f32 0%, #b8860b 100%);
+            color: white;
+        }
+
+        .tier-silver {
+            background: linear-gradient(135deg, #c0c0c0 0%, #808080 100%);
+            color: white;
+        }
+
+        .tier-gold {
+            background: linear-gradient(135deg, #ffd700 0%, #daa520 100%);
+            color: #333;
+        }
+
+        .tier-platinum {
+            background: linear-gradient(135deg, #e5e4e2 0%, #b9b8b5 100%);
+            color: #333;
+        }
+
+        .table {
+            color: #2d2f44;
+        }
+
+        .table thead th {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            color: #2d2f44;
+            font-weight: 600;
+            border: none;
+        }
+
+        .table tbody tr {
+            transition: all 0.2s ease;
+        }
+
+        .table tbody tr:hover {
+            background: rgba(102, 126, 234, 0.05);
+            transform: scale(1.01);
+        }
+
+        .modal-content {
+            border-radius: 1.25rem;
+            border: none;
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 1.25rem 1.25rem 0 0;
+        }
+
+        .form-control, .form-select {
+            border-radius: 0.75rem;
+            border: 2px solid #e2e8f0;
+            padding: 0.75rem;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+    </style>
+</head>
+<body>
+    <!-- Mobile navbar toggle -->
+    <nav class="navbar navbar-dark bg-dark d-md-none">
+        <div class="container-fluid">
+            <span class="navbar-brand">RehabPlus System</span>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+        </div>
+    </nav>
+
+    <div class="container-fluid" data-user-role="<%= user.role %>">
+        <div class="row">
+            <!-- Sidebar -->
+            <%- include('partials/sidebar', { user, activePage: 'loyalty' }) %>
+
+            <!-- Main Content -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+                <!-- Page Header -->
+                <div class="page-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h1><i class="bi bi-trophy-fill text-warning me-2"></i>Loyalty & Membership</h1>
+                        <p class="text-muted mb-0">All patients with paid bills are automatically enrolled in the loyalty program</p>
+                        <small class="text-muted"><i class="bi bi-info-circle"></i> Click "Sync All Patients" to update points from bills</small>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <% if (user.role === 'ADMIN') { %>
+                            <button class="btn btn-info" onclick="loyaltyManager.syncAllPatients()">
+                                <i class="bi bi-arrow-repeat"></i> Sync All Patients
+                            </button>
+                        <% } %>
+                    </div>
+                </div>
+
+                <!-- Tier Statistics -->
+                <div class="row g-3 mb-4">
+                    <div class="col-md-3">
+                        <div class="stats-card bronze">
+                            <i class="bi bi-award" style="font-size: 2.5rem;"></i>
+                            <h3 class="mt-2 mb-0" id="bronze-count">0</h3>
+                            <small>Bronze Members</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stats-card silver">
+                            <i class="bi bi-award-fill" style="font-size: 2.5rem;"></i>
+                            <h3 class="mt-2 mb-0" id="silver-count">0</h3>
+                            <small>Silver Members</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stats-card gold">
+                            <i class="bi bi-trophy" style="font-size: 2.5rem;"></i>
+                            <h3 class="mt-2 mb-0" id="gold-count">0</h3>
+                            <small>Gold Members</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stats-card platinum">
+                            <i class="bi bi-trophy-fill" style="font-size: 2.5rem;"></i>
+                            <h3 class="mt-2 mb-0" id="platinum-count">0</h3>
+                            <small>Platinum Members</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filters -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label">Search</label>
+                                <input type="text" class="form-control" id="search-input" placeholder="Name, HN, Phone...">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Tier</label>
+                                <select class="form-select" id="filter-tier">
+                                    <option value="">All Tiers</option>
+                                    <option value="BRONZE">Bronze</option>
+                                    <option value="SILVER">Silver</option>
+                                    <option value="GOLD">Gold</option>
+                                    <option value="PLATINUM">Platinum</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Status</label>
+                                <select class="form-select" id="filter-status">
+                                    <option value="">All Status</option>
+                                    <option value="ACTIVE">Active</option>
+                                    <option value="INACTIVE">Inactive</option>
+                                    <option value="SUSPENDED">Suspended</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 d-flex align-items-end">
+                                <button class="btn btn-primary w-100" onclick="loyaltyManager.loadMembers()">
+                                    <i class="bi bi-search"></i> Apply Filters
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Members Table -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-people-fill me-2"></i>Loyalty Members</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>HN</th>
+                                        <th>Patient Name</th>
+                                        <th>Tier</th>
+                                        <th>Total Points</th>
+                                        <th>Available Points</th>
+                                        <th>Lifetime Spending</th>
+                                        <th>Status</th>
+                                        <th>Member Since</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="members-table-body">
+                                    <tr>
+                                        <td colspan="9" class="text-center">
+                                            <div class="spinner-border text-primary" role="status"></div>
+                                            <p class="mt-2">Loading members...</p>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Member Details Modal -->
+    <div class="modal fade" id="memberDetailsModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Member Details</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="member-details-content">
+                    <!-- Content will be loaded dynamically -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Redeem Gift Card Modal -->
+    <div class="modal fade" id="redeemGiftCardModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Redeem Gift Card</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="gift-card-catalog">
+                        <!-- Catalog will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/public/js/loyalty.js?v=1765446492000"></script>
+</body>
+</html>

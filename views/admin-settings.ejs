@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Settings - RehabPlus</title>
+
+    <!-- PWA Meta Tags -->
+    <meta name="application-name" content="RehabPlus">
+    <meta name="theme-color" content="#667eea">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Libraries -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Design System -->
+    <link href="/public/css/variables.css" rel="stylesheet">
+    <link href="/public/css/base.css" rel="stylesheet">
+    <link href="/public/css/accessibility.css" rel="stylesheet">
+
+    <style>
+        /* --- DASHBOARD THEME VARIABLES --- */
+        :root {
+            --primary-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            --surface-color: #ffffff;
+            --background-color: #f3f4f6;
+            --text-main: #1f2937;
+            --text-secondary: #6b7280;
+            --border-radius-md: 12px;
+            --border-radius-sm: 8px;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            background-color: #f0f2f5; /* Matches dashboard.ejs exactly */
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* --- MAIN LAYOUT --- */
+        main {
+            padding-top: 1.5rem;
+            padding-bottom: 3rem;
+        }
+
+        /* --- PAGE HEADER (Dashboard Style) --- */
+        .page-header {
+            background: var(--surface-color);
+            border-radius: var(--border-radius-md);
+            padding: 0.8rem 1.2rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid rgba(255,255,255,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .page-header h1 {
+            font-weight: 800;
+            font-size: 1.4rem;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0;
+        }
+
+        .page-header .subtitle {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        /* --- SETTINGS GRID --- */
+        .settings-section-title {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 1rem;
+            padding-left: 0.5rem;
+            border-left: 3px solid #6366f1;
+        }
+
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        /* --- SETTING CARDS --- */
+        .setting-card {
+            background: var(--surface-color);
+            border-radius: var(--border-radius-md);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(229, 231, 235, 0.5);
+            height: 100%;
+        }
+
+        .setting-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-md);
+            border-color: rgba(99, 102, 241, 0.3);
+        }
+
+        /* Decorative top accent */
+        .setting-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: var(--primary-gradient);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .setting-card:hover::before {
+            opacity: 1;
+        }
+
+        .setting-icon-wrapper {
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
+            background: #f0f2ff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+            color: #6366f1;
+            font-size: 1.5rem;
+            transition: transform 0.3s ease, background 0.3s ease;
+        }
+
+        .setting-card:hover .setting-icon-wrapper {
+            background: var(--primary-gradient);
+            color: white;
+            transform: scale(1.1) rotate(5deg);
+        }
+
+        .setting-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 0.5rem;
+        }
+
+        .setting-description {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            margin-bottom: 0;
+        }
+
+        .setting-badge {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            font-size: 0.65rem;
+            padding: 0.25rem 0.6rem;
+            border-radius: 6px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-admin {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+        
+        .badge-system {
+            background: #e0e7ff;
+            color: #3730a3;
+            border: 1px solid #c7d2fe;
+        }
+    </style>
+</head>
+<body>
+    <%- include('partials/header') %>
+
+    <a href="#main-content" class="skip-link d-none">Skip to main content</a>
+
+    <!-- Mobile navbar toggle -->
+    <nav class="navbar navbar-dark bg-dark d-md-none">
+        <div class="container-fluid">
+            <span class="navbar-brand font-weight-bold">RehabPlus</span>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <%- include('partials/sidebar', { user, activePage: 'admin-settings' }) %>
+
+            <main id="main-content" class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                
+                <!-- Page Header (Dashboard Style) -->
+                <div class="page-header flex-column flex-md-row">
+                    <div>
+                        <h1 class="h2">Admin Settings</h1>
+                        <span class="subtitle">Configure and manage your <%= appName || 'PhysioConext' %> system</span>
+                    </div>
+                    <div class="mt-3 mt-md-0 d-flex align-items-center text-muted small">
+                        <i class="bi bi-shield-lock me-2 fs-5 text-primary"></i>
+                        <span>Secure Area <span class="badge bg-light text-secondary border ms-1">Admin Access</span></span>
+                    </div>
+                </div>
+
+                <div class="settings-container">
+                    
+                    <!-- System Configuration -->
+                    <div class="settings-section">
+                        <h3 class="settings-section-title">System Configuration</h3>
+                        <div class="settings-grid">
+                            <!-- Theme Settings -->
+                            <a href="/admin/theme-settings" class="setting-card">
+                                <span class="setting-badge badge-admin">Admin Only</span>
+                                <div class="setting-icon-wrapper">
+                                    <i class="bi bi-palette-fill"></i>
+                                </div>
+                                <h5 class="setting-title">Theme Settings</h5>
+                                <p class="setting-description">
+                                    Customize application name, logos, and branding colors.
+                                </p>
+                            </a>
+
+                            <!-- Users Management -->
+                            <a href="/admin/users" class="setting-card">
+                                <span class="setting-badge badge-admin">Admin Only</span>
+                                <div class="setting-icon-wrapper">
+                                    <i class="bi bi-people-fill"></i>
+                                </div>
+                                <h5 class="setting-title">Users Management</h5>
+                                <p class="setting-description">
+                                    Manage user accounts, roles, permissions, and staff access.
+                                </p>
+                            </a>
+
+                            <!-- Clinics Management -->
+                            <a href="/admin/clinics" class="setting-card">
+                                <span class="setting-badge badge-admin">Admin Only</span>
+                                <div class="setting-icon-wrapper">
+                                    <i class="bi bi-hospital-fill"></i>
+                                </div>
+                                <h5 class="setting-title">Clinics Management</h5>
+                                <p class="setting-description">
+                                    Configure clinic locations, operating hours, and details.
+                                </p>
+                            </a>
+
+                            <!-- Services Management -->
+                            <a href="/admin/services" class="setting-card">
+                                <span class="setting-badge badge-admin">Admin Only</span>
+                                <div class="setting-icon-wrapper">
+                                    <i class="bi bi-heart-pulse-fill"></i>
+                                </div>
+                                <h5 class="setting-title">Services Management</h5>
+                                <p class="setting-description">
+                                    Manage available physiotherapy services, pricing, and codes.
+                                </p>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Integration Settings -->
+                    <div class="settings-section">
+                        <h3 class="settings-section-title">Integrations & Notifications</h3>
+                        <div class="settings-grid">
+                            <!-- Google Calendar -->
+                            <a href="/admin/google-calendar-settings" class="setting-card">
+                                <div class="setting-icon-wrapper">
+                                    <i class="bi bi-calendar-event-fill"></i>
+                                </div>
+                                <h5 class="setting-title">Google Calendar</h5>
+                                <p class="setting-description">
+                                    Sync appointments with Google Calendar for seamless scheduling.
+                                </p>
+                            </a>
+
+                            <!-- LINE Webhook -->
+                            <a href="/admin/line-webhook-ids" class="setting-card">
+                                <div class="setting-icon-wrapper">
+                                    <i class="bi bi-chat-square-text-fill"></i>
+                                </div>
+                                <h5 class="setting-title">LINE Integration</h5>
+                                <p class="setting-description">
+                                    Configure LINE webhook for patient notifications and bots.
+                                </p>
+                            </a>
+
+                            <!-- Notification Settings -->
+                            <a href="/admin/notification-settings" class="setting-card">
+                                <div class="setting-icon-wrapper">
+                                    <i class="bi bi-bell-fill"></i>
+                                </div>
+                                <h5 class="setting-title">Notification Settings</h5>
+                                <p class="setting-description">
+                                    Configure email, SMS, and push notification preferences.
+                                </p>
+                            </a>
+
+                            <!-- Booking Settings -->
+                            <a href="/admin/booking-settings" class="setting-card">
+                                <div class="setting-icon-wrapper">
+                                    <i class="bi bi-calendar-check-fill"></i>
+                                </div>
+                                <h5 class="setting-title">Booking Settings</h5>
+                                <p class="setting-description">
+                                    Configure online booking rules, time slots, and availability.
+                                </p>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Documents & Display -->
+                    <div class="settings-section">
+                        <h3 class="settings-section-title">Documents & Reporting</h3>
+                        <div class="settings-grid">
+                            <!-- Document Settings -->
+                            <a href="/document-settings" class="setting-card">
+                                <div class="setting-icon-wrapper">
+                                    <i class="bi bi-file-earmark-text-fill"></i>
+                                </div>
+                                <h5 class="setting-title">Document Templates</h5>
+                                <p class="setting-description">
+                                    Customize PT certificates, bills, and other document layouts.
+                                </p>
+                            </a>
+
+                            <!-- Statistics & Reports -->
+                            <a href="/statistics" class="setting-card">
+                                <div class="setting-icon-wrapper">
+                                    <i class="bi bi-graph-up-arrow"></i>
+                                </div>
+                                <h5 class="setting-title">Statistics & Reports</h5>
+                                <p class="setting-description">
+                                    View analytics, reports, and business intelligence dashboards.
+                                </p>
+                            </a>
+
+                            <!-- System Logs -->
+                            <a href="/pn-logs" class="setting-card">
+                                <span class="setting-badge badge-system">System</span>
+                                <div class="setting-icon-wrapper">
+                                    <i class="bi bi-journal-text"></i>
+                                </div>
+                                <h5 class="setting-title">System Logs</h5>
+                                <p class="setting-description">
+                                    View audit trails, activity logs, and debugging information.
+                                </p>
+                            </a>
+                        </div>
+                    </div>
+
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
+    <script src="/public/js/utils.js?v=1765446492000"></script>
+</body>
+</html>

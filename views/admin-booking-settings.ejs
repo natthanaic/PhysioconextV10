@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Public Booking Settings - RehabPlus</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+        }
+        .sidebar .nav-link {
+            color: rgba(255,255,255,0.8);
+            padding: 0.75rem 1rem;
+            margin: 0.25rem 1rem;
+            border-radius: 0.5rem;
+            transition: all 0.3s;
+        }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active {
+            background: rgba(255,255,255,0.2);
+            color: white;
+        }
+        .tab-content {
+            padding: 2rem 0;
+        }
+        .package-card {
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            transition: all 0.3s;
+            position: relative;
+        }
+        .package-card:hover {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .package-card.featured {
+            border-color: #ffc107;
+        }
+        .package-card.best-value {
+            border-color: #28a745;
+        }
+        .badge-featured {
+            position: absolute;
+            top: -10px;
+            right: 10px;
+            background: #ffc107;
+            color: #000;
+        }
+        .badge-best-value {
+            position: absolute;
+            top: -10px;
+            left: 10px;
+            background: #28a745;
+        }
+        .promo-card {
+            border-left: 4px solid #667eea;
+        }
+        .setting-section {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <%- include('partials/sidebar', { user, activePage: 'booking-settings' }) %>
+
+            <!-- Main Content -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <div class="container-fluid py-4">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2><i class="bi bi-gear-fill"></i> Public Booking Settings</h2>
+                        <div>
+                            <span class="text-muted">Logged in as: <%= user.first_name %> <%= user.last_name %></span>
+                            <a href="/logout" class="btn btn-outline-danger btn-sm ms-3">
+                                <i class="bi bi-box-arrow-right"></i> Logout
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Tabs -->
+                    <ul class="nav nav-tabs mb-4" id="settingsTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="packages-tab" data-bs-toggle="tab" data-bs-target="#packages" type="button">
+                                <i class="bi bi-box"></i> Service Packages
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="promotions-tab" data-bs-toggle="tab" data-bs-target="#promotions" type="button">
+                                <i class="bi bi-tag"></i> Promotions
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="testimonials-tab" data-bs-toggle="tab" data-bs-target="#testimonials" type="button">
+                                <i class="bi bi-star"></i> Testimonials
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="general-tab" data-bs-toggle="tab" data-bs-target="#general" type="button">
+                                <i class="bi bi-sliders"></i> General Settings
+                            </button>
+                        </li>
+                    </ul>
+
+                    <!-- Tab Content -->
+                    <div class="tab-content" id="settingsTabContent">
+                        <!-- Service Packages Tab -->
+                        <div class="tab-pane fade show active" id="packages" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h4>Service Packages</h4>
+                                <button class="btn btn-primary" onclick="showPackageModal()">
+                                    <i class="bi bi-plus-circle"></i> Add Package
+                                </button>
+                            </div>
+                            <div id="packagesList" class="row g-3">
+                                <!-- Packages will load here -->
+                            </div>
+                        </div>
+
+                        <!-- Promotions Tab -->
+                        <div class="tab-pane fade" id="promotions" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h4>Promotion Codes</h4>
+                                <button class="btn btn-primary" onclick="showPromoModal()">
+                                    <i class="bi bi-plus-circle"></i> Add Promotion
+                                </button>
+                            </div>
+                            <div id="promosList">
+                                <!-- Promotions will load here -->
+                            </div>
+                        </div>
+
+                        <!-- Testimonials Tab -->
+                        <div class="tab-pane fade" id="testimonials" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h4>Customer Testimonials</h4>
+                                <button class="btn btn-primary" onclick="showTestimonialModal()">
+                                    <i class="bi bi-plus-circle"></i> Add Testimonial
+                                </button>
+                            </div>
+                            <div id="testimonialsList">
+                                <!-- Testimonials will load here -->
+                            </div>
+                        </div>
+
+                        <!-- General Settings Tab -->
+                        <div class="tab-pane fade" id="general" role="tabpanel">
+                            <h4 class="mb-4">General Settings</h4>
+
+                            <div class="setting-section">
+                                <h5><i class="bi bi-chat-text"></i> Welcome Message</h5>
+                                <textarea class="form-control" id="welcome_message" rows="2"></textarea>
+                            </div>
+
+                            <div class="setting-section">
+                                <h5><i class="bi bi-info-circle"></i> Booking Instructions</h5>
+                                <textarea class="form-control" id="booking_instructions" rows="3"></textarea>
+                            </div>
+
+                            <div class="setting-section">
+                                <h5><i class="bi bi-telephone"></i> Contact Information</h5>
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label">Line ID</label>
+                                        <input type="text" class="form-control" id="line_id" placeholder="@lantavafix">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">WhatsApp Number</label>
+                                        <input type="text" class="form-control" id="whatsapp_number" placeholder="+66-XXX-XXX-XXXX">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Phone Number</label>
+                                        <input type="text" class="form-control" id="phone_number" placeholder="+66-XXX-XXX-XXXX">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="setting-section">
+                                <h5><i class="bi bi-eye"></i> Display Options</h5>
+                                <div class="form-check form-switch mb-2">
+                                    <input class="form-check-input" type="checkbox" id="show_booking_count">
+                                    <label class="form-check-label" for="show_booking_count">
+                                        Show booking count on calendar dates
+                                    </label>
+                                </div>
+                                <div class="form-check form-switch mb-2">
+                                    <input class="form-check-input" type="checkbox" id="show_remaining_slots">
+                                    <label class="form-check-label" for="show_remaining_slots">
+                                        Show "Only X slots remaining" alerts
+                                    </label>
+                                </div>
+                                <div class="mt-3">
+                                    <label class="form-label">Low slots threshold (show urgency when slots below this number)</label>
+                                    <input type="number" class="form-control" id="low_slots_threshold" min="1" max="10" style="max-width: 200px;">
+                                </div>
+                            </div>
+
+                            <div class="setting-section">
+                                <h5><i class="bi bi-x-circle"></i> Cancellation Policy</h5>
+                                <textarea class="form-control" id="cancellation_policy" rows="3"></textarea>
+                            </div>
+
+                            <button class="btn btn-success btn-lg" onclick="saveGeneralSettings()">
+                                <i class="bi bi-save"></i> Save Settings
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Package Modal -->
+    <div class="modal fade" id="packageModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Service Package</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="packageForm">
+                        <input type="hidden" id="package_id">
+                        <div class="row g-3">
+                            <div class="col-md-8">
+                                <label class="form-label">Package Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="package_name" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Package Code <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="package_code" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Price (THB) <span class="text-danger">*</span></label>
+                                <input type="number" step="0.01" class="form-control" id="package_price" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Duration (minutes) <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="package_duration" required>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Description</label>
+                                <textarea class="form-control" id="package_description" rows="2"></textarea>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Benefits (one per line)</label>
+                                <textarea class="form-control" id="package_benefits" rows="4" placeholder="Professional licensed therapist&#10;Muscle pain relief&#10;Includes hot compress"></textarea>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Pain Zones (select applicable zones)</label>
+                                <div class="row g-2">
+                                    <div class="col-6 col-md-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input pain-zone" type="checkbox" value="neck" id="pain_neck">
+                                            <label class="form-check-label" for="pain_neck">Neck</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 col-md-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input pain-zone" type="checkbox" value="shoulder" id="pain_shoulder">
+                                            <label class="form-check-label" for="pain_shoulder">Shoulder</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 col-md-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input pain-zone" type="checkbox" value="back" id="pain_back">
+                                            <label class="form-check-label" for="pain_back">Back</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 col-md-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input pain-zone" type="checkbox" value="knee" id="pain_knee">
+                                            <label class="form-check-label" for="pain_knee">Knee</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 col-md-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input pain-zone" type="checkbox" value="hip" id="pain_hip">
+                                            <label class="form-check-label" for="pain_hip">Hip</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 col-md-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input pain-zone" type="checkbox" value="ankle" id="pain_ankle">
+                                            <label class="form-check-label" for="pain_ankle">Ankle</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 col-md-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input pain-zone" type="checkbox" value="elbow" id="pain_elbow">
+                                            <label class="form-check-label" for="pain_elbow">Elbow</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 col-md-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input pain-zone" type="checkbox" value="other" id="pain_other">
+                                            <label class="form-check-label" for="pain_other">Other</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Display Order</label>
+                                <input type="number" class="form-control" id="package_display_order" value="0">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Status</label>
+                                <select class="form-select" id="package_active">
+                                    <option value="1">Active</option>
+                                    <option value="0">Inactive</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="package_featured">
+                                    <label class="form-check-label" for="package_featured">
+                                        Mark as "Most Popular"
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="package_best_value">
+                                    <label class="form-check-label" for="package_best_value">
+                                        Mark as "Best Value"
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="savePackage()">Save Package</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Promotion Modal -->
+    <div class="modal fade" id="promoModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Promotion Code</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="promoForm">
+                        <input type="hidden" id="promo_id">
+                        <div class="mb-3">
+                            <label class="form-label">Promo Code <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="promo_code" required style="text-transform: uppercase;">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <input type="text" class="form-control" id="promo_description" placeholder="First-time customer discount">
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-6">
+                                <label class="form-label">Discount Type <span class="text-danger">*</span></label>
+                                <select class="form-select" id="promo_discount_type" required>
+                                    <option value="PERCENTAGE">Percentage (%)</option>
+                                    <option value="FIXED_AMOUNT">Fixed Amount (THB)</option>
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Discount Value <span class="text-danger">*</span></label>
+                                <input type="number" step="0.01" class="form-control" id="promo_discount_value" required>
+                            </div>
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-6">
+                                <label class="form-label">Valid From <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="promo_valid_from" required>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Valid Until <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="promo_valid_until" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Usage Limit (leave blank for unlimited)</label>
+                            <input type="number" class="form-control" id="promo_usage_limit" placeholder="Optional">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Status</label>
+                            <select class="form-select" id="promo_active">
+                                <option value="1">Active</option>
+                                <option value="0">Inactive</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="savePromo()">Save Promotion</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Testimonial Modal -->
+    <div class="modal fade" id="testimonialModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Customer Testimonial</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="testimonialForm">
+                        <input type="hidden" id="testimonial_id">
+                        <div class="mb-3">
+                            <label class="form-label">Patient Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="testimonial_patient_name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Rating <span class="text-danger">*</span></label>
+                            <select class="form-select" id="testimonial_rating" required>
+                                <option value="5">5 Stars</option>
+                                <option value="4">4 Stars</option>
+                                <option value="3">3 Stars</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Testimonial Text <span class="text-danger">*</span></label>
+                            <textarea class="form-control" id="testimonial_text" rows="4" required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Display Order</label>
+                            <input type="number" class="form-control" id="testimonial_display_order" value="0">
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="testimonial_display" checked>
+                            <label class="form-check-label" for="testimonial_display">
+                                Display on public booking page
+                            </label>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveTestimonial()">Save Testimonial</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/public/js/admin-booking-settings.js?v=1765446492000"></script>
+</body>
+</html>

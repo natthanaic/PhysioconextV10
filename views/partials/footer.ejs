@@ -1,0 +1,254 @@
+<!-- Footer -->
+<footer class="app-footer">
+    <div class="container-fluid">
+        <div class="row align-items-center">
+            <div class="col-md-6 text-center text-md-start mb-2 mb-md-0">
+                <p class="mb-0 footer-text">
+                    <i class="bi bi-heart-pulse-fill text-danger me-1"></i>
+                    <strong><%= appName || 'PhysioConext' %></strong> &copy; <%= new Date().getFullYear() %> | Physiotherapy Management System
+                </p>
+            </div>
+            <div class="col-md-6 text-center text-md-end">
+                <div class="footer-links">
+                    <a href="/dashboard" class="footer-link">
+                        <i class="bi bi-house-door"></i> Dashboard
+                    </a>
+                    <span class="footer-divider">|</span>
+                    <a href="/profile" class="footer-link">
+                        <i class="bi bi-person"></i> Profile
+                    </a>
+                    <% if (user && user.role === 'ADMIN') { %>
+                    <span class="footer-divider">|</span>
+                    <a href="/admin/settings" class="footer-link">
+                        <i class="bi bi-gear"></i> Settings
+                    </a>
+                    <% } %>
+                    <span class="footer-divider">|</span>
+                    <a href="#" onclick="showHelpModal(); return false;" class="footer-link">
+                        <i class="bi bi-question-circle"></i> Help
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="row mt-2">
+            <div class="col-12 text-center">
+                <small class="footer-version text-muted">
+                    Version 2.0.0 |
+                    <i class="bi bi-shield-check text-success"></i> HIPAA Compliant |
+                    <span id="serverStatus">
+                        <i class="bi bi-circle-fill text-success blink"></i> Online
+                    </span>
+                </small>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<!-- Help Modal -->
+<div class="modal fade" id="helpModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-gradient-primary text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-question-circle me-2"></i>Help & Support
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="help-section">
+                    <h6><i class="bi bi-book me-2"></i>Quick Guide</h6>
+                    <ul class="help-list">
+                        <li><strong>Dashboard:</strong> View today's appointments and cases</li>
+                        <li><strong>Patients:</strong> Manage patient records and history</li>
+                        <li><strong>Appointments:</strong> Schedule and track appointments</li>
+                        <li><strong>PN Cases:</strong> Create and manage physiotherapy referrals</li>
+                    </ul>
+                </div>
+                <div class="help-section mt-3">
+                    <h6><i class="bi bi-telephone me-2"></i>Contact Support</h6>
+                    <p class="mb-2">
+                        <i class="bi bi-envelope me-2"></i>
+                        Email: <a href="mailto:support@rehabplus.com">support@rehabplus.com</a>
+                    </p>
+                    <p class="mb-0">
+                        <i class="bi bi-phone me-2"></i>
+                        Phone: +66 XX-XXX-XXXX
+                    </p>
+                </div>
+                <div class="help-section mt-3">
+                    <h6><i class="bi bi-keyboard me-2"></i>Keyboard Shortcuts</h6>
+                    <table class="table table-sm">
+                        <tbody>
+                            <tr>
+                                <td><kbd>Ctrl</kbd> + <kbd>K</kbd></td>
+                                <td>Quick Search</td>
+                            </tr>
+                            <tr>
+                                <td><kbd>Ctrl</kbd> + <kbd>N</kbd></td>
+                                <td>New Patient/Case</td>
+                            </tr>
+                            <tr>
+                                <td><kbd>Ctrl</kbd> + <kbd>H</kbd></td>
+                                <td>Go to Dashboard</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .app-footer {
+        background: white;
+        border-top: 2px solid #e5e7eb;
+        padding: 1.5rem 0;
+        margin-top: 3rem;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+        position: relative;
+        z-index: 1000;
+    }
+
+    .footer-text {
+        color: #6b7280;
+        font-size: 0.9rem;
+    }
+
+    .footer-links {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .footer-link {
+        color: #6366f1;
+        text-decoration: none;
+        font-size: 0.9rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+    }
+
+    .footer-link:hover {
+        color: #8b5cf6;
+        background: #f3f4f6;
+        transform: translateY(-1px);
+    }
+
+    .footer-divider {
+        color: #d1d5db;
+    }
+
+    .footer-version {
+        font-size: 0.75rem;
+    }
+
+    .blink {
+        animation: blink-animation 2s ease-in-out infinite;
+    }
+
+    @keyframes blink-animation {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.3; }
+    }
+
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    }
+
+    .help-section {
+        padding: 0.75rem;
+        background: #f9fafb;
+        border-radius: 8px;
+    }
+
+    .help-section h6 {
+        color: #1f2937;
+        font-weight: 700;
+        margin-bottom: 0.75rem;
+    }
+
+    .help-list {
+        list-style: none;
+        padding-left: 0;
+        margin-bottom: 0;
+    }
+
+    .help-list li {
+        padding: 0.25rem 0;
+        color: #4b5563;
+    }
+
+    kbd {
+        background: #374151;
+        color: white;
+        padding: 0.1rem 0.4rem;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    @media (max-width: 768px) {
+        .footer-links {
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .footer-divider {
+            display: none;
+        }
+    }
+</style>
+
+<script>
+    function showHelpModal() {
+        const helpModal = new bootstrap.Modal(document.getElementById('helpModal'));
+        helpModal.show();
+    }
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        // Ctrl+K: Quick Search
+        if (e.ctrlKey && e.key === 'k') {
+            e.preventDefault();
+            const searchInput = document.getElementById('search-input');
+            if (searchInput) searchInput.focus();
+        }
+
+        // Ctrl+H: Go to Dashboard
+        if (e.ctrlKey && e.key === 'h') {
+            e.preventDefault();
+            window.location.href = '/dashboard';
+        }
+
+        // Ctrl+N: New (depends on current page)
+        if (e.ctrlKey && e.key === 'n') {
+            e.preventDefault();
+            // Could be customized per page
+        }
+    });
+
+    // Check server status periodically
+    setInterval(checkServerStatus, 30000); // Every 30 seconds
+
+    async function checkServerStatus() {
+        try {
+            const response = await fetch('/api/health');
+            const statusEl = document.getElementById('serverStatus');
+            if (response.ok) {
+                statusEl.innerHTML = '<i class="bi bi-circle-fill text-success blink"></i> Online';
+            } else {
+                statusEl.innerHTML = '<i class="bi bi-circle-fill text-warning"></i> Limited';
+            }
+        } catch (error) {
+            const statusEl = document.getElementById('serverStatus');
+            statusEl.innerHTML = '<i class="bi bi-circle-fill text-danger"></i> Offline';
+        }
+    }
+</script>

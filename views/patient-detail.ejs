@@ -1,0 +1,2532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Detail - RehabPlus System</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#667eea">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Design System -->
+    <link href="/public/css/variables.css" rel="stylesheet">
+    <link href="/public/css/base.css" rel="stylesheet">
+    <link href="/public/css/accessibility.css" rel="stylesheet">
+
+    <style>
+        /* --- DASHBOARD THEME VARIABLES --- */
+        :root {
+            --primary-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            --surface-color: #ffffff;
+            --background-color: #f3f4f6;
+            --text-main: #1f2937;
+            --text-secondary: #6b7280;
+            --border-radius-md: 12px;
+            --border-radius-sm: 8px;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            
+            /* Legacy overrides */
+            --theme-primary: #6366f1;
+            --theme-secondary: #8b5cf6;
+            --input-bg: #f8fafc;
+        }
+
+        body {
+            background-color: #f0f2f5; /* Matches dashboard.ejs exactly */
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* --- MAIN LAYOUT --- */
+        main {
+            padding-top: 1.5rem;
+            padding-bottom: 3rem;
+        }
+
+        /* --- PAGE HEADER (Dashboard Style) --- */
+        .page-header {
+            background: var(--surface-color);
+            border-radius: var(--border-radius-md);
+            padding: 0.8rem 1.2rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid rgba(255,255,255,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        
+        .page-header h1 {
+            font-weight: 800;
+            font-size: 1.4rem;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0;
+            display: flex;
+            align-items: center;
+        }
+
+        .btn-back {
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+            margin-right: 0.75rem;
+            transition: color 0.2s;
+            display: flex;
+            align-items: center;
+        }
+
+        .btn-back:hover {
+            color: var(--theme-primary);
+        }
+
+        /* --- CARDS --- */
+        .content-card {
+            background: var(--surface-color);
+            border-radius: var(--border-radius-md);
+            border: none;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 1.5rem;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.2s ease;
+        }
+
+        .content-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        /* Decorative top border */
+        .content-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: var(--primary-gradient);
+            opacity: 0.8;
+        }
+
+        /* Card Variants */
+        .content-card.card-patient::before { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+        .content-card.card-medical::before { background: linear-gradient(90deg, #10b981, #34d399); }
+
+        .card-header-custom {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid #f3f4f6;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .card-header-custom h5 {
+            margin: 0;
+            font-weight: 700;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            font-size: 1.1rem;
+        }
+
+        .card-header-custom h5 i {
+            margin-right: 12px;
+            color: var(--theme-primary);
+            background: #f0f2ff;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            font-size: 1.1rem;
+        }
+
+        .card-body {
+            padding: 1.5rem;
+        }
+
+        /* Detail Rows */
+        .detail-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            font-weight: 700;
+            margin-bottom: 0.35rem;
+        }
+        
+        .detail-value {
+            font-size: 0.95rem;
+            color: var(--text-main);
+            font-weight: 500;
+            min-height: 1.5rem;
+        }
+
+        /* --- TABS --- */
+        .nav-tabs {
+            border-bottom: 2px solid #f3f4f6;
+            margin-bottom: 1.5rem;
+        }
+        
+        .nav-tabs .nav-link {
+            border: none;
+            color: var(--text-secondary);
+            font-weight: 600;
+            padding: 0.75rem 1.25rem;
+            background: transparent;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+        
+        .nav-tabs .nav-link:hover {
+            color: var(--theme-primary);
+            background: #f8fafc;
+        }
+        
+        .nav-tabs .nav-link.active {
+            color: var(--theme-primary);
+            background: transparent;
+            border-bottom: 2px solid var(--theme-primary);
+        }
+        
+        .nav-tabs .nav-link i {
+            margin-right: 0.5rem;
+        }
+
+        /* --- TIMELINE --- */
+        .timeline-item {
+            position: relative;
+            padding-left: 1.5rem;
+            padding-bottom: 1.5rem;
+            border-left: 2px solid #e5e7eb;
+            margin-left: 0.5rem;
+        }
+        
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -7px;
+            top: 0;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--theme-primary);
+            border: 2px solid #fff;
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+        }
+        
+        .timeline-item:last-child {
+            border-left: 2px solid transparent;
+        }
+
+        /* --- MODALS --- */
+        .modal-content {
+            border: none;
+            border-radius: 16px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+        }
+
+        .modal-header {
+            background: var(--primary-gradient);
+            color: white;
+            border-bottom: none;
+            padding: 1rem 1.5rem;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+            background: #fff;
+        }
+
+        .modal-footer {
+            border-top: 1px solid #f3f4f6;
+            padding: 1rem 1.5rem;
+            background: #f9fafb;
+        }
+        
+        .btn-close-white {
+            filter: brightness(0) invert(1);
+            opacity: 0.8;
+        }
+
+        /* --- BUTTONS --- */
+        .btn {
+            border: none;
+            font-weight: 600;
+            border-radius: 6px;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: var(--primary-gradient);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+            color: white;
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #059669 0%, #34d399 100%);
+            color: white;
+        }
+
+        .btn-light {
+            background: #fff;
+            color: var(--text-main);
+            border: 1px solid #e5e7eb !important;
+        }
+
+        /* --- FORM CONTROLS --- */
+        .form-control, .form-select {
+            background-color: var(--input-bg);
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 0.6rem 0.8rem;
+            font-size: 0.9rem;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            background-color: #fff;
+            border-color: var(--theme-primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        /* --- TABLE --- */
+        .table thead th {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            border-bottom: 1px solid #e5e7eb;
+            font-weight: 600;
+            padding: 0.75rem 1rem;
+            background-color: #f9fafb;
+        }
+        
+        .table tbody td {
+            padding: 0.75rem 1rem;
+            vertical-align: middle;
+            font-size: 0.9rem;
+            color: var(--text-main);
+        }
+
+        /* Bill Section */
+        #bill-services-table table {
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+    <%- include('partials/header') %>
+
+    <!-- Mobile navbar toggle -->
+    <nav class="navbar navbar-dark bg-dark d-md-none">
+        <div class="container-fluid">
+            <span class="navbar-brand font-weight-bold">RehabPlus</span>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <%- include('partials/sidebar', { user, activePage: 'patient-detail' }) %>
+
+            <!-- Main content -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                
+                <!-- Page Header (Dashboard Style) -->
+                <div class="page-header">
+                    <h1>
+                        <a href="javascript:window.history.back()" class="btn-back" aria-label="Back">
+                            <i class="bi bi-arrow-left"></i>
+                        </a>
+                        Patient Detail
+                    </h1>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-primary shadow-sm" onclick="showCreatePNModal()">
+                            <i class="bi bi-plus-lg me-1"></i> Create PN Case
+                        </button>
+                        <button type="button" class="btn btn-success shadow-sm" onclick="showReservationModal(null, <%= patientId %>)">
+                            <i class="bi bi-calendar-plus me-1"></i> Reserve Appointment
+                        </button>
+                        <button type="button" class="btn btn-light border text-muted" onclick="window.close()">
+                            Close
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Patient Information -->
+                <div class="content-card card-patient" id="patientInfo">
+                    <div class="card-header-custom">
+                        <h5>
+                            <i class="bi bi-person-vcard text-warning" style="background: rgba(245, 158, 11, 0.1); color: #d97706 !important;"></i>
+                            Patient Information
+                        </h5>
+                        <button class="btn btn-sm btn-light border shadow-sm" onclick="editPatient()">
+                            <i class="bi bi-pencil me-1"></i> Edit Profile
+                        </button>
+                    </div>
+                    <div class="card-body pt-0">
+                        <div class="row g-4">
+                            <div class="col-md-3">
+                                <div class="detail-label">HN</div>
+                                <div class="detail-value fw-bold" id="hn">-</div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="detail-label">PT Number</div>
+                                <div class="detail-value fw-bold text-primary" id="ptNumber">-</div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="detail-label">Full Name</div>
+                                <div class="detail-value" id="fullName">-</div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="detail-label">Date of Birth</div>
+                                <div class="detail-value" id="dob">-</div>
+                            </div>
+                            
+                            <div class="col-md-3">
+                                <div class="detail-label">Gender</div>
+                                <div class="detail-value" id="gender">-</div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="detail-label">Phone</div>
+                                <div class="detail-value" id="phone">-</div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="detail-label">Email</div>
+                                <div class="detail-value" id="email">-</div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="detail-label">Registered Clinic</div>
+                                <div class="detail-value" id="clinic">-</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Medical Information -->
+                <div class="content-card card-medical">
+                    <div class="card-header-custom">
+                        <h5>
+                            <i class="bi bi-heart-pulse text-success" style="background: rgba(16, 185, 129, 0.1); color: #059669 !important;"></i>
+                            Medical Information
+                        </h5>
+                    </div>
+                    <div class="card-body pt-0">
+                        <div class="row g-4 mb-4">
+                            <div class="col-12">
+                                <div class="detail-label">Primary Diagnosis</div>
+                                <div class="detail-value fs-5 fw-bold text-dark" id="diagnosis">-</div>
+                            </div>
+                        </div>
+                        <div class="row g-4 mb-4">
+                            <div class="col-md-6">
+                                <div class="detail-label">Rehabilitation Goals</div>
+                                <div class="detail-value" id="rehabGoals">-</div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="detail-label">Target Body Area</div>
+                                <div class="detail-value" id="bodyArea">-</div>
+                            </div>
+                        </div>
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <div class="detail-label">Precautions</div>
+                                <div class="detail-value text-warning fw-bold" id="precautions">-</div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="detail-label">Contraindications</div>
+                                <div class="detail-value text-danger fw-bold" id="contraindications">-</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Content Tabs -->
+                <div class="content-card">
+                    <div class="card-body p-0">
+                        <ul class="nav nav-tabs px-4 pt-2" id="patientTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="cases-tab" data-bs-toggle="tab" data-bs-target="#cases" type="button">
+                                    <i class="bi bi-folder2-open"></i> PN Cases
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="timeline-tab" data-bs-toggle="tab" data-bs-target="#timeline" type="button">
+                                    <i class="bi bi-clock-history"></i> Timeline
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="bodycheck-tab" data-bs-toggle="tab" data-bs-target="#bodycheck" type="button">
+                                    <i class="bi bi-person-bounding-box"></i> Bodycheck History
+                                </button>
+                            </li>
+                        </ul>
+
+                        <div class="tab-content p-4" id="patientTabContent">
+                            <!-- PN Cases Tab -->
+                            <div class="tab-pane fade show active" id="cases" role="tabpanel">
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle mb-0">
+                                        <thead class="bg-light">
+                                            <tr>
+                                                <th>PN Code</th>
+                                                <th>Purpose</th>
+                                                <th>Target Clinic</th>
+                                                <th>Status</th>
+                                                <th>Created</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="casesTableBody">
+                                            <tr>
+                                                <td colspan="6" class="text-center py-4 text-muted">
+                                                    <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                                                    Loading cases...
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Timeline Tab -->
+                            <div class="tab-pane fade" id="timeline" role="tabpanel">
+                                <div id="timelineContent" class="ps-2">
+                                    <p class="text-muted fst-italic">Loading history...</p>
+                                </div>
+                            </div>
+
+                            <!-- Bodycheck History Tab -->
+                            <div class="tab-pane fade" id="bodycheck" role="tabpanel">
+                                <div class="mb-3 d-flex justify-content-between align-items-center">
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button type="button" class="btn btn-outline-secondary active" onclick="setBodycheckLimit(5)">5</button>
+                                        <button type="button" class="btn btn-outline-secondary" onclick="setBodycheckLimit(10)">10</button>
+                                        <button type="button" class="btn btn-outline-secondary" onclick="setBodycheckLimit(20)">20</button>
+                                    </div>
+                                    <button class="btn btn-sm btn-primary" onclick="createBodycheck()">
+                                        <i class="bi bi-plus-circle me-1"></i> New Bodycheck
+                                    </button>
+                                </div>
+
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle mb-0">
+                                        <thead class="bg-light">
+                                            <tr>
+                                                <th>Bodycheck ID</th>
+                                                <th>PN Code</th>
+                                                <th>Date</th>
+                                                <th>Anatomy Region</th>
+                                                <th>Pain</th>
+                                                <th>Spasm</th>
+                                                <th>Radicular</th>
+                                                <th>Numbness</th>
+                                                <th>Status</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="bodycheckTableBody">
+                                            <tr>
+                                                <td colspan="10" class="text-center py-4 text-muted">
+                                                    <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                                                    Loading bodychecks...
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <nav aria-label="Bodycheck pagination" id="bodycheckPagination" style="display: none;">
+                                    <ul class="pagination justify-content-center mt-3">
+                                        <!-- Pagination will be inserted here -->
+                                    </ul>
+                                </nav>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- Create PN Case Modal -->
+    <div class="modal fade" id="createPNModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-gradient text-white">
+                    <h5 class="modal-title"><i class="bi bi-folder-plus me-2"></i>Create PN Case</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="pnForm">
+                        <div class="mb-3">
+                            <label for="pnDiagnosis" class="form-label">Case Diagnosis</label>
+                            <textarea class="form-control" id="pnDiagnosis" rows="2" required placeholder="Specific diagnosis for this referral..."></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="pnPurpose" class="form-label">Purpose of Referral</label>
+                            <textarea class="form-control" id="pnPurpose" rows="2" required placeholder="Reason for treatment..."></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="targetClinic" class="form-label">Target Clinic</label>
+                            <select class="form-select" id="targetClinic" required>
+                                <option value="">Select Clinic</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="pnNotes" class="form-label">Additional Notes</label>
+                            <textarea class="form-control" id="pnNotes" rows="2" placeholder="Internal notes..."></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check p-3 bg-light rounded border">
+                                <input class="form-check-input ms-0 me-2" type="checkbox" id="recheckBodyPart" name="recheck_body_part">
+                                <label class="form-check-label fw-bold" for="recheckBodyPart">
+                                    <i class="bi bi-person-bounding-box me-2"></i>Recheck Body Part
+                                    <small class="text-muted d-block fw-normal mt-1">Check this to add body diagram annotation</small>
+                                </label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary px-4" onclick="createPNCase()">
+                        <i class="bi bi-check2-circle me-1"></i> Create Case
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Bill Modal -->
+    <div class="modal fade" id="createBillForPNModal" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white" style="background: linear-gradient(135deg, #059669 0%, #34d399 100%) !important;">
+                    <h5 class="modal-title"><i class="bi bi-receipt me-2"></i>Create Bill for PN Case</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- PN Info Card -->
+                    <div class="p-3 mb-4 rounded-3 bg-light border border-success border-opacity-25">
+                        <h6 class="text-success fw-bold mb-3"><i class="bi bi-info-circle me-2"></i>Case Details</h6>
+                        <div class="row g-2 small">
+                            <div class="col-md-6">
+                                <span class="text-muted d-block">PN Code:</span>
+                                <strong id="bill-pn-code">-</strong>
+                            </div>
+                            <div class="col-md-6">
+                                <span class="text-muted d-block">Patient:</span>
+                                <strong id="bill-patient-name">-</strong>
+                            </div>
+                            <div class="col-md-6">
+                                <span class="text-muted d-block">Diagnosis:</span>
+                                <span id="bill-pn-diagnosis">-</span>
+                            </div>
+                            <div class="col-md-6">
+                                <span class="text-muted d-block">Purpose:</span>
+                                <span id="bill-pn-purpose">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <input type="hidden" id="bill-pn-case-id">
+                    <input type="hidden" id="bill-patient-id">
+                    <input type="hidden" id="bill-clinic-id">
+
+                    <!-- Service Selection -->
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-body bg-white rounded-3">
+                            <h6 class="mb-3 fw-bold text-dark"><i class="bi bi-cart-plus me-2"></i>Add Services</h6>
+                            <div class="row g-2 align-items-end">
+                                <div class="col-md-5">
+                                    <label class="form-label">Service</label>
+                                    <select id="bill-service-select" class="form-select">
+                                        <option value="">Select Service</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Qty</label>
+                                    <input type="number" id="bill-service-quantity" class="form-control" value="1" min="1">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Discount (฿)</label>
+                                    <input type="number" id="bill-service-discount" class="form-control" value="0" min="0">
+                                </div>
+                                <div class="col-md-3">
+                                    <button type="button" class="btn btn-success w-100" onclick="addBillService()">
+                                        <i class="bi bi-plus-lg me-1"></i> Add
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Services Table -->
+                    <div id="bill-services-table" class="mb-4">
+                        <div class="text-center py-4 text-muted border rounded bg-white">No services added yet</div>
+                    </div>
+
+                    <!-- Totals -->
+                    <div class="row justify-content-end mb-4">
+                        <div class="col-md-5">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted">Subtotal:</span>
+                                <span id="bill-subtotal" class="fw-bold">฿0.00</span>
+                            </div>
+                            <div class="d-flex justify-content-between pt-2 border-top">
+                                <strong class="fs-5">TOTAL:</strong>
+                                <strong class="fs-5 text-success" id="bill-total">฿0.00</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Payment Method</label>
+                            <select id="bill-payment-method" class="form-select">
+                                <option value="">Select method (Optional)</option>
+                                <option value="CASH">Cash</option>
+                                <option value="CREDIT_CARD">Credit Card</option>
+                                <option value="TRANSFER">Bank Transfer</option>
+                                <option value="QR_CODE">QR Code</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Bill Notes</label>
+                            <input type="text" id="bill-notes-input" class="form-control" placeholder="Optional notes...">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-success px-4" onclick="saveBillForPN()">
+                        <i class="bi bi-check-circle me-2"></i> Confirm Bill
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Appointment Reservation Modal -->
+    <div class="modal fade" id="reserveAppointmentModal" tabindex="-1" aria-labelledby="reserveAppointmentModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="reserveAppointmentModalLabel">
+                        <i class="bi bi-calendar-check me-2"></i>Reserve Appointment
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info border-0 shadow-sm d-flex align-items-center mb-3">
+                        <i class="bi bi-info-circle-fill fs-4 me-3"></i>
+                        <span id="reservation-patient-info" class="fw-bold">Loading patient...</span>
+                    </div>
+
+                    <div id="reservation-pn-info" class="alert alert-success border-0 shadow-sm mb-4" style="display: none;">
+                        <i class="bi bi-file-earmark-medical me-2"></i>
+                        <strong>Linked to PN Case:</strong> <span id="reservation-pn-code-display" class="badge bg-success ms-2"></span>
+                    </div>
+
+                    <input type="hidden" id="reservation-pn-case-id">
+                    <input type="hidden" id="reservation-patient-id">
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label required">Clinic</label>
+                            <select id="reservation-clinic-id" class="form-select" onchange="loadReservationPTs(); clearTimeSlots();">
+                                <option value="">Select Clinic...</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label required">Physiotherapist</label>
+                            <select id="reservation-pt-id" class="form-select" onchange="clearTimeSlots();">
+                                <option value="">Select PT...</option>
+                            </select>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label required">Date</label>
+                            <input type="date" id="reservation-date" class="form-control" onchange="loadAvailableTimeSlots()">
+                        </div>
+                        
+                        <div class="col-md-12">
+                            <label class="form-label">Time Slots</label>
+                            <div id="time-slots-container" class="p-3 bg-light rounded border" style="max-height: 250px; overflow-y: auto;">
+                                <div class="text-center text-muted small py-2">
+                                    Select clinic, PT, and date to view slots.
+                                </div>
+                            </div>
+                            <div class="form-text">Select multiple consecutive slots for longer sessions.</div>
+                        </div>
+                        
+                        <div class="col-md-12">
+                            <label class="form-label">Reason / Notes</label>
+                            <textarea id="reservation-reason" class="form-control" rows="2" placeholder="Reason for appointment..."></textarea>
+                        </div>
+                        <div class="d-none">
+                             <textarea id="reservation-notes" class="form-control"></textarea>
+                        </div>
+                    </div>
+
+                    <div id="reservation-alert" class="alert mt-3" style="display: none;"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary px-4" onclick="confirmAppointmentReservation()">
+                        Confirm Reservation
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Patient Profile Modal -->
+    <div class="modal fade" id="editPatientModal" tabindex="-1" aria-labelledby="editPatientModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="editPatientModalLabel">
+                        <i class="bi bi-person-vcard me-2"></i>Edit Patient Profile
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editPatientForm">
+                        <!-- Personal Information Section -->
+                        <h6 class="text-primary fw-bold mb-3 pb-2 border-bottom">
+                            <i class="bi bi-person me-2"></i>Personal Information
+                        </h6>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label for="edit-hn" class="form-label">HN <span class="text-muted fw-normal">(Read-only)</span></label>
+                                <input type="text" class="form-control bg-light" id="edit-hn" readonly>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="edit-pt-number" class="form-label">PT Number <span class="text-muted fw-normal">(Read-only)</span></label>
+                                <input type="text" class="form-control bg-light" id="edit-pt-number" readonly>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="edit-first-name" class="form-label">First Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="edit-first-name" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="edit-last-name" class="form-label">Last Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="edit-last-name" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="edit-dob" class="form-label">Date of Birth <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="edit-dob" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="edit-gender" class="form-label">Gender <span class="text-danger">*</span></label>
+                                <select class="form-select" id="edit-gender" required>
+                                    <option value="">Select Gender</option>
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="edit-clinic" class="form-label">Registered Clinic <span class="text-danger">*</span></label>
+                                <select class="form-select" id="edit-clinic" required>
+                                    <option value="">Select Clinic</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="edit-phone" class="form-label">Phone</label>
+                                <input type="tel" class="form-control" id="edit-phone" placeholder="e.g., 0812345678">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="edit-email" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="edit-email" placeholder="e.g., patient@example.com">
+                            </div>
+                        </div>
+
+                        <!-- Medical Information Section -->
+                        <h6 class="text-primary fw-bold mb-3 pb-2 border-bottom">
+                            <i class="bi bi-heart-pulse me-2"></i>Medical Information
+                        </h6>
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label for="edit-diagnosis" class="form-label">Primary Diagnosis <span class="text-danger">*</span></label>
+                                <textarea class="form-control" id="edit-diagnosis" rows="2" required placeholder="Primary medical diagnosis..."></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="edit-rehab-goals" class="form-label">Rehabilitation Goals</label>
+                                <textarea class="form-control" id="edit-rehab-goals" rows="3" placeholder="Patient's rehabilitation goals..."></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="edit-body-area" class="form-label">Target Body Area</label>
+                                <textarea class="form-control" id="edit-body-area" rows="3" placeholder="Target body areas for treatment..."></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="edit-precautions" class="form-label">Precautions</label>
+                                <textarea class="form-control" id="edit-precautions" rows="3" placeholder="Medical precautions..."></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="edit-contraindications" class="form-label">Contraindications</label>
+                                <textarea class="form-control" id="edit-contraindications" rows="3" placeholder="Medical contraindications..."></textarea>
+                            </div>
+                        </div>
+                    </form>
+
+                    <div id="edit-patient-alert" class="alert mt-3" style="display: none;"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light border" data-bs-dismiss="modal">
+                        <i class="bi bi-x-lg me-1"></i>Cancel
+                    </button>
+                    <button type="button" class="btn btn-primary px-4" onclick="savePatientProfile()">
+                        <i class="bi bi-check-lg me-1"></i>Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Body Annotation Modal for PN Case Creation -->
+    <div class="modal fade" id="pnBodyAnnotationModal" tabindex="-1" aria-labelledby="pnBodyAnnotationModalLabel" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title" id="pnBodyAnnotationModalLabel">
+                        <i class="bi bi-person-bounding-box me-2"></i>Body Part Assessment - PN Case
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-4">
+                        <!-- LEFT PANEL: Pain Assessment Form -->
+                        <div class="col-md-5">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-header bg-light border-bottom">
+                                    <h6 class="mb-0 fw-bold">Pain Assessment</h6>
+                                </div>
+                                <div class="card-body">
+                                    <form id="pnBodyAnnotationForm">
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">Pain Type</label>
+                                            <div class="form-check">
+                                                <input type="checkbox" class="form-check-input" id="pnConstantPain" name="constantPain">
+                                                <label class="form-check-label" for="pnConstantPain">Constant Pain</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input type="checkbox" class="form-check-input" id="pnIntermittentPain" name="intermittentPain">
+                                                <label class="form-check-label" for="pnIntermittentPain">Intermittent Pain</label>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="pnPainTypeDescription" class="form-label fw-bold">Type of Pain</label>
+                                            <textarea class="form-control" id="pnPainTypeDescription" name="painTypeDescription" rows="2" placeholder="e.g., Sharp, dull, burning"></textarea>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="pnAggravation" class="form-label fw-bold">Aggravation</label>
+                                            <textarea class="form-control" id="pnAggravation" name="aggravation" rows="2" placeholder="What makes the pain worse?"></textarea>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="pnEasingFactor" class="form-label fw-bold">Easing Factor</label>
+                                            <textarea class="form-control" id="pnEasingFactor" name="easingFactor" rows="2" placeholder="What makes the pain better?"></textarea>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="pnSeverity" class="form-label fw-bold">Pain Severity (1-10)</label>
+                                            <input type="range" class="form-range" id="pnSeverity" name="severity" min="1" max="10" value="5" step="1">
+                                            <div class="text-center fw-bold text-primary"><span id="pnSeverityValue">5</span>/10</div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="pnAnnotationNotes" class="form-label fw-bold">Additional Notes</label>
+                                            <textarea class="form-control" id="pnAnnotationNotes" name="notes" rows="3" placeholder="Any additional observations"></textarea>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- RIGHT PANEL: Canvas Preview -->
+                        <div class="col-md-7">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-header bg-light border-bottom">
+                                    <h6 class="mb-0 fw-bold">Body Diagram</h6>
+                                </div>
+                                <div class="card-body p-0">
+                                    <div class="text-center p-3 bg-light">
+                                        <canvas id="pnBodyAnnotationPreview" width="800" height="1200" style="max-width: 100%; height: auto; border: 1px solid #dee2e6; border-radius: 8px; background: white;"></canvas>
+                                    </div>
+                                    <div class="p-3 border-top">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span>Marks: <strong id="pnStrokeCount">0 strokes</strong></span>
+                                        </div>
+                                        <div class="d-grid gap-2">
+                                            <button type="button" class="btn btn-primary" id="pnDrawBodyButton">
+                                                <i class="bi bi-pencil me-1"></i> Draw on Body
+                                            </button>
+                                            <div class="btn-group">
+                                                <button type="button" class="btn btn-outline-secondary" id="pnUndoButton">
+                                                    <i class="bi bi-arrow-counterclockwise me-1"></i> Undo
+                                                </button>
+                                                <button type="button" class="btn btn-outline-danger" id="pnClearMarksButton">
+                                                    <i class="bi bi-trash me-1"></i> Clear All
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="pnSaveAnnotationButton">
+                        <i class="bi bi-check-circle me-1"></i> Save Assessment
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Full-Screen Drawing Modal for PN Case -->
+    <div class="modal fade" id="pnBodyDrawingModal" tabindex="-1" aria-labelledby="pnBodyDrawingModalLabel" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-fullscreen">
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title" id="pnBodyDrawingModalLabel">
+                        <i class="bi bi-pencil-square me-2"></i>Draw on Body Diagram
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" id="pnCloseDrawingModalButton" aria-label="Close"></button>
+                </div>
+                <div class="modal-body bg-light">
+                    <div class="d-flex justify-content-center gap-2 mb-3 p-2 bg-white border rounded shadow-sm flex-wrap">
+                        <button type="button" class="btn btn-sm btn-outline-danger active" id="pnRedColorButton" data-color="#FF0000">Red</button>
+                        <button type="button" class="btn btn-sm btn-outline-primary" id="pnBlueColorButton" data-color="#0000FF">Blue</button>
+                        <button type="button" class="btn btn-sm btn-outline-success" id="pnGreenColorButton" data-color="#00FF00">Green</button>
+                        <button type="button" class="btn btn-sm btn-outline-warning" id="pnYellowColorButton" data-color="#FFFF00">Yellow</button>
+                        <div class="vr d-none d-md-block"></div>
+                        <label class="btn btn-sm btn-outline-secondary mb-0 d-flex align-items-center gap-2">
+                            Width: <input type="range" id="pnStrokeWidthSlider" min="1" max="20" value="3" step="1" style="width: 80px;">
+                            <span id="pnWidthValue">3</span>
+                        </label>
+                        <div class="vr d-none d-md-block"></div>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="pnUndoDrawingButton">
+                            <i class="bi bi-arrow-counterclockwise"></i> Undo
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-danger" id="pnClearDrawingButton">
+                            <i class="bi bi-trash"></i> Clear All
+                        </button>
+                    </div>
+                    <div class="d-flex justify-content-center p-3 rounded bg-white shadow-sm" style="max-width: fit-content; margin: 0 auto;">
+                        <canvas id="pnBodyAnnotationCanvas" width="800" height="1200" style="border: 1px solid #dee2e6; background: white; max-width: 100%; height: auto; touch-action: none; border-radius: 4px;"></canvas>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="pnCancelDrawingButton">Cancel</button>
+                    <button type="button" class="btn btn-success" id="pnSaveDrawingButton">
+                        <i class="bi bi-check2-circle me-1"></i> Save & Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const patientId = <%= patientId %>;
+        let patientData = null;
+        let clinicsData = [];
+
+        async function loadPatientData() {
+            try {
+                const response = await fetch(`/api/patients/${patientId}`, {
+                    headers: {}
+                });
+                
+                if (response.ok) {
+                    patientData = await response.json();
+                    displayPatientInfo();
+                    loadPNCases();
+                    loadTimeline();
+                }
+            } catch (error) {
+                console.error('Error loading patient:', error);
+            }
+        }
+
+        function displayPatientInfo() {
+            document.getElementById('hn').textContent = patientData.hn || '-';
+            document.getElementById('ptNumber').textContent = patientData.pt_number || '-';
+            document.getElementById('fullName').textContent = `${patientData.first_name} ${patientData.last_name}`;
+            document.getElementById('dob').textContent = formatDate(patientData.dob);
+            document.getElementById('gender').textContent = patientData.gender || '-';
+            document.getElementById('phone').textContent = patientData.phone || '-';
+            document.getElementById('email').textContent = patientData.email || '-';
+            document.getElementById('clinic').textContent = patientData.clinic_name || '-';
+            document.getElementById('diagnosis').textContent = patientData.diagnosis || '-';
+            document.getElementById('rehabGoals').textContent = patientData.rehab_goal || '-';
+            document.getElementById('bodyArea').textContent = patientData.body_area || '-';
+            document.getElementById('precautions').textContent = patientData.precaution || '-';
+            document.getElementById('contraindications').textContent = patientData.contraindication || '-';
+            
+            // Pre-fill PN form with patient diagnosis
+            document.getElementById('pnDiagnosis').value = patientData.diagnosis || '';
+        }
+
+        async function loadPNCases() {
+            try {
+                const response = await fetch(`/api/pn?search=${patientData.hn}`, {
+                    headers: {}
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    displayCases(data.cases.filter(c => c.patient_id == patientId));
+                }
+            } catch (error) {
+                console.error('Error loading cases:', error);
+            }
+        }
+
+        function displayCases(cases) {
+            const tbody = document.getElementById('casesTableBody');
+            
+            if (cases.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">No PN cases found</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = cases.map(pnCase => `
+                <tr>
+                    <td><span class="badge bg-light text-dark border font-monospace">${pnCase.pn_code}</span></td>
+                    <td><div class="text-truncate" style="max-width: 200px;">${truncateText(pnCase.purpose, 50)}</div></td>
+                    <td><span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-10">${pnCase.target_clinic_name}</span></td>
+                    <td>${getStatusBadge(pnCase.status)}</td>
+                    <td>${formatDate(pnCase.created_at)}</td>
+                    <td>
+                        <button class="btn btn-sm btn-white border shadow-sm text-primary" onclick="viewCase(${pnCase.id})">
+                            <i class="bi bi-eye"></i> View
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function loadTimeline() {
+            // Placeholder implementation
+            document.getElementById('timelineContent').innerHTML = `
+                <div class="timeline-item">
+                    <div class="fw-bold text-dark">Patient Registered</div>
+                    <small class="text-muted">${formatDateTime(patientData.created_at)}</small>
+                </div>
+            `;
+        }
+
+        async function loadClinics() {
+            try {
+            const user = JSON.parse(localStorage.getItem('user'));
+
+                const response = await fetch('/api/clinics', {
+                    headers: {}
+                });
+
+                if (response.ok) {
+                    clinicsData = await response.json();
+                    const select = document.getElementById('targetClinic');
+
+                    // For CLINIC role, lock target clinic to their own clinic
+                    if (user.role === 'CLINIC') {
+                        const userClinic = clinicsData.find(c => c.id == user.clinic_id);
+                        if (userClinic) {
+                            const option = document.createElement('option');
+                            option.value = userClinic.id;
+                            option.textContent = userClinic.name + ' (Your Clinic)';
+                            option.selected = true;
+                            select.appendChild(option);
+                            select.disabled = true; // Lock the selection
+                        }
+                    } else {
+                        // For ADMIN and PT, show all clinics
+                        clinicsData.forEach(clinic => {
+                            const option = document.createElement('option');
+                            option.value = clinic.id;
+                            option.textContent = clinic.name;
+                            select.appendChild(option);
+                        });
+                    }
+
+                    // Also populate edit patient modal clinic dropdown
+                    populateEditClinicDropdown();
+                }
+            } catch (error) {
+                console.error('Error loading clinics:', error);
+            }
+        }
+
+        function populateEditClinicDropdown() {
+            const editClinicSelect = document.getElementById('edit-clinic');
+            editClinicSelect.innerHTML = '<option value="">Select Clinic</option>';
+
+            clinicsData.forEach(clinic => {
+                const option = document.createElement('option');
+                option.value = clinic.id;
+                option.textContent = clinic.name;
+                editClinicSelect.appendChild(option);
+            });
+        }
+
+        function showCreatePNModal() {
+            const modal = new bootstrap.Modal(document.getElementById('createPNModal'));
+            modal.show();
+        }
+
+        async function createPNCase() {
+            // Get form data including recheck body part checkbox
+            const recheckCheckbox = document.getElementById('recheckBodyPart');
+            const recheckValue = recheckCheckbox ? recheckCheckbox.checked : false;
+
+            const formData = {
+                patient_id: patientId,
+                diagnosis: document.getElementById('pnDiagnosis').value,
+                purpose: document.getElementById('pnPurpose').value,
+                target_clinic_id: document.getElementById('targetClinic').value,
+                notes: document.getElementById('pnNotes').value,
+                recheck_body_part: recheckValue
+            };
+
+            console.log('🔵 Creating PN Case - Form Data:', formData);
+            console.log('   Recheck checkbox element:', recheckCheckbox);
+            console.log('   Recheck checkbox checked:', recheckValue);
+
+            try {
+                const response = await fetch('/api/pn', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                        },
+                    body: JSON.stringify(formData)
+                });
+
+                console.log('🔵 PN Case creation response status:', response.status);
+
+                if (response.ok) {
+                    const result = await response.json();
+                    bootstrap.Modal.getInstance(document.getElementById('createPNModal')).hide();
+                    loadPNCases();
+
+                    // Ask if user wants to create a bill for this PN
+                    const createBill = confirm(
+                        `PN Case created successfully!\nPN Code: ${result.pn_code}\n\n` +
+                        `Do you want to create a bill for this PN now?`
+                    );
+
+                    if (createBill) {
+                        const pnData = {
+                            ...result,
+                            diagnosis: formData.diagnosis,
+                            purpose: formData.purpose,
+                            patient_id: formData.patient_id
+                        };
+                        showBillModalForPN(pnData);
+                    } else {
+                        const reserveAppointment = confirm(
+                            `PN Case created successfully!\nPN Code: ${result.pn_code}\n\n` +
+                            `Would you like to reserve an appointment for this patient now?`
+                        );
+
+                        if (reserveAppointment) {
+                            showReservationModal(result.id, formData.patient_id, result.pn_code);
+                        }
+                    }
+                } else {
+                    const error = await response.json();
+                    alert('Error: ' + error.error);
+                }
+            } catch (error) {
+                alert('Network error. Please try again.');
+            }
+        }
+
+        function viewCase(caseId) {
+            window.location.href = `/pn/${caseId}`;
+        }
+
+        function editPatient() {
+            if (!patientData) {
+                showEditPatientAlert('Patient data not loaded yet', 'warning');
+                return;
+            }
+
+            // Populate modal with current patient data
+            document.getElementById('edit-hn').value = patientData.hn || '';
+            document.getElementById('edit-pt-number').value = patientData.pt_number || '';
+            document.getElementById('edit-first-name').value = patientData.first_name || '';
+            document.getElementById('edit-last-name').value = patientData.last_name || '';
+            document.getElementById('edit-dob').value = patientData.dob ? patientData.dob.split('T')[0] : '';
+            document.getElementById('edit-gender').value = patientData.gender || '';
+            document.getElementById('edit-phone').value = patientData.phone || '';
+            document.getElementById('edit-email').value = patientData.email || '';
+            document.getElementById('edit-diagnosis').value = patientData.diagnosis || '';
+            document.getElementById('edit-rehab-goals').value = patientData.rehab_goal || '';
+            document.getElementById('edit-body-area').value = patientData.body_area || '';
+            document.getElementById('edit-precautions').value = patientData.precaution || '';
+            document.getElementById('edit-contraindications').value = patientData.contraindication || '';
+
+            // Set clinic dropdown
+            const clinicSelect = document.getElementById('edit-clinic');
+            if (patientData.clinic_id) {
+                clinicSelect.value = patientData.clinic_id;
+            }
+
+            // Hide any previous alerts
+            hideEditPatientAlert();
+
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('editPatientModal'));
+            modal.show();
+        }
+
+        async function savePatientProfile() {
+            // Validate form
+            const form = document.getElementById('editPatientForm');
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            // Collect form data
+            const updatedData = {
+                first_name: document.getElementById('edit-first-name').value,
+                last_name: document.getElementById('edit-last-name').value,
+                dob: document.getElementById('edit-dob').value,
+                gender: document.getElementById('edit-gender').value,
+                phone: document.getElementById('edit-phone').value || null,
+                email: document.getElementById('edit-email').value || null,
+                clinic_id: parseInt(document.getElementById('edit-clinic').value),
+                diagnosis: document.getElementById('edit-diagnosis').value,
+                rehab_goal: document.getElementById('edit-rehab-goals').value || null,
+                body_area: document.getElementById('edit-body-area').value || null,
+                precaution: document.getElementById('edit-precautions').value || null,
+                contraindication: document.getElementById('edit-contraindications').value || null
+            };
+
+            try {
+                const response = await fetch(`/api/patients/${patientId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                        },
+                    body: JSON.stringify(updatedData)
+                });
+
+                if (response.ok) {
+                    showEditPatientAlert('Patient profile updated successfully!', 'success');
+
+                    // Reload patient data to reflect changes
+                    setTimeout(async () => {
+                        await loadPatientData();
+
+                        // Close modal
+                        const modalEl = document.getElementById('editPatientModal');
+                        const modal = bootstrap.Modal.getInstance(modalEl);
+                        if (modal) modal.hide();
+                    }, 1000);
+                } else {
+                    const error = await response.json();
+                    showEditPatientAlert(error.error || 'Failed to update patient profile', 'danger');
+                }
+            } catch (error) {
+                console.error('Error updating patient:', error);
+                showEditPatientAlert('Network error. Please try again.', 'danger');
+            }
+        }
+
+        function showEditPatientAlert(message, type = 'info') {
+            const alert = document.getElementById('edit-patient-alert');
+            alert.className = `alert alert-${type} mt-3`;
+            alert.textContent = message;
+            alert.style.display = 'block';
+
+            // Auto-hide success messages after 3 seconds
+            if (type === 'success') {
+                setTimeout(() => { alert.style.display = 'none'; }, 3000);
+            }
+        }
+
+        function hideEditPatientAlert() {
+            document.getElementById('edit-patient-alert').style.display = 'none';
+        }
+
+        function getStatusBadge(status) {
+            const colors = {
+                'PENDING': 'warning',
+                'ACCEPTED': 'info',
+                'IN_PROGRESS': 'primary',
+                'COMPLETED': 'success',
+                'CANCELLED': 'danger'
+            };
+            return `<span class="badge bg-${colors[status] || 'secondary'}">${status}</span>`;
+        }
+
+        function formatDate(date) {
+            return new Date(date).toLocaleDateString('en-GB');
+        }
+
+        function formatDateTime(date) {
+            return new Date(date).toLocaleString('en-GB');
+        }
+
+        function truncateText(text, maxLength) {
+            if (!text) return '';
+            if (text.length <= maxLength) return text;
+            return text.substring(0, maxLength) + '...';
+        }
+
+        // ========================================
+        // Bill Creation Logic
+        // ========================================
+
+        let billServices = [];
+        let currentPNData = null;
+
+        async function showBillModalForPN(pnData) {
+            billServices = [];
+            currentPNData = pnData;
+            const sourceClinicId = patientData?.clinic_id;
+
+            if (!sourceClinicId) {
+                alert('Error: Patient clinic not found. Cannot create bill.');
+                return;
+            }
+
+            document.getElementById('bill-pn-code').textContent = pnData.pn_code || 'N/A';
+            document.getElementById('bill-patient-name').textContent = patientData ? `${patientData.first_name} ${patientData.last_name}` : 'N/A';
+            document.getElementById('bill-pn-diagnosis').textContent = pnData.diagnosis || 'N/A';
+            document.getElementById('bill-pn-purpose').textContent = pnData.purpose || 'N/A';
+
+            const pnCaseIdValue = pnData.pn_id || pnData.id || '';
+            document.getElementById('bill-pn-case-id').value = pnCaseIdValue;
+            document.getElementById('bill-patient-id').value = patientId;
+            document.getElementById('bill-clinic-id').value = sourceClinicId;
+
+            await loadServicesForBill(sourceClinicId);
+
+            document.getElementById('bill-service-quantity').value = '1';
+            document.getElementById('bill-service-discount').value = '0';
+            document.getElementById('bill-payment-method').value = '';
+            document.getElementById('bill-notes-input').value = '';
+
+            renderBillServices();
+            updateBillTotals();
+
+            const modal = new bootstrap.Modal(document.getElementById('createBillForPNModal'));
+            modal.show();
+        }
+
+        async function loadServicesForBill(clinicId) {
+            try {
+                const params = new URLSearchParams({ clinic_id: clinicId });
+                const response = await fetch(`/api/bills/services?${params}`, {
+                    headers: {}
+                });
+
+                if (response.ok) {
+                    const services = await response.json();
+                    const select = document.getElementById('bill-service-select');
+                    select.innerHTML = '<option value="">Select Service</option>';
+
+                    services.forEach(service => {
+                        const option = document.createElement('option');
+                        option.value = service.id;
+                        const displayPrice = service.price || service.default_price;
+                        option.textContent = `${service.service_code} - ${service.service_name} (฿${displayPrice})`;
+                        option.dataset.price = displayPrice;
+                        option.dataset.name = service.service_name;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading services:', error);
+            }
+        }
+
+        function addBillService() {
+            const select = document.getElementById('bill-service-select');
+            const quantity = parseInt(document.getElementById('bill-service-quantity').value) || 1;
+            const discount = parseFloat(document.getElementById('bill-service-discount').value) || 0;
+
+            const serviceId = select.value;
+            const serviceName = select.options[select.selectedIndex]?.dataset.name || '';
+            const unitPrice = parseFloat(select.options[select.selectedIndex]?.dataset.price || 0);
+
+            if (!serviceId) {
+                alert('Please select a service');
+                return;
+            }
+
+            const service = {
+                service_id: parseInt(serviceId),
+                service_name: serviceName,
+                quantity: quantity,
+                unit_price: unitPrice,
+                discount: discount,
+                total_price: (quantity * unitPrice) - discount,
+                notes: null
+            };
+
+            billServices.push(service);
+            renderBillServices();
+            updateBillTotals();
+
+            select.value = '';
+            document.getElementById('bill-service-quantity').value = '1';
+            document.getElementById('bill-service-discount').value = '0';
+        }
+
+        function renderBillServices() {
+            const container = document.getElementById('bill-services-table');
+
+            if (billServices.length === 0) {
+                container.innerHTML = '<p class="text-muted text-center py-3 small">No services added yet</p>';
+                return;
+            }
+
+            container.innerHTML = `
+                <table class="table table-sm table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Service</th>
+                            <th class="text-center">Qty</th>
+                            <th class="text-end">Price</th>
+                            <th class="text-end">Disc.</th>
+                            <th class="text-end">Total</th>
+                            <th class="text-center"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${billServices.map((service, index) => `
+                            <tr>
+                                <td>${service.service_name}</td>
+                                <td class="text-center">${service.quantity}</td>
+                                <td class="text-end">${service.unit_price.toLocaleString()}</td>
+                                <td class="text-end">${service.discount.toLocaleString()}</td>
+                                <td class="text-end fw-bold">${service.total_price.toLocaleString()}</td>
+                                <td class="text-center">
+                                    <button type="button" class="btn btn-link text-danger p-0" onclick="removeBillService(${index})">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        function removeBillService(index) {
+            billServices.splice(index, 1);
+            renderBillServices();
+            updateBillTotals();
+        }
+
+        function updateBillTotals() {
+            const subtotal = billServices.reduce((sum, service) => sum + service.total_price, 0);
+            document.getElementById('bill-subtotal').textContent = `฿${subtotal.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+            document.getElementById('bill-total').textContent = `฿${subtotal.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+        }
+
+        async function saveBillForPN() {
+            if (billServices.length === 0) {
+                alert('Please add at least one service');
+                return;
+            }
+
+            const pnCaseIdValue = document.getElementById('bill-pn-case-id').value;
+            const pnCaseId = parseInt(pnCaseIdValue);
+            const patientId = parseInt(document.getElementById('bill-patient-id').value);
+            const clinicId = parseInt(document.getElementById('bill-clinic-id').value);
+            const paymentMethod = document.getElementById('bill-payment-method').value;
+            const notes = document.getElementById('bill-notes-input').value;
+
+            const billData = {
+                patient_id: patientId,
+                walk_in_name: null,
+                walk_in_phone: null,
+                clinic_id: clinicId,
+                bill_date: new Date().toISOString().split('T')[0],
+                items: billServices,
+                discount: 0,
+                tax: 0,
+                bill_notes: notes || null,
+                payment_method: paymentMethod || null,
+                payment_notes: null,
+                appointment_id: null,
+                pn_case_id: pnCaseId
+            };
+
+            try {
+                const response = await fetch('/api/bills', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                        },
+                    body: JSON.stringify(billData)
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    bootstrap.Modal.getInstance(document.getElementById('createBillForPNModal')).hide();
+                    loadPNCases();
+
+                    const reserveAppointment = confirm(
+                        `Bill ${result.bill_code} created successfully!\n` +
+                        `Would you like to reserve an appointment now?`
+                    );
+
+                    if (reserveAppointment) {
+                        showReservationModal(pnCaseId, patientId, currentPNData?.pn_code);
+                    }
+                } else {
+                    const error = await response.json();
+                    alert('Error creating bill: ' + (error.error || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Network error. Please try again.');
+            }
+        }
+
+        // ========================================
+        // Reservation Logic
+        // ========================================
+
+        let selectedTimeSlots = [];
+        let reservationClinics = [];
+        let reservationPTs = [];
+        let isSubmittingReservation = false;
+
+        async function showReservationModal(pnCaseId, patientId, pnCode = null) {
+            selectedTimeSlots = [];
+            isSubmittingReservation = false;
+            
+            const pnCaseIdValue = pnCaseId || '';
+            document.getElementById('reservation-pn-case-id').value = pnCaseIdValue;
+            document.getElementById('reservation-patient-id').value = patientId;
+            document.getElementById('reservation-clinic-id').value = '';
+            document.getElementById('reservation-pt-id').value = '';
+            document.getElementById('reservation-date').value = '';
+            document.getElementById('reservation-reason').value = '';
+            document.getElementById('time-slots-container').innerHTML = '<p class="text-muted text-center py-3 small">Select clinic, PT, and date.</p>';
+            hideReservationAlert();
+
+            if (patientData) {
+                document.getElementById('reservation-patient-info').textContent =
+                    `Reserving for: ${patientData.first_name} ${patientData.last_name}`;
+            }
+
+            if (pnCaseId && pnCode) {
+                document.getElementById('reservation-pn-info').style.display = 'block';
+                document.getElementById('reservation-pn-code-display').textContent = pnCode;
+            } else {
+                document.getElementById('reservation-pn-info').style.display = 'none';
+            }
+
+            await loadReservationClinics();
+            const modal = new bootstrap.Modal(document.getElementById('reserveAppointmentModal'));
+            modal.show();
+        }
+
+        async function loadReservationClinics() {
+            try {
+                const response = await fetch('/api/clinics', {
+                    headers: {}
+                });
+
+                if (response.ok) {
+                    reservationClinics = await response.json();
+                    const select = document.getElementById('reservation-clinic-id');
+                    select.innerHTML = '<option value="">Select Clinic...</option>';
+                    reservationClinics.forEach(clinic => {
+                        const option = document.createElement('option');
+                        option.value = clinic.id;
+                        option.textContent = clinic.name;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading clinics:', error);
+            }
+        }
+
+        async function loadReservationPTs() {
+            const clinicId = document.getElementById('reservation-clinic-id').value;
+            if (!clinicId) {
+                document.getElementById('reservation-pt-id').innerHTML = '<option value="">Select PT...</option>';
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/users?role=PT&clinic_id=${clinicId}`, {
+                    headers: {}
+                });
+
+                if (response.ok) {
+                    reservationPTs = await response.json();
+                    const select = document.getElementById('reservation-pt-id');
+                    select.innerHTML = '<option value="">Select PT...</option>';
+                    reservationPTs.forEach(pt => {
+                        const option = document.createElement('option');
+                        option.value = pt.id;
+                        option.textContent = `${pt.first_name} ${pt.last_name}`;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading PTs:', error);
+            }
+        }
+
+        function clearTimeSlots() {
+            selectedTimeSlots = [];
+            document.getElementById('time-slots-container').innerHTML =
+                '<p class="text-muted text-center py-3 small">Select clinic, PT, and date.</p>';
+        }
+
+        async function loadAvailableTimeSlots() {
+            const clinicId = document.getElementById('reservation-clinic-id').value;
+            const ptId = document.getElementById('reservation-pt-id').value;
+            const date = document.getElementById('reservation-date').value;
+
+            if (!clinicId || !ptId || !date) return;
+
+            document.getElementById('time-slots-container').innerHTML =
+                '<p class="text-muted text-center py-3 small"><span class="spinner-border spinner-border-sm me-2"></span>Loading...</p>';
+
+            try {
+                const response = await fetch(
+                    `/api/appointments/available-slots?date=${date}&clinic_id=${clinicId}&pt_id=${ptId}`,
+                    { headers: {} }
+                );
+
+                if (response.ok) {
+                    const data = await response.json();
+                    renderTimeSlots(data.slots);
+                } else {
+                    document.getElementById('time-slots-container').innerHTML =
+                        '<p class="text-danger text-center py-3 small">Error loading slots.</p>';
+                }
+            } catch (error) {
+                document.getElementById('time-slots-container').innerHTML =
+                    '<p class="text-danger text-center py-3 small">Network error.</p>';
+            }
+        }
+
+        function renderTimeSlots(slots) {
+            const container = document.getElementById('time-slots-container');
+
+            if (slots.length === 0) {
+                container.innerHTML = '<p class="text-muted text-center py-3 small">No slots available.</p>';
+                return;
+            }
+
+            const availableSlots = slots.filter(slot => slot.available);
+
+            if (availableSlots.length === 0) {
+                container.innerHTML = '<p class="text-warning text-center py-3 small">All slots booked.</p>';
+                return;
+            }
+
+            let html = '<div class="row g-2">';
+            slots.forEach(slot => {
+                if (slot.available) {
+                    html += `
+                        <div class="col-4 col-md-3">
+                            <button type="button"
+                                    class="btn btn-outline-primary w-100 btn-sm"
+                                    onclick="selectTimeSlot('${slot.start_time}', '${slot.end_time}', '${slot.label}', this)">
+                                ${slot.label}
+                            </button>
+                        </div>
+                    `;
+                }
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function selectTimeSlot(startTime, endTime, label, btn) {
+            const clickedSlot = { startTime, endTime, label };
+            const existingIndex = selectedTimeSlots.findIndex(s => s.startTime === startTime);
+
+            if (existingIndex >= 0) {
+                selectedTimeSlots.splice(existingIndex, 1);
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn-outline-primary');
+            } else {
+                selectedTimeSlots.push(clickedSlot);
+                selectedTimeSlots.sort((a, b) => a.startTime.localeCompare(b.startTime));
+
+                if (!areTimeSlotsConsecutive(selectedTimeSlots)) {
+                    selectedTimeSlots.splice(selectedTimeSlots.findIndex(s => s.startTime === startTime), 1);
+                    showReservationAlert('Please select consecutive slots only.', 'warning');
+                    return;
+                }
+
+                btn.classList.remove('btn-outline-primary');
+                btn.classList.add('btn-primary');
+            }
+            updateSelectedTimeSlotsDisplay();
+        }
+
+        function areTimeSlotsConsecutive(slots) {
+            if (slots.length <= 1) return true;
+            for (let i = 0; i < slots.length - 1; i++) {
+                if (slots[i].endTime !== slots[i + 1].startTime) return false;
+            }
+            return true;
+        }
+
+        function updateSelectedTimeSlotsDisplay() {
+            const existingInfo = document.getElementById('selected-slots-info');
+            if (existingInfo) existingInfo.remove();
+
+            if (selectedTimeSlots.length > 0) {
+                const firstSlot = selectedTimeSlots[0];
+                const lastSlot = selectedTimeSlots[selectedTimeSlots.length - 1];
+                const duration = selectedTimeSlots.length * 30;
+
+                const infoHtml = `
+                    <div id="selected-slots-info" class="alert alert-success mt-2 py-2 small mb-0">
+                        <strong>Selected:</strong> ${firstSlot.startTime.substring(0, 5)} - ${lastSlot.endTime.substring(0, 5)}
+                        (${duration} mins)
+                    </div>
+                `;
+                document.getElementById('time-slots-container').insertAdjacentHTML('afterend', infoHtml);
+            }
+        }
+
+        async function confirmAppointmentReservation() {
+            if (isSubmittingReservation) return;
+
+            const clinicId = document.getElementById('reservation-clinic-id').value;
+            const ptId = document.getElementById('reservation-pt-id').value;
+            const date = document.getElementById('reservation-date').value;
+            const reason = document.getElementById('reservation-reason').value;
+            const notes = document.getElementById('reservation-notes').value; // Keep hidden notes logic if needed
+            const patientId = document.getElementById('reservation-patient-id').value;
+            const pnCaseId = document.getElementById('reservation-pn-case-id').value;
+
+            if (!clinicId || !ptId || !date) {
+                showReservationAlert('Missing required fields.', 'warning');
+                return;
+            }
+
+            if (selectedTimeSlots.length === 0) {
+                showReservationAlert('Select at least one time slot.', 'warning');
+                return;
+            }
+
+            const firstSlot = selectedTimeSlots[0];
+            const lastSlot = selectedTimeSlots[selectedTimeSlots.length - 1];
+
+            const appointmentData = {
+                booking_type: 'OLD_PATIENT',
+                patient_id: parseInt(patientId),
+                pt_id: parseInt(ptId),
+                clinic_id: parseInt(clinicId),
+                appointment_date: date,
+                start_time: firstSlot.startTime,
+                end_time: lastSlot.endTime,
+                appointment_type: 'TREATMENT',
+                reason: reason || 'Follow-up treatment',
+                notes: notes || '',
+                pn_case_id: pnCaseId ? parseInt(pnCaseId) : null
+            };
+
+            isSubmittingReservation = true;
+
+            try {
+                const response = await fetch('/api/appointments', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                        },
+                    body: JSON.stringify(appointmentData)
+                });
+
+                if (response.ok) {
+                    bootstrap.Modal.getInstance(document.getElementById('reserveAppointmentModal')).hide();
+                    alert('Appointment reserved successfully!');
+                    loadTimeline();
+                    isSubmittingReservation = false;
+                } else {
+                    const error = await response.json();
+                    showReservationAlert('Error: ' + (error.error || 'Failed'), 'danger');
+                    isSubmittingReservation = false;
+                }
+            } catch (error) {
+                showReservationAlert('Network error.', 'danger');
+                isSubmittingReservation = false;
+            }
+        }
+
+        function showReservationAlert(message, type = 'info') {
+            const alert = document.getElementById('reservation-alert');
+            alert.className = `alert alert-${type} mt-3 py-2 small`;
+            alert.textContent = message;
+            alert.style.display = 'block';
+            setTimeout(() => { alert.style.display = 'none'; }, 5000);
+        }
+
+        function hideReservationAlert() {
+            document.getElementById('reservation-alert').style.display = 'none';
+        }
+
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+        }
+
+        function logout() {
+            document.cookie = 'authToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+            localStorage.clear();
+            window.location.href = '/login';
+        }
+
+        // PN Body Annotation Manager
+        class PNBodyAnnotationManager {
+            constructor() {
+                this.mainModal = null;
+                this.drawingModal = null;
+                this.previewCanvas = null;
+                this.drawingCanvas = null;
+                this.previewCtx = null;
+                this.drawingCtx = null;
+                this.strokes = [];
+                this.currentStroke = [];
+                this.isDrawing = false;
+                this.currentColor = '#FF0000';
+                this.currentWidth = 3;
+                this.bodyImage = new Image();
+
+                this.init();
+            }
+
+            init() {
+                this.bodyImage.src = '/uploads/body.png';
+                this.bodyImage.onload = () => {
+                    this.renderPreview();
+                };
+
+                this.mainModal = new bootstrap.Modal(document.getElementById('pnBodyAnnotationModal'));
+
+                this.previewCanvas = document.getElementById('pnBodyAnnotationPreview');
+                this.drawingCanvas = document.getElementById('pnBodyAnnotationCanvas');
+
+                if (this.previewCanvas) {
+                    this.previewCtx = this.previewCanvas.getContext('2d');
+                }
+                if (this.drawingCanvas) {
+                    this.drawingCtx = this.drawingCanvas.getContext('2d');
+                }
+
+                this.bindEvents();
+            }
+
+            bindEvents() {
+                const severitySlider = document.getElementById('pnSeverity');
+                const severityValue = document.getElementById('pnSeverityValue');
+                if (severitySlider && severityValue) {
+                    severitySlider.addEventListener('input', (e) => {
+                        severityValue.textContent = e.target.value;
+                    });
+                }
+
+                document.getElementById('pnDrawBodyButton')?.addEventListener('click', () => {
+                    this.openDrawingModal();
+                });
+
+                document.getElementById('pnUndoButton')?.addEventListener('click', () => {
+                    this.undoStroke();
+                });
+
+                document.getElementById('pnClearMarksButton')?.addEventListener('click', () => {
+                    if (confirm('Clear all marks?')) {
+                        this.clearAllStrokes();
+                    }
+                });
+
+                document.getElementById('pnSaveAnnotationButton')?.addEventListener('click', () => {
+                    this.saveAnnotation();
+                });
+
+                document.getElementById('pnCloseDrawingModalButton')?.addEventListener('click', () => {
+                    this.closeDrawingModal();
+                });
+
+                document.getElementById('pnCancelDrawingButton')?.addEventListener('click', () => {
+                    this.closeDrawingModal();
+                });
+
+                document.getElementById('pnSaveDrawingButton')?.addEventListener('click', () => {
+                    this.closeDrawingModal();
+                });
+
+                document.getElementById('pnUndoDrawingButton')?.addEventListener('click', () => {
+                    this.undoStroke();
+                });
+
+                document.getElementById('pnClearDrawingButton')?.addEventListener('click', () => {
+                    if (confirm('Clear all marks?')) {
+                        this.clearAllStrokes();
+                    }
+                });
+
+                document.querySelectorAll('#pnBodyDrawingModal [data-color]').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelectorAll('#pnBodyDrawingModal [data-color]').forEach(b => b.classList.remove('active'));
+                        e.target.classList.add('active');
+                        this.currentColor = e.target.getAttribute('data-color');
+                    });
+                });
+
+                const widthSlider = document.getElementById('pnStrokeWidthSlider');
+                const widthValue = document.getElementById('pnWidthValue');
+                if (widthSlider && widthValue) {
+                    widthSlider.addEventListener('input', (e) => {
+                        this.currentWidth = parseInt(e.target.value);
+                        widthValue.textContent = this.currentWidth;
+                    });
+                }
+
+                if (this.drawingCanvas) {
+                    this.drawingCanvas.addEventListener('pointerdown', (e) => this.handlePointerDown(e));
+                    this.drawingCanvas.addEventListener('pointermove', (e) => this.handlePointerMove(e));
+                    this.drawingCanvas.addEventListener('pointerup', (e) => this.handlePointerUp(e));
+                    this.drawingCanvas.addEventListener('pointerleave', (e) => this.handlePointerUp(e));
+                }
+            }
+
+            showModal(entityId, entityType) {
+                this.resetForm();
+                this.renderPreview();
+                this.mainModal.show();
+            }
+
+            resetForm() {
+                document.getElementById('pnBodyAnnotationForm').reset();
+                document.getElementById('pnSeverityValue').textContent = '5';
+                this.strokes = [];
+                this.updateStrokeCount();
+            }
+
+            openDrawingModal() {
+                const modalEl = document.getElementById('pnBodyDrawingModal');
+                modalEl.style.display = 'block';
+                modalEl.classList.add('show');
+                modalEl.setAttribute('aria-hidden', 'false');
+                document.body.classList.add('modal-open');
+
+                this.renderDrawingCanvas();
+            }
+
+            closeDrawingModal() {
+                const modalEl = document.getElementById('pnBodyDrawingModal');
+                modalEl.style.display = 'none';
+                modalEl.classList.remove('show');
+                modalEl.setAttribute('aria-hidden', 'true');
+                document.body.classList.remove('modal-open');
+
+                this.renderPreview();
+                this.updateStrokeCount();
+            }
+
+            handlePointerDown(e) {
+                this.isDrawing = true;
+                this.currentStroke = {
+                    points: [],
+                    color: this.currentColor,
+                    width: this.currentWidth
+                };
+                this.addPoint(e);
+            }
+
+            handlePointerMove(e) {
+                if (!this.isDrawing) return;
+                this.addPoint(e);
+                this.drawCurrentStroke();
+            }
+
+            handlePointerUp(e) {
+                if (!this.isDrawing) return;
+                this.isDrawing = false;
+
+                if (this.currentStroke.points.length > 0) {
+                    this.strokes.push(this.currentStroke);
+                }
+                this.currentStroke = { points: [], color: this.currentColor, width: this.currentWidth };
+            }
+
+            addPoint(e) {
+                const rect = this.drawingCanvas.getBoundingClientRect();
+                const scaleX = this.drawingCanvas.width / rect.width;
+                const scaleY = this.drawingCanvas.height / rect.height;
+
+                const x = (e.clientX - rect.left) * scaleX;
+                const y = (e.clientY - rect.top) * scaleY;
+
+                this.currentStroke.points.push({
+                    x: x / this.drawingCanvas.width,
+                    y: y / this.drawingCanvas.height,
+                    pressure: e.pressure || 0.5
+                });
+            }
+
+            drawCurrentStroke() {
+                this.renderDrawingCanvas();
+
+                if (this.currentStroke.points.length < 2) return;
+
+                this.drawingCtx.strokeStyle = this.currentStroke.color;
+                this.drawingCtx.lineWidth = this.currentStroke.width;
+                this.drawingCtx.lineCap = 'round';
+                this.drawingCtx.lineJoin = 'round';
+
+                this.drawingCtx.beginPath();
+                const firstPoint = this.currentStroke.points[0];
+                this.drawingCtx.moveTo(
+                    firstPoint.x * this.drawingCanvas.width,
+                    firstPoint.y * this.drawingCanvas.height
+                );
+
+                for (let i = 1; i < this.currentStroke.points.length; i++) {
+                    const point = this.currentStroke.points[i];
+                    this.drawingCtx.lineTo(
+                        point.x * this.drawingCanvas.width,
+                        point.y * this.drawingCanvas.height
+                    );
+                }
+
+                this.drawingCtx.stroke();
+            }
+
+            renderDrawingCanvas() {
+                this.drawingCtx.clearRect(0, 0, this.drawingCanvas.width, this.drawingCanvas.height);
+                this.drawingCtx.drawImage(this.bodyImage, 0, 0, this.drawingCanvas.width, this.drawingCanvas.height);
+
+                this.strokes.forEach(stroke => {
+                    if (stroke.points.length < 2) return;
+
+                    this.drawingCtx.strokeStyle = stroke.color;
+                    this.drawingCtx.lineWidth = stroke.width;
+                    this.drawingCtx.lineCap = 'round';
+                    this.drawingCtx.lineJoin = 'round';
+
+                    this.drawingCtx.beginPath();
+                    this.drawingCtx.moveTo(
+                        stroke.points[0].x * this.drawingCanvas.width,
+                        stroke.points[0].y * this.drawingCanvas.height
+                    );
+
+                    for (let i = 1; i < stroke.points.length; i++) {
+                        this.drawingCtx.lineTo(
+                            stroke.points[i].x * this.drawingCanvas.width,
+                            stroke.points[i].y * this.drawingCanvas.height
+                        );
+                    }
+
+                    this.drawingCtx.stroke();
+                });
+            }
+
+            renderPreview() {
+                if (!this.previewCtx) return;
+
+                this.previewCtx.clearRect(0, 0, this.previewCanvas.width, this.previewCanvas.height);
+                this.previewCtx.drawImage(this.bodyImage, 0, 0, this.previewCanvas.width, this.previewCanvas.height);
+
+                this.strokes.forEach(stroke => {
+                    if (stroke.points.length < 2) return;
+
+                    this.previewCtx.strokeStyle = stroke.color;
+                    this.previewCtx.lineWidth = stroke.width;
+                    this.previewCtx.lineCap = 'round';
+                    this.previewCtx.lineJoin = 'round';
+
+                    this.previewCtx.beginPath();
+                    this.previewCtx.moveTo(
+                        stroke.points[0].x * this.previewCanvas.width,
+                        stroke.points[0].y * this.previewCanvas.height
+                    );
+
+                    for (let i = 1; i < stroke.points.length; i++) {
+                        this.previewCtx.lineTo(
+                            stroke.points[i].x * this.previewCanvas.width,
+                            stroke.points[i].y * this.previewCanvas.height
+                        );
+                    }
+
+                    this.previewCtx.stroke();
+                });
+            }
+
+            undoStroke() {
+                if (this.strokes.length > 0) {
+                    this.strokes.pop();
+                    this.renderDrawingCanvas();
+                    this.renderPreview();
+                    this.updateStrokeCount();
+                }
+            }
+
+            clearAllStrokes() {
+                this.strokes = [];
+                this.renderDrawingCanvas();
+                this.renderPreview();
+                this.updateStrokeCount();
+            }
+
+            updateStrokeCount() {
+                const strokeCount = document.getElementById('pnStrokeCount');
+                if (strokeCount) {
+                    strokeCount.textContent = `${this.strokes.length} strokes`;
+                }
+            }
+
+            getAnnotationData() {
+                return {
+                    strokes: this.strokes,
+                    metadata: {
+                        constantPain: document.getElementById('pnConstantPain').checked,
+                        intermittentPain: document.getElementById('pnIntermittentPain').checked,
+                        painType: document.getElementById('pnPainTypeDescription').value,
+                        aggravation: document.getElementById('pnAggravation').value,
+                        easingFactor: document.getElementById('pnEasingFactor').value,
+                        severity: parseInt(document.getElementById('pnSeverity').value),
+                        notes: document.getElementById('pnAnnotationNotes').value
+                    }
+                };
+            }
+
+            async saveAnnotation() {
+                try {
+                    const data = this.getAnnotationData();
+
+                    if (data.strokes.length === 0) {
+                        alert('Please draw on the body diagram before saving.');
+                        return;
+                    }
+
+                    // First, create the body annotation
+                    const annotationResponse = await fetch('/api/body-annotations', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            entity_type: 'pn_case',
+                            entity_id: 0, // Temporary, will update after PN case creation
+                            strokes_json: JSON.stringify(data.strokes),
+                            image_width: 800,
+                            image_height: 1200,
+                            constant_pain: data.metadata.constantPain,
+                            intermittent_pain: data.metadata.intermittentPain,
+                            pain_type: data.metadata.painType,
+                            aggravation: data.metadata.aggravation,
+                            easing_factor: data.metadata.easingFactor,
+                            severity: data.metadata.severity,
+                            notes: data.metadata.notes
+                        })
+                    });
+
+                    if (!annotationResponse.ok) {
+                        throw new Error('Failed to save annotation');
+                    }
+
+                    const annotationResult = await annotationResponse.json();
+
+                    // Now create the PN case with the annotation ID
+                    const pnFormData = {
+                        ...window.pendingPNFormData,
+                        body_annotation_id: annotationResult.annotation_id
+                    };
+
+                    const pnResponse = await fetch('/api/pn', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(pnFormData)
+                    });
+
+                    if (!pnResponse.ok) {
+                        throw new Error('Failed to create PN case');
+                    }
+
+                    const pnResult = await pnResponse.json();
+
+                    // Update the annotation with the correct PN case ID
+                    await fetch(`/api/body-annotations/${annotationResult.annotation_id}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            entity_id: pnResult.id
+                        })
+                    });
+
+                    this.mainModal.hide();
+                    alert('PN Case with body annotation created successfully!');
+                    loadPNCases();
+
+                    // Ask if user wants to create a bill
+                    const createBill = confirm(
+                        `PN Case created successfully!\nPN Code: ${pnResult.pn_code}\n\n` +
+                        `Do you want to create a bill for this PN now?`
+                    );
+
+                    if (createBill) {
+                        const pnData = {
+                            ...pnResult,
+                            diagnosis: pnFormData.diagnosis,
+                            purpose: pnFormData.purpose,
+                            patient_id: pnFormData.patient_id
+                        };
+                        showBillModalForPN(pnData);
+                    }
+
+                } catch (error) {
+                    console.error('Error saving annotation:', error);
+                    alert('Failed to save body annotation. Please try again.');
+                }
+            }
+        }
+
+        // ========================================
+        // BODYCHECK FUNCTIONS
+        // ========================================
+
+        let bodycheckLimit = 5;
+        let bodycheckOffset = 0;
+        let bodycheckTotal = 0;
+
+        async function loadBodychecks() {
+            if (!patientData) return;
+
+            try {
+                // Get all PN cases for this patient first to aggregate bodychecks
+                const pnResponse = await fetch(`/api/pn?search=${patientData.hn}`, {
+                    headers: {}
+                });
+
+                if (!pnResponse.ok) return;
+
+                const pnData = await pnResponse.json();
+                const pnCases = pnData.cases || [];
+                let allBodychecks = [];
+
+                // Fetch bodychecks for each PN case
+                for (const pnCase of pnCases) {
+                    const response = await fetch(`/api/bodychecks/pn/${pnCase.id}?limit=100&offset=0`, {
+                        headers: {}
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        allBodychecks = allBodychecks.concat(data.bodychecks.map(bc => ({
+                            ...bc,
+                            pn_code: pnCase.pn_code
+                        })));
+                    }
+                }
+
+                // Sort by date descending
+                allBodychecks.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+                bodycheckTotal = allBodychecks.length;
+                const paginatedBodychecks = allBodychecks.slice(bodycheckOffset, bodycheckOffset + bodycheckLimit);
+
+                displayBodychecks(paginatedBodychecks);
+                updateBodycheckPagination();
+
+            } catch (error) {
+                console.error('Error loading bodychecks:', error);
+                document.getElementById('bodycheckTableBody').innerHTML =
+                    '<tr><td colspan="10" class="text-center text-danger py-4">Failed to load bodychecks</td></tr>';
+            }
+        }
+
+        function displayBodychecks(bodychecks) {
+            const tbody = document.getElementById('bodycheckTableBody');
+
+            if (bodychecks.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted py-4">No bodychecks recorded yet</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = bodychecks.map(bc => {
+                const regions = bc.all_regions ? 'All regions' : (bc.regions || 'No regions');
+                const statusColor = bc.status === 'ACCEPTED' ? 'success' : (bc.status === 'SAVED' ? 'primary' : 'secondary');
+
+                return `
+                    <tr>
+                        <td class="fw-bold">${bc.id}</td>
+                        <td><a href="/pn/${bc.pn_id}" class="text-decoration-none">${bc.pn_code}</a></td>
+                        <td>${new Date(bc.created_at).toLocaleDateString('en-GB')}</td>
+                        <td>${regions}</td>
+                        <td><span class="badge bg-danger">${bc.total_pain || 0}</span></td>
+                        <td><span class="badge bg-warning">${bc.total_spasm || 0}</span></td>
+                        <td><span class="badge bg-info">${bc.total_radicular || 0}</span></td>
+                        <td><span class="badge bg-secondary">${bc.total_numbness || 0}</span></td>
+                        <td><span class="badge bg-${statusColor}">${bc.status}</span></td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick="window.location.href='/bodycheck/${bc.id}'">
+                                <i class="bi bi-eye"></i> View
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function updateBodycheckPagination() {
+            const pagination = document.getElementById('bodycheckPagination');
+            const totalPages = Math.ceil(bodycheckTotal / bodycheckLimit);
+
+            if (totalPages <= 1) {
+                pagination.style.display = 'none';
+                return;
+            }
+
+            pagination.style.display = 'block';
+            const currentPage = Math.floor(bodycheckOffset / bodycheckLimit) + 1;
+
+            let html = '';
+            for (let i = 1; i <= totalPages; i++) {
+                html += `<li class="page-item ${i === currentPage ? 'active' : ''}">
+                    <a class="page-link" href="#" onclick="setBodycheckPage(${i}); return false;">${i}</a>
+                </li>`;
+            }
+
+            pagination.querySelector('.pagination').innerHTML = html;
+        }
+
+        function setBodycheckLimit(limit) {
+            bodycheckLimit = limit;
+            bodycheckOffset = 0;
+
+            // Update button states
+            document.querySelectorAll('.btn-group .btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            loadBodychecks();
+        }
+
+        function setBodycheckPage(page) {
+            bodycheckOffset = (page - 1) * bodycheckLimit;
+            loadBodychecks();
+        }
+
+        async function createBodycheck() {
+            try {
+                // Show PN selection modal
+                const pnData = await fetch(`/api/pn?search=${patientData.hn}`, {
+                    headers: {}
+                }).then(r => r.json());
+
+                const pnCases = pnData.cases || [];
+
+                if (pnCases.length === 0) {
+                    alert('No PN cases found for this patient. Please create a PN case first.');
+                    return;
+                }
+
+                const pnOptions = pnCases.map((pn, i) => `${i+1}. ${pn.pn_code} - ${pn.diagnosis || pn.purpose || 'N/A'}`).join('\n');
+                const pnId = prompt(`Select PN Case:\n${pnOptions}\n\nEnter number:`);
+
+                if (!pnId || pnId < 1 || pnId > pnCases.length) return;
+
+                const selectedPn = pnCases[parseInt(pnId) - 1];
+
+                // Create bodycheck
+                const response = await fetch('/api/bodychecks', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                        },
+                    body: JSON.stringify({
+                        pn_id: selectedPn.id,
+                        patient_id: patientId
+                    })
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    window.location.href = `/bodycheck/${result.bodycheck_id}`;
+                } else {
+                    alert('Failed to create bodycheck');
+                }
+
+            } catch (error) {
+                console.error('Error creating bodycheck:', error);
+                alert('Failed to create bodycheck');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize PN body annotation manager
+            window.pnBodyAnnotationManager = new PNBodyAnnotationManager();
+
+            loadPatientData();
+            loadClinics();
+
+            if (window.location.hash === '#create-pn') {
+                setTimeout(showCreatePNModal, 500);
+            }
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const reservePnId = urlParams.get('reserve_pn');
+            const pnCode = urlParams.get('pn_code');
+
+            if (reservePnId && pnCode) {
+                setTimeout(() => {
+                    showReservationModal(parseInt(reservePnId), patientId, decodeURIComponent(pnCode));
+                }, 500);
+            }
+
+            // Listen for bodycheck tab activation
+            document.getElementById('bodycheck-tab').addEventListener('click', () => {
+                loadBodychecks();
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,122 @@
+<nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block sidebar collapse p-0">
+    <div class="position-sticky pt-3">
+        <ul class="nav flex-column mb-0">
+            <!-- Dashboard -->
+            <li class="nav-item">
+                <a class="nav-link <%= activePage === 'dashboard' ? 'active' : '' %>" href="/dashboard">
+                    <i class="bi bi-speedometer2"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+
+            <!-- Appointments (High Priority) -->
+            <% if (user.role === 'ADMIN' || user.role === 'PT') { %>
+            <li class="nav-item">
+                <a class="nav-link <%= activePage === 'appointments' ? 'active' : '' %>" href="/appointments">
+                    <i class="bi bi-calendar-check"></i>
+                    <span>Appointments</span>
+                </a>
+            </li>
+            <% } %>
+
+            <!-- Patient Management -->
+            <li class="nav-item">
+                <a class="nav-link <%= activePage === 'patients' ? 'active' : '' %>" href="/patients">
+                    <i class="bi bi-people"></i>
+                    <span>Patients</span>
+                </a>
+            </li>
+
+            <!-- Register Patient -->
+            <li class="nav-item">
+                <a class="nav-link <%= activePage === 'register' ? 'active' : '' %>" href="/patient/register">
+                    <i class="bi bi-person-plus"></i>
+                    <span>Register Patient</span>
+                </a>
+            </li>
+
+            <!-- Homecace (Service) -->
+            <li class="nav-item">
+                <a class="nav-link <%= activePage === 'homecace' ? 'active' : '' %>" href="/homecace">
+                    <i class="bi bi-house-heart-fill"></i>
+                    <span>Homecace</span>
+                </a>
+            </li>
+
+            <!-- CONEXT CHAT (Communication) -->
+            <% if (user.role === 'ADMIN' || user.role === 'PT') { %>
+            <li class="nav-item">
+                <a class="nav-link <%= activePage === 'chat' ? 'active' : '' %>" href="/chat">
+                    <i class="bi bi-hdd-network"></i>
+                    <span>CONEXT CHAT</span>
+                </a>
+            </li>
+            <% } %>
+
+            <!-- Courses (Resources) -->
+            <li class="nav-item">
+                <a class="nav-link <%= activePage === 'courses' ? 'active' : '' %>" href="/courses">
+                    <i class="bi bi-book"></i>
+                    <span>Courses</span>
+                </a>
+            </li>
+
+            <!-- Bills (Admin) -->
+            <% if (user.role === 'ADMIN') { %>
+            <li class="nav-item">
+                <a class="nav-link <%= activePage === 'bills' ? 'active' : '' %>" href="/bills">
+                    <i class="bi bi-receipt"></i>
+                    <span>Bills</span>
+                </a>
+            </li>
+            <% } %>
+
+            <!-- Statistics (Reporting) -->
+            <% if (user.role === 'ADMIN' || user.role === 'PT') { %>
+            <li class="nav-item">
+                <a class="nav-link <%= activePage === 'statistics' ? 'active' : '' %>" href="/statistics">
+                    <i class="bi bi-graph-up"></i>
+                    <span>Statistics</span>
+                </a>
+            </li>
+            <% } %>
+
+            <!-- Admin Settings (ADMIN only) -->
+            <% if (user.role === 'ADMIN') { %>
+            <li class="nav-item mt-1">
+                <hr class="sidebar-divider">
+            </li>
+
+            <!-- Admin Settings Hub -->
+            <li class="nav-item">
+                <a class="nav-link <%= activePage === 'admin-settings' ? 'active' : '' %>" href="/admin/settings">
+                    <i class="bi bi-sliders"></i>
+                    <span>Admin Settings</span>
+                </a>
+            </li>
+
+            <!-- AI Settings -->
+            <li class="nav-item">
+                <a class="nav-link <%= activePage === 'ai-settings' ? 'active' : '' %>" href="/admin/ai-settings">
+                    <i class="bi bi-stars"></i>
+                    <span>AI Settings</span>
+                </a>
+            </li>
+            <% } %>
+
+            <!-- Logout -->
+            <li class="nav-item mt-1">
+                <a class="nav-link" href="#" onclick="logout()">
+                    <i class="bi bi-box-arrow-left"></i>
+                    <span>Logout</span>
+                </a>
+            </li>
+        </ul>
+
+        <div class="user-info-footer">
+            <small class="d-block opacity-75" style="font-size: 0.7rem;">Logged in as:</small>
+            <strong class="d-block text-truncate"><%= user.name || user.email %></strong>
+            <span class="badge bg-white text-primary mt-1 shadow-sm border border-light"><%= user.role %></span>
+        </div>
+    </div>
+</nav>

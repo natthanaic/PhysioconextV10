@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+  <!-- BRAND -->
+  <link rel="icon" href="/public/images/Fav.png" type="image/x-icon">
+  <title>RehabPlus System - Login</title>
+
+  <!-- BOOTSTRAP -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+
+  <!-- DESIGN SYSTEM -->
+  <link href="/public/css/variables.css" rel="stylesheet">
+  <link href="/public/css/accessibility.css" rel="stylesheet">
+
+  <style>
+    :root{
+      /* Use design system variables */
+      --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --primary-gradient-vertical: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+    }
+
+    /* Background: soft purple gradient */
+    body{
+      min-height:100vh;
+      margin:0;
+      display:flex; align-items:center; justify-content:center;
+      background:
+        radial-gradient(1200px 800px at 10% 0%, rgba(102, 126, 234, 0.15) 0%, transparent 60%),
+        radial-gradient(1000px 700px at 100% 100%, rgba(118, 75, 162, 0.2) 0%, transparent 65%),
+        linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+      overflow:hidden;
+      font-family: var(--font-family-sans, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif);
+      color: var(--color-text-primary, #2d3748);
+      position:relative;
+    }
+
+    /* micro dot grid */
+    .pattern::before{
+      content:"";
+      position:fixed; inset:0; pointer-events:none; opacity:.06;
+      background-image:
+        radial-gradient(circle at 1px 1px, #667eea 1.2px, transparent 1.2px),
+        radial-gradient(circle at 1px 1px, #764ba2 1.2px, transparent 1.2px);
+      background-size:22px 22px, 44px 44px;
+      mix-blend-mode:multiply;
+      z-index:0;
+    }
+
+    /* Soft gradient pills */
+    .pill{
+      position:fixed; border-radius:999px; filter:blur(0.3px);
+      opacity:.1; mix-blend-mode:multiply;
+      background: var(--primary-gradient);
+      box-shadow:0 10px 40px rgba(102, 126, 234, 0.25);
+      animation:float 14s ease-in-out infinite;
+      pointer-events:none; z-index:0;
+    }
+    .pill.p1{ width:320px; height:90px; top:6%; left:4%; transform:rotate(-12deg); animation-delay:.2s;}
+    .pill.p2{ width:260px; height:80px; bottom:8%; right:6%; transform:rotate(15deg); animation-delay:1s;}
+    @keyframes float{
+      0%,100%{ transform:translateY(0) rotate(var(--r,0deg)); }
+      50%{ transform:translateY(-18px) rotate(calc(var(--r,0deg) + 3deg)); }
+    }
+
+    /* ===== BIG diversified symbols (medical + engineering + physio + tech) ===== */
+    .symbol-field{
+      position:fixed; inset:0; pointer-events:none; z-index:1; overflow:hidden;
+    }
+    .sym{
+      position:absolute; opacity:.22;
+      background-repeat:no-repeat; background-position:center; background-size:contain;
+      filter: drop-shadow(0 8px 24px rgba(102, 126, 234,.25));
+      animation: drift 24s ease-in-out infinite, spin 36s linear infinite;
+      will-change: transform, opacity;
+    }
+    /* scale presets */
+    .lg  { width:90px;  height:90px;  }
+    .xl  { width:120px; height:120px; }
+    .xxl { width:160px; height:160px; opacity:.18; }
+
+    /* positions */
+    .pos-a{ top:8%;   left:8%;  --driftY:22px; --rot:360deg; }
+    .pos-b{ top:16%;  right:10%; --driftY:28px; --rot:-360deg; }
+    .pos-c{ top:44%;  left:4%;  --driftY:24px; --rot:360deg; }
+    .pos-d{ bottom:18%; right:14%; --driftY:26px; --rot:-360deg; }
+    .pos-e{ top:26%;  right:34%; --driftY:20px; --rot:360deg; }
+    .pos-f{ bottom:10%; left:28%; --driftY:22px; --rot:-360deg; }
+    .pos-g{ top:10%;  left:42%; --driftY:18px; --rot:360deg; }
+    .pos-h{ bottom:30%; right:40%; --driftY:20px; --rot:-360deg; }
+
+    @keyframes drift{
+      0%   { transform: translate3d(0,0,0); }
+      50%  { transform: translate3d(0, calc(-1 * var(--driftY, 20px)), 0); }
+      100% { transform: translate3d(0,0,0); }
+    }
+    @keyframes spin{
+      to { transform: rotate(var(--rot, 360deg)); }
+    }
+
+    /* individual symbol SVGs (stroke only, clean, scalable) */
+    /* big medical plus */
+    .plus{
+      background-image: url("data:image/svg+xml;utf8,\
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'>\
+<g fill='none' stroke='%23667eea' stroke-width='5' stroke-linecap='round'>\
+<path d='M24 6v36'/><path d='M6 24h36'/></g></svg>");
+    }
+    /* engineering gear */
+    .gear{
+      background-image: url(\"data:image/svg+xml;utf8,\
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'>\
+<g fill='none' stroke='%23764ba2' stroke-width='3'>\
+<circle cx='24' cy='24' r='7'/>\
+<path d='M24 4v6M24 38v6M4 24h6M38 24h6M9 9l4.2 4.2M34.8 34.8L39 39M9 39l4.2-4.2M34.8 13.2L39 9'/></g></svg>\");
+    }
+    /* ECG waveform */
+    .ecg{
+      background-image: url(\"data:image/svg+xml;utf8,\
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 32'>\
+<polyline fill='none' stroke='%23667eea' stroke-width='3' points='0,16 10,16 16,26 22,6 28,22 34,14 40,16 64,16' stroke-linejoin='round' stroke-linecap='round'/>\
+</svg>\");
+    }
+    /* molecule / hex network */
+    .molecule{
+      background-image: url(\"data:image/svg+xml;utf8,\
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'>\
+<g fill='none' stroke='%23764ba2' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'>\
+<path d='M16 8l8-4 8 4v8l-8 4-8-4zM8 32l8-4 8 4v8l-8 4-8-4zM24 16l8 4 8-4 8 4' stroke-opacity='.0'/>\
+<path d='M24 20v8M16 28l8 4M32 28l-8 4'/></g></svg>\");
+    }
+    /* microchip */
+    .chip{
+      background-image: url(\"data:image/svg+xml;utf8,\
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'>\
+<g fill='none' stroke='%23667eea' stroke-width='3' stroke-linejoin='round'>\
+<rect x='12' y='12' width='24' height='24' rx='3'/>\
+<rect x='18' y='18' width='12' height='12' rx='2'/>\
+<path d='M24 2v8M24 46v-8M2 24h8M46 24h-8M9 9l6 6M39 39l-6-6M9 39l6-6M39 9l-6 6'/></g></svg>\");
+    }
+    /* physio / joint (stylized knee) */
+    .joint{
+      background-image: url(\"data:image/svg+xml;utf8,\
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'>\
+<g fill='none' stroke='%23764ba2' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'>\
+<path d='M20 6c4 4 6 8 6 12s-2 8-6 12'/>\
+<path d='M28 6c-4 4-6 8-6 12s2 8 6 12'/>\
+<path d='M14 24h8M26 24h8'/></g></svg>\");
+    }
+
+    /* Accessibility */
+    @media (prefers-reduced-motion: reduce){
+      .pill, .sym{ animation: none !important; }
+    }
+
+    /* Login card (glass) */
+    .login-container{
+      width:100%; max-width:430px;
+      background:rgba(255,255,255,.82);
+      -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+      border:1px solid rgba(102, 126, 234,.18);
+      border-radius:20px;
+      box-shadow: 0 10px 25px rgba(102, 126, 234,.10), 0 30px 80px rgba(118, 75, 162,.12);
+      padding:2.25rem; position:relative; z-index:3;
+    }
+
+    /* Logo + pulse ring */
+    .logo{ text-align:center; margin-bottom:1.25rem; }
+    .logo .ring{
+      position:relative; display:inline-grid; place-items:center; width:110px; height:110px; margin:auto;
+    }
+    .logo .ring::before,
+    .logo .ring::after{
+      content:""; position:absolute; inset:-8px; border-radius:999px;
+      background: conic-gradient(from 180deg, #667eea, #764ba2, #667eea);
+      filter: blur(8px); opacity:.35; animation:ringspin 9s linear infinite;
+    }
+    .logo .ring::after{ inset:-16px; opacity:.18; animation-duration:14s;}
+    @keyframes ringspin{ to{ transform:rotate(360deg);} }
+
+    .logo img{
+      width:84px; height:84px; object-fit:contain; background:white; border-radius:18px;
+      border:1px solid rgba(102, 126, 234,.15); box-shadow:0 6px 18px rgba(102, 126, 234,.15);
+      position:relative; z-index:1;
+    }
+
+    h3{ font-weight:700; letter-spacing:.2px; margin-top:.75rem; margin-bottom:.2rem; color:var(--color-text-primary, #2d3748); }
+    .subtitle{ color:var(--ink-500); font-size:.95rem; }
+
+    /* Inputs */
+    .form-label{ font-weight:600; color:var(--color-text-primary, #2d3748); }
+    .input-group-text{
+      background:linear-gradient(135deg, #f5f3ff, #ede9fe);
+      border-color:rgba(102, 126, 234,.25);
+      color:#667eea;
+      font-size:1.05rem;
+    }
+    .form-control{ border-color:rgba(102, 126, 234,.25); padding:.7rem .9rem; }
+    .form-control:focus{ border-color:#667eea; box-shadow:0 0 0 .2rem rgba(102, 126, 234,.15); }
+
+    /* Button */
+    .btn-login{
+      background:linear-gradient(135deg, #667eea, #764ba2);
+      border:none; color:white; padding:.85rem; font-weight:600; letter-spacing:.2px;
+      border-radius:12px; box-shadow:0 8px 20px rgba(102, 126, 234,.25);
+      transition:transform .12s ease, box-shadow .12s ease, opacity .12s ease;
+    }
+    .btn-login:hover{ transform:translateY(-1px); box-shadow:0 12px 28px rgba(102, 126, 234,.28); }
+    .btn-login:active{ transform:translateY(0); opacity:.95; }
+
+    /* Small trust row */
+    .trust{ display:flex; gap:.75rem; justify-content:center; align-items:center; color: var(--color-text-secondary, #4a5568); font-size:.88rem; }
+    .trust .dot{ width:6px; height:6px; background: #764ba2; border-radius:50%; opacity:.8; }
+
+    /* Footer */
+    .foot{ color:#64748b; font-size:.8rem; }
+
+    /* Error alert spacing */
+    .alert{ border-radius:12px; }
+
+    /* Responsive tweaks */
+    @media (max-width:480px){
+      .login-container{ margin:1rem; padding:1.5rem; }
+      .logo .ring{ width:92px; height:92px; }
+      .logo img{ width:72px; height:72px; }
+    }
+  </style>
+</head>
+
+<body class="pattern">
+  <!-- Soft gradient blobs -->
+  <div class="pill p1" style="--r:-12deg;"></div>
+  <div class="pill p2" style="--r:15deg;"></div>
+
+  <!-- BIG diversified symbol layer -->
+  <div class="symbol-field" aria-hidden="true">
+    <!-- Big medical pluses -->
+    <span class="sym plus xxl pos-a"></span>
+    <span class="sym plus xl pos-g"></span>
+
+    <!-- Engineering gear -->
+    <span class="sym gear xl pos-b"></span>
+
+    <!-- ECG waveform -->
+    <span class="sym ecg lg pos-e"></span>
+
+    <!-- Biomed molecule -->
+    <span class="sym molecule xl pos-c"></span>
+
+    <!-- Health IT microchip -->
+    <span class="sym chip lg pos-h"></span>
+
+    <!-- Physio joint -->
+    <span class="sym joint xl pos-d"></span>
+
+    <!-- Optional extra big plus -->
+    <span class="sym plus lg pos-f"></span>
+  </div>
+
+  <div class="login-container">
+    <div class="logo">
+      <span class="ring">
+        <!-- Your brand mark -->
+        <img src="/public/images/RehabPlus.png" alt="RehabPlus Logo" />
+      </span>
+      <h3>RehabPlus System</h3>
+      <p class="subtitle">Physiotherapy Plan &amp; Referral System</p>
+    </div>
+
+    <% if (error) { %>
+      <div class="alert alert-danger d-flex align-items-center" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <div><%= error %></div>
+      </div>
+    <% } %>
+
+    <form id="loginForm" novalidate>
+      <div class="mb-3">
+        <label for="email" class="form-label">Email address</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+          <input type="email" class="form-control" id="email" autocomplete="username" required>
+          <div class="invalid-feedback">Please enter a valid email.</div>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label for="password" class="form-label">Password</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-lock"></i></span>
+          <input type="password" class="form-control" id="password" autocomplete="current-password" minlength="6" required>
+          <div class="invalid-feedback">Password is required.</div>
+        </div>
+      </div>
+
+      <div class="mb-3 form-check">
+        <input type="checkbox" class="form-check-input" id="remember">
+        <label class="form-check-label" for="remember">Remember me</label>
+      </div>
+
+      <button type="submit" class="btn btn-login w-100">
+        <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
+      </button>
+    </form>
+
+    <!-- OR Divider -->
+    <div class="position-relative my-4">
+      <hr style="border-color: rgba(0,0,0,0.1);">
+      <span style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(255,255,255,0.82); padding: 0 1rem; color: #6b7280; font-weight: 600; font-size: 0.85rem;">OR</span>
+    </div>
+
+    <!-- Sign in with Google -->
+    <button type="button" id="googleSignInBtn" class="btn w-100 mb-3" style="background: white; color: #1f2937; border: 2px solid rgba(0,0,0,0.1); font-weight: 600; padding: 0.85rem; border-radius: 12px; transition: all 0.2s ease;">
+      <svg width="18" height="18" viewBox="0 0 18 18" style="margin-right: 0.5rem; vertical-align: middle;">
+        <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/>
+        <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/>
+        <path fill="#FBBC05" d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957C.347 6.175 0 7.55 0 9s.348 2.825.957 4.039l3.007-2.332z"/>
+        <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/>
+      </svg>
+      Sign in with Google
+    </button>
+
+    <!-- 2FA Verification Form (hidden by default) -->
+    <div id="twoFactorForm" style="display: none;">
+      <div class="alert alert-info d-flex align-items-start" role="alert">
+        <i class="bi bi-shield-lock-fill me-2 fs-5"></i>
+        <div>
+          <strong>Two-Factor Authentication Required</strong>
+          <p class="mb-0 mt-1 small">Please enter the 6-digit code from your Google Authenticator app.</p>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label for="totpCode" class="form-label">Verification Code</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-key"></i></span>
+          <input type="text" class="form-control" id="totpCode"
+                 placeholder="000000"
+                 maxlength="6"
+                 pattern="[0-9]{6}"
+                 autocomplete="off"
+                 inputmode="numeric"
+                 required>
+          <div class="invalid-feedback">Please enter a 6-digit code.</div>
+        </div>
+        <small class="text-muted">Or enter one of your backup codes</small>
+      </div>
+
+      <button type="button" id="verify2FABtn" class="btn btn-login w-100 mb-2">
+        <i class="bi bi-shield-check me-2"></i>Verify Code
+      </button>
+
+      <button type="button" id="backToLoginBtn" class="btn btn-outline-secondary w-100">
+        <i class="bi bi-arrow-left me-2"></i>Back to Login
+      </button>
+    </div>
+
+    <hr class="my-4">
+
+    <div class="trust mb-2">
+      <i class="bi bi-shield-check"></i> HIPAA-style safeguards
+      <span class="dot"></span>
+      <i class="bi bi-hdd-network"></i> Secure referrals
+      <span class="dot"></span>
+      <i class="bi bi-heart-pulse"></i> Rehab-focused UX
+    </div>
+
+    <div class="text-center foot">
+      <small>&copy; 2025 RehabPlus. All rights reserved.</small>
+    </div>
+  </div>
+
+  <!-- JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" defer></script>
+  <script src="/public/js/utils.js?v=1765446492000"></script>
+
+  <script>
+    (function(){
+      let pendingUserId = null;
+
+      // Login form submission
+      const form = document.getElementById('loginForm');
+      form?.addEventListener('submit', async (e)=>{
+        e.preventDefault();
+
+        const emailEl = document.getElementById('email');
+        const passEl  = document.getElementById('password');
+
+        if(!emailEl.checkValidity()) emailEl.classList.add('is-invalid'); else emailEl.classList.remove('is-invalid');
+        if(!passEl.checkValidity())  passEl.classList.add('is-invalid');  else passEl.classList.remove('is-invalid');
+        if(!form.checkValidity()) return;
+
+        const email    = emailEl.value.trim();
+        const password = passEl.value;
+
+        try{
+          const resp = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type':'application/json' },
+            body: JSON.stringify({ email, password })
+          });
+          const data = await resp.json();
+
+          if(resp.ok){
+            // Check if 2FA is required
+            if(data.requires2FA){
+              console.log('🔐 2FA required for user:', data.userId);
+              pendingUserId = data.userId;
+
+              // Hide login form, show 2FA form
+              document.getElementById('loginForm').style.display = 'none';
+              document.getElementById('twoFactorForm').style.display = 'block';
+
+              // Focus on TOTP code input
+              document.getElementById('totpCode').focus();
+              return;
+            }
+
+            // Normal login (no 2FA)
+            completeLogin(data);
+          }else{
+            alert(data.error || data.message || 'Login failed');
+          }
+        }catch(err){
+          console.error('Login error:', err);
+          alert('Network error. Please try again.');
+        }
+      });
+
+      // 2FA verification
+      const verify2FABtn = document.getElementById('verify2FABtn');
+      verify2FABtn?.addEventListener('click', async ()=>{
+        const codeEl = document.getElementById('totpCode');
+        const code = codeEl.value.trim();
+
+        if(!code || code.length < 6){
+          codeEl.classList.add('is-invalid');
+          alert('Please enter a valid verification code');
+          return;
+        }
+
+        codeEl.classList.remove('is-invalid');
+
+        // Detect if it's a backup code (format: XXXX-XXXX)
+        const isBackupCode = code.includes('-');
+
+        try{
+          const resp = await fetch('/api/auth/login/verify-2fa', {
+            method: 'POST',
+            headers: { 'Content-Type':'application/json' },
+            body: JSON.stringify({
+              userId: pendingUserId,
+              token: code,
+              isBackupCode: isBackupCode
+            })
+          });
+          const data = await resp.json();
+
+          if(resp.ok){
+            console.log('✅ 2FA verification successful');
+            completeLogin(data);
+          }else{
+            alert(data.error || 'Invalid verification code. Please try again.');
+            codeEl.value = '';
+            codeEl.focus();
+          }
+        }catch(err){
+          console.error('2FA verification error:', err);
+          alert('Network error. Please try again.');
+        }
+      });
+
+      // Back to login button
+      const backToLoginBtn = document.getElementById('backToLoginBtn');
+      backToLoginBtn?.addEventListener('click', ()=>{
+        document.getElementById('twoFactorForm').style.display = 'none';
+        document.getElementById('loginForm').style.display = 'block';
+        document.getElementById('totpCode').value = '';
+        pendingUserId = null;
+      });
+
+      // Allow Enter key to submit 2FA code
+      document.getElementById('totpCode')?.addEventListener('keypress', (e)=>{
+        if(e.key === 'Enter'){
+          e.preventDefault();
+          verify2FABtn.click();
+        }
+      });
+
+      // Complete login helper
+      function completeLogin(data){
+        // Note: Server already sets secure httpOnly cookie
+        // Client-side cookie is for fallback/compatibility only
+        const isSecure = window.location.protocol === 'https:';
+        // 12 hours = 43200 seconds
+        const cookieFlags = `path=/; max-age=43200; samesite=lax${isSecure ? '; secure' : ''}`;
+        document.cookie = `authToken=${data.token}; ${cookieFlags}`;
+        localStorage.setItem('user', JSON.stringify(data.user||{}));
+        window.location.href = '/dashboard';
+      }
+
+      // Google Sign-In button
+      document.getElementById('googleSignInBtn')?.addEventListener('click', async () => {
+        try {
+          const response = await fetch('/api/google/signin-url');
+          if (response.ok) {
+            const data = await response.json();
+            // Redirect to Google OAuth for sign-in
+            window.location.href = data.authUrl;
+          } else {
+            alert('Failed to initiate Google Sign-In. Please try again.');
+          }
+        } catch (error) {
+          console.error('Google Sign-In error:', error);
+          alert('Network error. Please try again.');
+        }
+      });
+
+      // Handle Google Sign-In error messages from URL params
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('error') === 'google_signin_failed') {
+        alert('❌ Google Sign-In failed. Please try again or use email/password login.');
+        window.history.replaceState({}, document.title, '/login');
+      } else if (urlParams.get('error') === 'invalid_state') {
+        alert('❌ Invalid sign-in request. Please try again.');
+        window.history.replaceState({}, document.title, '/login');
+      }
+    })();
+  </script>
+</body>
+</html>

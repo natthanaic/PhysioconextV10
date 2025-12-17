@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PN Case Detail - RehabPlus System</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#667eea">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Design System -->
+    <link href="/public/css/variables.css" rel="stylesheet">
+    <link href="/public/css/base.css" rel="stylesheet">
+    <link href="/public/css/accessibility.css" rel="stylesheet">
+
+    <style>
+        /* --- DASHBOARD THEME VARIABLES --- */
+        :root {
+            --primary-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            --surface-color: #ffffff;
+            --background-color: #f3f4f6;
+            --text-main: #1f2937;
+            --text-secondary: #6b7280;
+            --border-radius-md: 12px;
+            --border-radius-sm: 8px;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            
+            /* Legacy overrides */
+            --theme-primary: #6366f1;
+            --theme-secondary: #8b5cf6;
+            --input-bg: #f8fafc;
+        }
+
+        body {
+            background-color: #f0f2f5; /* Matches dashboard.ejs exactly */
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* --- MAIN LAYOUT --- */
+        main {
+            padding-top: 1.5rem;
+            padding-bottom: 3rem;
+        }
+
+        /* --- PAGE HEADER (Dashboard Style) --- */
+        .page-header {
+            background: var(--surface-color);
+            border-radius: var(--border-radius-md);
+            padding: 0.8rem 1.2rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid rgba(255,255,255,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        
+        .page-header h1 {
+            font-weight: 800;
+            font-size: 1.4rem;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0;
+            display: flex;
+            align-items: center;
+        }
+
+        .btn-back {
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+            margin-right: 0.75rem;
+            transition: color 0.2s;
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+        }
+
+        .btn-back:hover {
+            color: var(--theme-primary);
+        }
+
+        /* --- CARDS --- */
+        .content-card {
+            background: var(--surface-color);
+            border-radius: var(--border-radius-md);
+            border: none;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 1.5rem;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.2s ease;
+        }
+
+        .content-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        /* Decorative top border */
+        .content-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: var(--primary-gradient);
+            opacity: 0.8;
+        }
+
+        /* Card Variants */
+        .content-card.card-patient::before { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+        .content-card.card-medical::before { background: linear-gradient(90deg, #10b981, #34d399); }
+        .content-card.card-pt::before { background: linear-gradient(90deg, #a18cd1, #fbc2eb); }
+        .content-card.card-body-annotation::before { background: linear-gradient(90deg, #ef4444, #f87171); }
+
+        .card-header-custom {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid #f3f4f6;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .card-header-custom h5 {
+            margin: 0;
+            font-weight: 700;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            font-size: 1.1rem;
+        }
+
+        .card-header-custom h5 i {
+            margin-right: 12px;
+            color: var(--theme-primary);
+            background: #f0f2ff;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            font-size: 1.1rem;
+        }
+
+        .card-body {
+            padding: 1.5rem;
+        }
+
+        /* Detail Rows */
+        .detail-row {
+            margin-bottom: 1rem;
+        }
+        
+        .detail-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            font-weight: 700;
+            margin-bottom: 0.35rem;
+        }
+        
+        .detail-value {
+            font-size: 0.95rem;
+            color: var(--text-main);
+            font-weight: 500;
+        }
+
+        /* --- FORM CONTROLS --- */
+        .form-control, .form-select {
+            background-color: var(--input-bg);
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 0.6rem 0.8rem;
+            font-size: 0.9rem;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            background-color: #fff;
+            border-color: var(--theme-primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .form-label {
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.4rem;
+        }
+
+        /* --- BUTTONS --- */
+        .btn {
+            border: none;
+            font-weight: 600;
+            border-radius: 6px;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: var(--primary-gradient);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+            color: white;
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #059669 0%, #34d399 100%);
+            color: white;
+        }
+
+        .btn-light {
+            background: #fff;
+            color: var(--text-main);
+            border: 1px solid #e5e7eb !important;
+        }
+
+        /* --- SOAP NOTES --- */
+        .soap-card {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            overflow: hidden;
+            transition: all 0.2s;
+        }
+        
+        .soap-card:hover {
+            box-shadow: var(--shadow-sm);
+            border-color: #d1d5db;
+        }
+        
+        .soap-header {
+            background: #f9fafb;
+            padding: 0.75rem 1.25rem;
+            border-bottom: 1px solid #e5e7eb;
+            font-weight: 600;
+            color: var(--text-main);
+            font-size: 0.9rem;
+        }
+        
+        .soap-body {
+            padding: 1.25rem;
+        }
+
+        /* --- ATTACHMENTS --- */
+        .attachment-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.85rem 1rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            margin-bottom: 0.75rem;
+            background: #fff;
+            transition: background 0.2s;
+        }
+        
+        .attachment-item:hover {
+            background: #f8fafc;
+            border-color: #d1d5db;
+        }
+
+        .upload-area {
+            background: #f8fafc;
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 2px dashed #d1d5db;
+            text-align: center;
+            margin-bottom: 1.5rem;
+            transition: border-color 0.2s;
+        }
+
+        .upload-area:hover {
+            border-color: var(--theme-primary);
+            background: #f0f2ff;
+        }
+
+        /* --- TABLE --- */
+        .table thead th {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            border-bottom: 1px solid #e5e7eb;
+            font-weight: 600;
+            padding: 0.75rem 1rem;
+            background-color: #f9fafb;
+        }
+        
+        .table tbody td {
+            padding: 0.75rem 1rem;
+            vertical-align: middle;
+            font-size: 0.9rem;
+            color: var(--text-main);
+        }
+    </style>
+</head>
+<body>
+    <%- include('partials/header') %>
+
+    <!-- Mobile navbar toggle -->
+    <nav class="navbar navbar-dark bg-dark d-md-none">
+        <div class="container-fluid">
+            <span class="navbar-brand font-weight-bold">RehabPlus</span>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <%- include('partials/sidebar', { user, activePage: 'pn-detail' }) %>
+
+            <!-- Main content -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                
+                <!-- Page Header (Dashboard Style) -->
+                <div class="page-header">
+                    <h1>
+                        <a href="/dashboard" class="btn-back" aria-label="Back to Dashboard">
+                            <i class="bi bi-arrow-left"></i>
+                        </a>
+                        PN Case Detail
+                    </h1>
+                    <button type="button" class="btn btn-primary shadow-sm" id="editBtn">
+                        <i class="bi bi-pencil-square me-2"></i> Edit Medical Info
+                    </button>
+                </div>
+
+                <!-- Case Information Card -->
+                <div class="content-card">
+                    <div class="card-header-custom">
+                        <h5>
+                            <i class="bi bi-info-circle text-primary" style="background: rgba(99, 102, 241, 0.1);"></i>
+                            Case Information
+                        </h5>
+                        <div id="caseStatusBadge"></div> <!-- Placeholder for status badge -->
+                    </div>
+                    <div class="card-body pt-0">
+                        <div class="row" id="caseInfo">
+                            <div class="col-12 text-center py-4">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Patient Information (Read Only) -->
+                <div class="content-card card-patient">
+                    <div class="card-header-custom">
+                        <h5>
+                            <i class="bi bi-person-vcard text-warning" style="background: rgba(245, 158, 11, 0.1); color: #d97706 !important;"></i> 
+                            Patient Information
+                        </h5>
+                        <span class="badge bg-light text-dark border">Registered Profile</span>
+                    </div>
+                    <div class="card-body pt-0">
+                        <div class="row" id="patientInfo">
+                            <div class="col-12 text-center py-4">
+                                <div class="spinner-border text-warning" role="status"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Medical Information (Editable) -->
+                <div class="content-card card-medical">
+                    <div class="card-header-custom">
+                        <h5>
+                            <i class="bi bi-clipboard2-pulse text-success" style="background: rgba(16, 185, 129, 0.1); color: #059669 !important;"></i> 
+                            Medical Information
+                        </h5>
+                        <span class="badge bg-light text-dark border">Editable for this Case</span>
+                    </div>
+                    <div class="card-body pt-0">
+                        <form id="medicalForm">
+                            <div class="row" id="medicalInfo">
+                                <div class="col-12 text-center py-4">
+                                    <div class="spinner-border text-success" role="status"></div>
+                                </div>
+                            </div>
+                            <div class="row mt-4 pt-3 border-top" id="formActions" style="display:none;">
+                                <div class="col-12 text-end">
+                                    <button type="button" class="btn btn-light me-2 border" id="cancelBtn">Cancel</button>
+                                    <button type="submit" class="btn btn-success text-white shadow">
+                                        <i class="bi bi-check2-circle me-2"></i> Save Changes
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Body Annotation Card -->
+                <div class="content-card card-body-annotation" id="bodyAnnotationSection" style="display:none;">
+                    <div class="card-header-custom">
+                        <h5>
+                            <i class="bi bi-person-bounding-box text-danger" style="background: rgba(239, 68, 68, 0.1); color: #dc2626 !important;"></i>
+                            Body Annotation
+                        </h5>
+                        <div class="btn-group btn-group-sm">
+                            <button type="button" class="btn btn-light border text-danger" onclick="exportAnnotationPDF()">
+                                <i class="bi bi-file-pdf me-1"></i>Export PDF
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body pt-0">
+                        <div class="row">
+                            <!-- Left: Pain Assessment Data -->
+                            <div class="col-md-4">
+                                <h6 class="text-secondary fw-bold text-uppercase small mb-3">Pain Assessment</h6>
+                                <div id="annotationMetadata">
+                                    <!-- Loaded by JS -->
+                                </div>
+                            </div>
+                            <!-- Right: Annotated Body Diagram -->
+                            <div class="col-md-8">
+                                <h6 class="text-secondary fw-bold text-uppercase small mb-3">Body Diagram</h6>
+                                <div class="text-center bg-light p-3 rounded border">
+                                    <canvas id="annotatedBodyCanvas" width="800" height="1200" style="max-width: 100%; height: auto;"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PT Assessment (Read Only) -->
+                <div class="content-card card-pt" id="ptAssessmentSection" style="display:none;">
+                    <div class="card-header-custom">
+                        <h5>
+                            <i class="bi bi-activity text-info" style="background: rgba(14, 165, 233, 0.1); color: #0284c7 !important;"></i> 
+                            PT Assessment
+                        </h5>
+                        <small class="text-muted fw-bold">Recorded on Acceptance</small>
+                    </div>
+                    <div class="card-body pt-0">
+                        <div class="row" id="ptAssessmentInfo">
+                            <!-- Loaded by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-4">
+                    <!-- Left Column: SOAP & Visits -->
+                    <div class="col-lg-8">
+                        <!-- SOAP Notes -->
+                        <div class="content-card">
+                            <div class="card-header-custom">
+                                <h5><i class="bi bi-journal-text text-primary" style="background: #f0f2ff;"></i> SOAP Notes History</h5>
+                            </div>
+                            <div class="card-body pt-0">
+                                <div id="soapNotesSection">
+                                    <div class="text-center py-4 text-muted">No SOAP notes recorded yet.</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Visits Section -->
+                        <div class="content-card">
+                            <div class="card-header-custom">
+                                <h5><i class="bi bi-calendar-check text-primary" style="background: #f0f2ff;"></i> Treatment Visits</h5>
+                            </div>
+                            <div class="card-body pt-0">
+                                <div id="visitsSection">
+                                    <div class="text-center py-4 text-muted">No visits recorded yet.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Attachments & Certificates -->
+                    <div class="col-lg-4">
+                        <!-- Attachments -->
+                        <div class="content-card h-100">
+                            <div class="card-header-custom">
+                                <h5><i class="bi bi-paperclip text-primary" style="background: #f0f2ff;"></i> Attachments</h5>
+                            </div>
+                            <div class="card-body pt-0">
+                                <div class="upload-area">
+                                    <i class="bi bi-cloud-upload display-6 text-muted mb-2"></i>
+                                    <h6 class="text-secondary small fw-bold mb-3 text-uppercase">Upload New File</h6>
+                                    <div class="input-group">
+                                        <input type="file" class="form-control" id="fileInput" aria-describedby="uploadButton">
+                                        <button class="btn btn-primary" type="button" id="uploadButton" onclick="handleUpload()">
+                                            Upload
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <h6 class="text-muted text-uppercase small fw-bold mb-3">Files List</h6>
+                                <div id="attachmentsList">
+                                    <!-- List Items generated by JS -->
+                                    <div class="text-center text-muted small">No files attached.</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Certificates Section -->
+                        <div class="content-card mt-4" id="certificatesSection" style="display:none;">
+                            <div class="card-header-custom">
+                                <h5><i class="bi bi-award text-success" style="background: rgba(16, 185, 129, 0.1);"></i> Certificates</h5>
+                            </div>
+                            <div class="card-body pt-0">
+                                <div id="certificatesContent">
+                                    <!-- Loaded by JS -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
+    <script>
+        const pnId = <%= pnId %>;
+        let isEditing = false;
+        let currentPnCase = null;
+        const loggedInUser = JSON.parse(localStorage.getItem('user'));
+
+        // Load PN case details
+        async function loadPNCase() {
+            try {
+                const response = await fetch(`/api/pn/${pnId}`, {
+                    headers: {}
+                });
+
+                if (response.ok) {
+                    currentPnCase = await response.json();
+                    displayCaseInfo(currentPnCase);
+                    displayPatientInfo(currentPnCase);
+                    displayMedicalInfo(currentPnCase, false);
+                    displayPTAssessment(currentPnCase);
+                    displayBodyAnnotation(currentPnCase);
+                    displaySOAPNotes(currentPnCase.soap_notes);
+                    displayAttachments(currentPnCase.attachments);
+                    displayVisits(currentPnCase.visits);
+                } else {
+                    alert('Failed to load PN case');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error loading PN case');
+            }
+        }
+
+        function displayCaseInfo(pnCase) {
+            // Render status badge separately for the header
+            const statusHtml = renderStatus(pnCase.status);
+            document.getElementById('caseStatusBadge').innerHTML = statusHtml;
+
+            const html = `
+                <div class="col-md-6 mb-3">
+                    <div class="detail-row">
+                        <div class="detail-label">PN Code</div>
+                        <div class="detail-value text-primary fw-bold">${pnCase.pn_code}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">Created Date</div>
+                        <div class="detail-value">${moment(pnCase.created_at).format('DD/MM/YYYY HH:mm')}</div>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="detail-row">
+                        <div class="detail-label">Source Clinic</div>
+                        <div class="detail-value">${pnCase.source_clinic_name}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">Target Clinic</div>
+                        <div class="detail-value">${pnCase.target_clinic_name}</div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('caseInfo').innerHTML = html;
+        }
+
+        function displayPatientInfo(pnCase) {
+            const html = `
+                <div class="col-md-6 mb-3">
+                    <div class="detail-row">
+                        <div class="detail-label">Full Name</div>
+                        <div class="detail-value fs-5 fw-bold text-dark">${pnCase.first_name} ${pnCase.last_name}</div>
+                    </div>
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="detail-row">
+                                <div class="detail-label">HN</div>
+                                <div class="detail-value text-dark">${pnCase.hn}</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="detail-row">
+                                <div class="detail-label">PT Number</div>
+                                <div class="detail-value text-dark">${pnCase.pt_number}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">Date of Birth</div>
+                        <div class="detail-value">${moment(pnCase.dob).format('DD/MM/YYYY')}</div>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="detail-row">
+                        <div class="detail-label">Gender</div>
+                        <div class="detail-value">${pnCase.gender || 'N/A'}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">General Diagnosis</div>
+                        <div class="detail-value">${pnCase.patient_diagnosis || '-'}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">Rehab Goal</div>
+                        <div class="detail-value">${pnCase.rehab_goal || '-'}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">General Precaution</div>
+                        <div class="detail-value text-danger fw-bold">${pnCase.precaution || '-'}</div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('patientInfo').innerHTML = html;
+        }
+
+        function displayMedicalInfo(pnCase, editMode) {
+            const html = editMode ? `
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Diagnosis for This PN</label>
+                        <textarea class="form-control" name="diagnosis" rows="2">${pnCase.diagnosis || ''}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Purpose/Referral Reason</label>
+                        <textarea class="form-control" name="purpose" rows="2">${pnCase.purpose || ''}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Current Medications</label>
+                        <textarea class="form-control" name="current_medications" rows="2">${pnCase.current_medications || ''}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Allergies</label>
+                        <textarea class="form-control" name="allergies" rows="2">${pnCase.allergies || ''}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Pain Scale (0-10)</label>
+                        <input type="number" class="form-control" name="pain_scale" min="0" max="10" value="${pnCase.pain_scale || ''}">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Precautions for This PN</label>
+                        <textarea class="form-control" name="pn_precautions" rows="2">${pnCase.pn_precautions || ''}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Contraindications</label>
+                        <textarea class="form-control" name="pn_contraindications" rows="2">${pnCase.pn_contraindications || ''}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Treatment Goals</label>
+                        <textarea class="form-control" name="treatment_goals" rows="2">${pnCase.treatment_goals || ''}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Expected Outcomes</label>
+                        <textarea class="form-control" name="expected_outcomes" rows="2">${pnCase.expected_outcomes || ''}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Medical Notes</label>
+                        <textarea class="form-control" name="medical_notes" rows="2">${pnCase.medical_notes || ''}</textarea>
+                    </div>
+                </div>
+            ` : `
+                <div class="col-md-6 mb-3">
+                    <div class="detail-row">
+                        <div class="detail-label">Diagnosis</div>
+                        <div class="detail-value fw-bold text-dark">${pnCase.diagnosis || 'N/A'}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">Purpose / Referral</div>
+                        <div class="detail-value">${pnCase.purpose || 'N/A'}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">Current Medications</div>
+                        <div class="detail-value">${pnCase.current_medications || 'None'}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">Allergies</div>
+                        <div class="detail-value text-danger fw-bold">${pnCase.allergies || 'None'}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">Pain Scale</div>
+                        <div class="detail-value">
+                            ${pnCase.pain_scale !== null ? 
+                                `<span class="badge bg-${pnCase.pain_scale > 7 ? 'danger' : (pnCase.pain_scale > 3 ? 'warning' : 'success')}">${pnCase.pain_scale}/10</span>` 
+                                : 'Not assessed'}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="detail-row">
+                        <div class="detail-label">Precautions</div>
+                        <div class="detail-value text-warning fw-bold">${pnCase.pn_precautions || 'None'}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">Contraindications</div>
+                        <div class="detail-value text-danger fw-bold">${pnCase.pn_contraindications || 'None'}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">Treatment Goals</div>
+                        <div class="detail-value">${pnCase.treatment_goals || 'Not specified'}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">Expected Outcomes</div>
+                        <div class="detail-value">${pnCase.expected_outcomes || 'Not specified'}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">Notes</div>
+                        <div class="detail-value text-muted fst-italic">${pnCase.medical_notes || 'None'}</div>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('medicalInfo').innerHTML = html;
+            document.getElementById('formActions').style.display = editMode ? 'block' : 'none';
+        }
+
+        // PT Assessment
+        function displayPTAssessment(pnCase) {
+            if (pnCase.pt_diagnosis || pnCase.pt_chief_complaint) {
+                const html = `
+                    <div class="col-md-6">
+                        <div class="detail-row">
+                            <div class="detail-label">Physiotherapy Diagnosis</div>
+                            <div class="detail-value fw-bold text-info">${pnCase.pt_diagnosis || 'N/A'}</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">Chief Complaint</div>
+                            <div class="detail-value">${pnCase.pt_chief_complaint || 'N/A'}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="detail-row">
+                            <div class="detail-label">Present History</div>
+                            <div class="detail-value">${pnCase.pt_present_history || 'N/A'}</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">Initial Pain Score</div>
+                            <div class="detail-value">${pnCase.pt_pain_score !== null ? pnCase.pt_pain_score + '/10' : 'N/A'}</div>
+                        </div>
+                    </div>
+                `;
+                document.getElementById('ptAssessmentInfo').innerHTML = html;
+                document.getElementById('ptAssessmentSection').style.display = 'block';
+            } else {
+                document.getElementById('ptAssessmentSection').style.display = 'none';
+            }
+        }
+
+        // Body Annotation
+        async function displayBodyAnnotation(pnCase) {
+            if (pnCase.body_annotation_id) {
+                try {
+                    // Fetch annotation data
+                    const response = await fetch(`/api/body-annotations/${pnCase.body_annotation_id}`);
+
+                    if (!response.ok) throw new Error('Failed to load annotation');
+
+                    const annotation = await response.json();
+
+                    // Display metadata
+                    let metadataHtml = '';
+
+                    if (annotation.constant_pain || annotation.intermittent_pain) {
+                        metadataHtml += `<div class="mb-3">
+                            <strong class="text-dark small text-uppercase">Pain Type:</strong>
+                            <div class="mt-1">`;
+                        if (annotation.constant_pain) {
+                            metadataHtml += `<span class="badge bg-danger me-1">Constant</span>`;
+                        }
+                        if (annotation.intermittent_pain) {
+                            metadataHtml += `<span class="badge bg-warning">Intermittent</span>`;
+                        }
+                        metadataHtml += `</div></div>`;
+                    }
+
+                    if (annotation.pain_type) {
+                        metadataHtml += `<div class="mb-3">
+                            <strong class="text-dark small text-uppercase">Type of Pain:</strong>
+                            <p class="mb-0 text-muted">${annotation.pain_type}</p>
+                        </div>`;
+                    }
+
+                    if (annotation.severity) {
+                        const severityPercent = annotation.severity * 10;
+                        metadataHtml += `<div class="mb-3">
+                            <strong class="text-dark small text-uppercase">Pain Severity:</strong>
+                            <div class="progress mt-1" style="height: 20px;">
+                                <div class="progress-bar bg-danger" role="progressbar"
+                                     style="width: ${severityPercent}%"
+                                     aria-valuenow="${annotation.severity}" aria-valuemin="0" aria-valuemax="10">
+                                    ${annotation.severity}/10
+                                </div>
+                            </div>
+                        </div>`;
+                    }
+
+                    if (annotation.aggravation) {
+                        metadataHtml += `<div class="mb-3">
+                            <strong class="text-dark small text-uppercase">Aggravation:</strong>
+                            <p class="mb-0 text-muted">${annotation.aggravation}</p>
+                        </div>`;
+                    }
+
+                    if (annotation.easing_factor) {
+                        metadataHtml += `<div class="mb-3">
+                            <strong class="text-dark small text-uppercase">Easing Factor:</strong>
+                            <p class="mb-0 text-muted">${annotation.easing_factor}</p>
+                        </div>`;
+                    }
+
+                    if (annotation.notes) {
+                        metadataHtml += `<div class="mb-3">
+                            <strong class="text-dark small text-uppercase">Additional Notes:</strong>
+                            <p class="mb-0 text-muted">${annotation.notes}</p>
+                        </div>`;
+                    }
+
+                    if (annotation.created_at) {
+                        const createdDate = new Date(annotation.created_at).toLocaleDateString('th-TH');
+                        metadataHtml += `<div class="mt-3 pt-2 border-top">
+                            <small class="text-muted">
+                                <i class="bi bi-clock me-1"></i>Created: ${createdDate}
+                            </small>
+                        </div>`;
+                    }
+
+                    document.getElementById('annotationMetadata').innerHTML = metadataHtml || '<p class="text-muted">No assessment data available</p>';
+
+                    // Render annotation on canvas
+                    const canvas = document.getElementById('annotatedBodyCanvas');
+                    if (canvas) {
+                        const ctx = canvas.getContext('2d');
+
+                        // Load body image
+                        const bodyImage = new Image();
+                        bodyImage.src = '/uploads/body.png';
+                        bodyImage.onload = function() {
+                            // Clear canvas
+                            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                            // Draw body image
+                            ctx.drawImage(bodyImage, 0, 0, canvas.width, canvas.height);
+
+                            // Parse strokes JSON
+                            let strokes = [];
+                            try {
+                                strokes = JSON.parse(annotation.strokes_json);
+                            } catch (e) {
+                                console.error('Failed to parse strokes JSON:', e);
+                                return;
+                            }
+
+                            // Draw all strokes
+                            strokes.forEach(stroke => {
+                                if (!stroke.points || stroke.points.length < 2) return;
+
+                                ctx.strokeStyle = stroke.color || '#FF0000';
+                                ctx.lineWidth = stroke.width || 3;
+                                ctx.lineCap = 'round';
+                                ctx.lineJoin = 'round';
+
+                                ctx.beginPath();
+                                ctx.moveTo(
+                                    stroke.points[0].x * canvas.width,
+                                    stroke.points[0].y * canvas.height
+                                );
+
+                                for (let i = 1; i < stroke.points.length; i++) {
+                                    ctx.lineTo(
+                                        stroke.points[i].x * canvas.width,
+                                        stroke.points[i].y * canvas.height
+                                    );
+                                }
+
+                                ctx.stroke();
+                            });
+                        };
+
+                        bodyImage.onerror = function() {
+                            console.error('Failed to load body image');
+                        };
+                    }
+
+                    // Show the section
+                    document.getElementById('bodyAnnotationSection').style.display = 'block';
+                } catch (error) {
+                    console.error('❌ Error loading body annotation:', error);
+                    document.getElementById('bodyAnnotationSection').style.display = 'none';
+                }
+            } else {
+                document.getElementById('bodyAnnotationSection').style.display = 'none';
+            }
+        }
+
+        function exportAnnotationPDF() {
+            if (currentPnCase && currentPnCase.body_annotation_id) {
+                window.open(`/api/body-annotations/${currentPnCase.body_annotation_id}/render?format=pdf`, '_blank');
+            }
+        }
+
+        // SOAP Notes
+        function displaySOAPNotes(soapNotes) {
+            const container = document.getElementById('soapNotesSection');
+            if (!soapNotes || soapNotes.length === 0) {
+                container.innerHTML = '<div class="text-center py-4 text-muted border rounded bg-light">No SOAP notes recorded yet.</div>';
+                return;
+            }
+
+            container.innerHTML = soapNotes.map(note => `
+                <div class="soap-card">
+                    <div class="soap-header d-flex justify-content-between align-items-center">
+                        <span class="text-primary"><i class="bi bi-calendar3 me-2"></i> ${moment(note.timestamp).format('DD/MM/YYYY HH:mm')}</span>
+                        <span class="badge bg-white text-dark border">By: ${note.created_by_name || 'N/A'}</span>
+                    </div>
+                    <div class="soap-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <strong class="text-secondary small text-uppercase">S (Subjective)</strong>
+                                <p class="small mb-0 text-dark mt-1">${(note.subjective || '-').replace(/\n/g, '<br>')}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <strong class="text-secondary small text-uppercase">O (Objective)</strong>
+                                <p class="small mb-0 text-dark mt-1">${(note.objective || '-').replace(/\n/g, '<br>')}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <strong class="text-secondary small text-uppercase">A (Assessment)</strong>
+                                <p class="small mb-0 text-dark mt-1">${(note.assessment || '-').replace(/\n/g, '<br>')}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <strong class="text-secondary small text-uppercase">P (Plan)</strong>
+                                <p class="small mb-0 text-dark mt-1">${(note.plan || '-').replace(/\n/g, '<br>')}</p>
+                            </div>
+                        </div>
+                        ${note.notes ? `<hr class="my-2"><small class="d-block text-muted"><strong>Note:</strong> ${note.notes}</small>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Attachments
+        function displayAttachments(attachments) {
+            const list = document.getElementById('attachmentsList');
+            if (!attachments || attachments.length === 0) {
+                list.innerHTML = '<div class="text-center py-3 text-muted small bg-light rounded border">No files attached.</div>';
+                return;
+            }
+
+            const allowedDeleteRoles = ['ADMIN', 'PT', 'PT_ADMIN'];
+
+            list.innerHTML = attachments.map(att => `
+                <div class="attachment-item" id="attachment-${att.id}">
+                    <div class="d-flex align-items-center overflow-hidden">
+                        <div class="me-3 text-danger"><i class="bi bi-file-earmark-pdf-fill fs-4"></i></div>
+                        <div class="text-truncate">
+                            <div class="fw-bold text-dark text-truncate small">${att.file_name}</div>
+                            <small class="text-muted" style="font-size: 0.7rem;">
+                                ${moment(att.created_at).format('DD/MM/YY')} • ${(att.file_size / 1024).toFixed(1)} KB
+                            </small>
+                        </div>
+                    </div>
+                    <div class="d-flex flex-shrink-0">
+                        <a href="/api/attachment/${att.id}/download" class="btn btn-sm btn-light border text-primary" title="Download">
+                            <i class="bi bi-download"></i>
+                        </a>
+                        ${(loggedInUser && allowedDeleteRoles.includes(loggedInUser.role)) ? 
+                        `<button class="btn btn-sm btn-light border text-danger ms-1" onclick="deleteAttachment(${att.id})" title="Delete">
+                            <i class="bi bi-trash"></i>
+                        </button>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // File Upload
+        async function handleUpload() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            const uploadButton = document.getElementById('uploadButton');
+
+            if (!file) {
+                alert('Please select a file to upload.');
+                return;
+            }
+            
+            uploadButton.disabled = true;
+            uploadButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span>';
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch(`/api/pn/${pnId}/upload`, {
+                    method: 'POST',
+                    headers: {},
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    fileInput.value = '';
+                    
+                    if (!currentPnCase.attachments) currentPnCase.attachments = [];
+                    currentPnCase.attachments.unshift(result.attachment);
+                    displayAttachments(currentPnCase.attachments);
+                } else {
+                    const error = await response.json();
+                    alert(`Upload failed: ${error.error}`);
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                alert('An error occurred during upload.');
+            } finally {
+                uploadButton.disabled = false;
+                uploadButton.innerHTML = 'Upload';
+            }
+        }
+        
+        // Delete Attachment
+        async function deleteAttachment(attachmentId) {
+            if (!confirm('Delete this file?')) return;
+
+            try {
+                const response = await fetch(`/api/attachment/${attachmentId}`, {
+                    method: 'DELETE',
+                    headers: {}
+                });
+
+                if (response.ok) {
+                    document.getElementById(`attachment-${attachmentId}`).remove();
+                    currentPnCase.attachments = currentPnCase.attachments.filter(att => att.id !== attachmentId);
+                    if (currentPnCase.attachments.length === 0) displayAttachments([]);
+                } else {
+                    const error = await response.json();
+                    alert(`Delete failed: ${error.error}`);
+                }
+            } catch (error) {
+                console.error('Delete error:', error);
+            }
+        }
+
+        function displayVisits(visits) {
+            if (!visits || visits.length === 0) {
+                document.getElementById('visitsSection').innerHTML = '<div class="text-center py-4 text-muted border rounded bg-light">No visits recorded yet.</div>';
+                return;
+            }
+
+            const html = `
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>Visit #</th>
+                                <th>Date</th>
+                                <th>Therapist</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${visits.map(visit => `
+                                <tr>
+                                    <td class="fw-bold">#${visit.visit_no}</td>
+                                    <td>${moment(visit.visit_date).format('DD/MM/YYYY')}</td>
+                                    <td>${visit.therapist_name || '-'}</td>
+                                    <td>${renderStatus(visit.status)}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-white border shadow-sm text-primary" onclick="viewVisit(${visit.id})">
+                                            View
+                                        </button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            document.getElementById('visitsSection').innerHTML = html;
+        }
+
+        // Edit mode toggles
+        document.getElementById('editBtn').addEventListener('click', () => {
+            isEditing = true;
+            displayMedicalInfo(currentPnCase, true);
+        });
+
+        document.getElementById('cancelBtn').addEventListener('click', () => {
+            isEditing = false;
+            displayMedicalInfo(currentPnCase, false);
+        });
+
+        // Save medical information
+        document.getElementById('medicalForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+
+            try {
+                const response = await fetch(`/api/pn/${pnId}`, {
+                    method: 'PUT',
+                    headers: {                        'Content-Type': 'application/json'
+                        },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    alert('Updated successfully');
+                    isEditing = false;
+                    loadPNCase();
+                } else {
+                    const error = await response.json();
+                    alert(error.error || 'Failed to update');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        });
+
+        // Helper functions
+        function renderStatus(status) {
+            const colors = {
+                'PENDING': 'warning',
+                'ACCEPTED': 'info',
+                'IN_PROGRESS': 'primary',
+                'COMPLETED': 'success',
+                'CANCELLED': 'danger',
+                'SCHEDULED': 'secondary'
+            };
+            return `<span class="badge bg-${colors[status] || 'secondary'}">${status}</span>`;
+        }
+
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+        }
+
+        function viewVisit(visitId) {
+            window.location.href = `/visit/${visitId}`;
+        }
+
+        // Load PT Certificates
+        async function loadCertificates() {
+            try {
+                const response = await fetch(`/api/pn/${pnId}/certificates`, {
+                    headers: {}
+                });
+
+                if (response.ok) {
+                    const certificates = await response.json();
+                    if (certificates.length > 0) {
+                        document.getElementById('certificatesSection').style.display = 'block';
+                        displayCertificates(certificates);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading certificates:', error);
+            }
+        }
+
+        function displayCertificates(certificates) {
+            const contentDiv = document.getElementById('certificatesContent');
+            
+            contentDiv.innerHTML = certificates.map(cert => {
+                const certData = JSON.parse(cert.certificate_data || '{}');
+                const createdDate = new Date(cert.created_at).toLocaleDateString('en-GB');
+
+                return `
+                    <div class="p-3 mb-2 border rounded bg-white shadow-sm attachment-item">
+                        <div class="d-flex justify-content-between align-items-center w-100">
+                            <div>
+                                <div class="fw-bold text-success small text-uppercase">
+                                    <i class="bi bi-patch-check-fill me-1"></i>
+                                    ${cert.certificate_type.toUpperCase()} Certificate
+                                </div>
+                                <small class="text-muted" style="font-size: 0.7rem;">Issued: ${createdDate}</small>
+                            </div>
+                            <button class="btn btn-sm btn-light border text-primary" onclick="window.open('/certificates/${cert.id}/print', '_blank')">
+                                <i class="bi bi-printer"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Load on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadPNCase();
+            loadCertificates();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Services Management - RehabPlus System</title>
+    <link rel="icon" href="/public/images/Fav.png" type="image/x-icon">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body {
+            background: #f5f7fb;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 2px 0 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.85);
+            padding: 0.75rem 1rem;
+            margin: 0.25rem 1rem;
+            border-radius: 0.5rem;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            background: rgba(255, 255, 255, 0.25);
+            color: #fff;
+        }
+
+        main {
+            min-height: 100vh;
+            padding-bottom: 4rem;
+        }
+
+        .page-header {
+            background: white;
+            border-radius: 1.5rem;
+            padding: 2rem;
+            box-shadow: 0 10px 40px rgba(82, 95, 225, 0.12);
+            margin-bottom: 2rem;
+        }
+
+        .page-header h1 {
+            font-weight: 700;
+            color: #2d2f44;
+        }
+
+        .page-header p {
+            color: #6c6f93;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            font-weight: 600;
+            padding: 0.6rem 1.6rem;
+            border-radius: 0.75rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.35);
+        }
+
+        .filters-card,
+        .services-card {
+            border: none;
+            border-radius: 1.25rem;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+        }
+
+        .filters-card .card-header {
+            background: transparent;
+            border-bottom: 1px solid rgba(102, 126, 234, 0.15);
+            font-weight: 600;
+            color: #2d2f44;
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+        }
+
+        .modal-content {
+            border: none;
+            border-radius: 1.25rem;
+        }
+
+        .table thead th {
+            background: rgba(102, 126, 234, 0.08);
+            color: #2d2f44;
+            font-weight: 600;
+            border: none;
+        }
+
+        .badge {
+            font-weight: 600;
+            padding: 0.4rem 0.8rem;
+            border-radius: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <%- include('../partials/sidebar', { user, activePage: 'services' }) %>
+
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+                <div class="page-header d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+                    <div>
+                        <h1 class="h3 mb-2"><i class="bi bi-list-check me-2 text-primary"></i>Services Management</h1>
+                        <p class="mb-0">Manage physiotherapy services and pricing for your clinic.</p>
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="showCreateServiceModal()">
+                        <i class="bi bi-plus-circle me-2"></i>New Service
+                    </button>
+                </div>
+
+                <div id="alerts-container"></div>
+
+                <!-- Filters -->
+                <div class="card filters-card mb-4">
+                    <div class="card-header">
+                        <i class="bi bi-funnel me-2 text-primary"></i>Filter services
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label for="filterType" class="form-label">Service Type</label>
+                                <select id="filterType" class="form-select" onchange="loadServices()">
+                                    <option value="">All Types</option>
+                                    <option value="PHYSIOTHERAPY">Physiotherapy</option>	
+									<option value="COURSES">Courses</option>									
+                                    <option value="CONSULTATION">Consultation</option>
+                                    <option value="EQUIPMENT">Equipment</option>
+                                    <option value="OTHER">Other</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="filterStatus" class="form-label">Status</label>
+                                <select id="filterStatus" class="form-select" onchange="loadServices()">
+                                    <option value="">All Status</option>
+                                    <option value="1" selected>Active</option>
+                                    <option value="0">Inactive</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="searchService" class="form-label">Search</label>
+                                <input type="text" id="searchService" class="form-control" placeholder="Search by name or code..." oninput="loadServices()">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Services Table -->
+                <div class="card services-card">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Code</th>
+                                        <th>Service Name</th>
+                                        <th>Type</th>
+                                        <th>Default Price (฿)</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="services-table-body">
+                                    <tr><td colspan="6" class="text-center">Loading...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Create/Edit Service Modal -->
+    <div class="modal fade" id="serviceModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="serviceModalTitle"><i class="bi bi-plus-circle me-2"></i>New Service</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="serviceForm">
+                        <input type="hidden" id="serviceId">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="serviceCode" class="form-label">Service Code <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="serviceCode" required placeholder="e.g., PT-001">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="serviceType" class="form-label">Service Type <span class="text-danger">*</span></label>
+                                <select id="serviceType" class="form-select" required>
+                                    <option value="">Select type</option>
+                                    <option value="PHYSIOTHERAPY">Physiotherapy</option>
+									<option value="COURSES">Courses</option>
+                                    <option value="CONSULTATION">Consultation</option>
+                                    <option value="EQUIPMENT">Equipment</option>
+                                    <option value="OTHER">Other</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label for="serviceName" class="form-label">Service Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="serviceName" required placeholder="e.g., Manual Therapy Session">
+                            </div>
+                            <div class="col-12">
+                                <label for="serviceDescription" class="form-label">Description</label>
+                                <textarea class="form-control" id="serviceDescription" rows="3" placeholder="Detailed description of the service..."></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="defaultPrice" class="form-label">Default Price (฿) <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="defaultPrice" required min="0" step="0.01" placeholder="0.00">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="serviceActive" class="form-label">Status</label>
+                                <select id="serviceActive" class="form-select">
+                                    <option value="1">Active</option>
+                                    <option value="0">Inactive</option>
+                                </select>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-2"></i>Cancel
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="saveService()">
+                        <i class="bi bi-check-circle me-2"></i>Save Service
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Clinic Pricing Modal -->
+    <div class="modal fade" id="clinicPricingModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div>
+                        <h5 class="modal-title" id="clinicPricingModalTitle"><i class="bi bi-currency-dollar me-2"></i>Clinic Pricing</h5>
+                        <small class="text-white-50" id="pricing-default-price">Default Price: ฿0.00</small>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Configure clinic-specific pricing for this service. Enable the service for each clinic and set custom prices.
+                        If disabled or price not set, the default price will be used.
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Clinic Code</th>
+                                    <th>Clinic Name</th>
+                                    <th>Enabled</th>
+                                    <th>Custom Price (฿)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="clinic-pricing-table-body">
+                                <tr><td colspan="4" class="text-center">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-2"></i>Cancel
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="saveClinicPricing()">
+                        <i class="bi bi-check-circle me-2"></i>Save Clinic Pricing
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        window.userInfo = {
+            id: <%= user.id %>,
+            role: <%- JSON.stringify(user.role) %>,
+            email: <%- JSON.stringify(user.email || '') %>
+        };
+    </script>
+    <script src="/public/js/services.js?v=1765446492000<%= Date.now() %>"></script>
+</body>
+</html>

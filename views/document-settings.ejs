@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Settings - RehabPlus System</title>
+    <link rel="icon" href="/public/images/Fav.png" type="image/x-icon">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body {
+            background: #f5f7fb;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 2px 0 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.85);
+            padding: 0.75rem 1rem;
+            margin: 0.25rem 1rem;
+            border-radius: 0.5rem;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            background: rgba(255, 255, 255, 0.25);
+            color: #fff;
+        }
+
+        main {
+            min-height: 100vh;
+            padding-bottom: 4rem;
+        }
+
+        .page-header {
+            background: white;
+            border-radius: 1.5rem;
+            padding: 2rem;
+            box-shadow: 0 10px 40px rgba(82, 95, 225, 0.12);
+            margin-bottom: 2rem;
+        }
+
+        .page-header h1 {
+            font-weight: 700;
+            color: #2d2f44;
+        }
+
+        .page-header p {
+            color: #6c6f93;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            font-weight: 600;
+            padding: 0.6rem 1.6rem;
+            border-radius: 0.75rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.35);
+        }
+
+        .nav-tabs {
+            border-bottom: 2px solid rgba(102, 126, 234, 0.15);
+        }
+
+        .nav-tabs .nav-link {
+            border: none;
+            color: #6c6f93;
+            font-weight: 600;
+            padding: 1rem 1.5rem;
+            margin-right: 0.5rem;
+            border-radius: 0.75rem 0.75rem 0 0;
+            transition: all 0.3s ease;
+        }
+
+        .nav-tabs .nav-link:hover {
+            background: rgba(102, 126, 234, 0.05);
+            color: #667eea;
+        }
+
+        .nav-tabs .nav-link.active {
+            background: white;
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .settings-card,
+        .preview-card {
+            border: none;
+            border-radius: 1.25rem;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+            margin-bottom: 1.5rem;
+        }
+
+        .settings-card .card-header,
+        .preview-card .card-header {
+            background: transparent;
+            border-bottom: 1px solid rgba(102, 126, 234, 0.15);
+            font-weight: 600;
+            color: #2d2f44;
+            padding: 1.25rem 1.5rem;
+        }
+
+        .settings-card .card-body,
+        .preview-card .card-body {
+            padding: 1.5rem;
+        }
+
+        .form-label {
+            color: #2d2f44;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .form-control, .form-select {
+            border: 2px solid #e8ecf4;
+            border-radius: 0.75rem;
+            padding: 0.75rem 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.1);
+        }
+
+        .form-check-input:checked {
+            background-color: #667eea;
+            border-color: #667eea;
+        }
+
+        .color-picker-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .color-preview {
+            width: 40px;
+            height: 40px;
+            border-radius: 4px;
+            border: 2px solid #dee2e6;
+        }
+
+        .preview-frame-container {
+            border: 2px solid #e8ecf4;
+            border-radius: 1rem;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+        }
+
+        .btn-outline-primary {
+            color: #667eea;
+            border: 2px solid #667eea;
+            font-weight: 600;
+            border-radius: 0.5rem;
+        }
+
+        .btn-outline-primary:hover {
+            background: #667eea;
+            border-color: #667eea;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <!-- Mobile navbar toggle -->
+    <nav class="navbar navbar-dark bg-dark d-md-none">
+        <div class="container-fluid">
+            <span class="navbar-brand">RehabPlus System</span>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <%- include('partials/sidebar', { user, activePage: 'document-settings' }) %>
+
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+                <div class="page-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h1>
+                                <i class="bi bi-file-earmark-text me-2"></i>
+                                Document Customization
+                            </h1>
+                            <p class="mb-0 mt-2">Customize your bills, certificates, and appointment cards templates</p>
+                        </div>
+                        <div>
+                            <button class="btn btn-primary" id="saveSettings">
+                                <i class="bi bi-save me-2"></i>Save Settings
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="alert-container"></div>
+
+                <!-- Document Type Tabs -->
+                <ul class="nav nav-tabs mb-4" id="documentTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="bill-tab" data-bs-toggle="tab" data-bs-target="#bill-settings" type="button">
+                            <i class="bi bi-receipt me-2"></i>Bill Settings
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="certificate-tab" data-bs-toggle="tab" data-bs-target="#certificate-settings" type="button">
+                            <i class="bi bi-award me-2"></i>PT Certificate Settings
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="appointment-tab" data-bs-toggle="tab" data-bs-target="#appointment-settings" type="button">
+                            <i class="bi bi-calendar-check me-2"></i>Appointment Card Settings
+                        </button>
+                    </li>
+                </ul>
+
+                <!-- Tab Content -->
+                <div class="tab-content" id="documentTabContent">
+                    <!-- Bill Settings Tab -->
+                    <div class="tab-pane fade show active" id="bill-settings" role="tabpanel">
+                        <div class="row">
+                            <!-- Settings Column -->
+                            <div class="col-lg-5">
+                                <div class="card settings-card">
+                                    <div class="card-header">
+                                        <i class="bi bi-gear me-2"></i>Bill Template Settings
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label class="form-label" for="bill-company-name">Company Name</label>
+                                            <input type="text" class="form-control" id="bill-company-name" placeholder="Enter company name">
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label" for="bill-address">Address</label>
+                                            <textarea class="form-control" id="bill-address" rows="2" placeholder="Enter address"></textarea>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label" for="bill-phone">Phone</label>
+                                            <input type="text" class="form-control" id="bill-phone" placeholder="02-123-4567">
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label" for="bill-tax-id">Tax ID</label>
+                                            <input type="text" class="form-control" id="bill-tax-id" placeholder="0123456789012">
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label" for="bill-header-color">Header Color</label>
+                                            <div class="color-picker-wrapper">
+                                                <input type="color" class="form-control form-control-color" id="bill-header-color" value="#667eea">
+                                                <span id="bill-header-color-value">#667eea</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label" for="bill-footer">Footer Text</label>
+                                            <input type="text" class="form-control" id="bill-footer" placeholder="Thank you for your business!">
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="bill-show-logo">
+                                                <label class="form-check-label" for="bill-show-logo">
+                                                    Show Company Logo
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="bill-show-tax" checked>
+                                                <label class="form-check-label" for="bill-show-tax">
+                                                    Show Tax ID
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="bill-show-qr">
+                                                <label class="form-check-label" for="bill-show-qr">
+                                                    Show QR Code
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Preview Column -->
+                            <div class="col-lg-7">
+                                <div class="card preview-card">
+                                    <div class="card-header d-flex justify-content-between align-items-center">
+                                        <span><i class="bi bi-eye me-2"></i>Live Preview</span>
+                                        <button class="btn btn-sm btn-outline-primary" onclick="document.getElementById('bill-preview-frame').contentWindow.location.reload()">
+                                            <i class="bi bi-arrow-clockwise me-1"></i> Refresh
+                                        </button>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <div class="preview-frame-container">
+                                            <iframe
+                                                id="bill-preview-frame"
+                                                src="/documents/preview/bill"
+                                                style="width: 100%; height: 600px; border: none; background: white;">
+                                            </iframe>
+                                        </div>
+                                        <p class="text-muted mt-2 text-center">
+                                            <small><i class="bi bi-info-circle me-1"></i>Save settings and refresh preview to see changes</small>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PT Certificate Settings Tab -->
+                    <div class="tab-pane fade" id="certificate-settings" role="tabpanel">
+                        <div class="row">
+                            <!-- Settings Column -->
+                            <div class="col-lg-5">
+                                <div class="card settings-card">
+                                    <div class="card-header">
+                                        <i class="bi bi-gear me-2"></i>Certificate Template Settings
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label class="form-label" for="cert-clinic-name">Clinic Name</label>
+                                            <input type="text" class="form-control" id="cert-clinic-name" placeholder="Enter clinic name">
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label" for="cert-address">Address</label>
+                                            <textarea class="form-control" id="cert-address" rows="2" placeholder="Enter address"></textarea>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label" for="cert-border-color">Border Color</label>
+                                            <div class="color-picker-wrapper">
+                                                <input type="color" class="form-control form-control-color" id="cert-border-color" value="#667eea">
+                                                <span id="cert-border-color-value">#667eea</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label" for="cert-doctor-name">Doctor Name</label>
+                                            <input type="text" class="form-control" id="cert-doctor-name" placeholder="Dr. Name">
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label" for="cert-license">License Number</label>
+                                            <input type="text" class="form-control" id="cert-license" placeholder="PT License Number">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Preview Column -->
+                            <div class="col-lg-7">
+                                <div class="card preview-card">
+                                    <div class="card-header d-flex justify-content-between align-items-center">
+                                        <span><i class="bi bi-eye me-2"></i>Live Preview</span>
+                                        <button class="btn btn-sm btn-outline-primary" onclick="document.getElementById('cert-preview-frame').contentWindow.location.reload()">
+                                            <i class="bi bi-arrow-clockwise me-1"></i> Refresh
+                                        </button>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <div class="preview-frame-container">
+                                            <iframe
+                                                id="cert-preview-frame"
+                                                src="/documents/preview/pt_cert"
+                                                style="width: 100%; height: 600px; border: none; background: white;">
+                                            </iframe>
+                                        </div>
+                                        <p class="text-muted mt-2 text-center">
+                                            <small><i class="bi bi-info-circle me-1"></i>Save settings and refresh preview to see changes</small>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Appointment Card Settings Tab -->
+                    <div class="tab-pane fade" id="appointment-settings" role="tabpanel">
+                        <div class="row">
+                            <!-- Settings Column -->
+                            <div class="col-lg-5">
+                                <div class="card settings-card">
+                                    <div class="card-header">
+                                        <i class="bi bi-gear me-2"></i>Appointment Card Template Settings
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label class="form-label" for="appt-clinic-name">Clinic Name</label>
+                                            <input type="text" class="form-control" id="appt-clinic-name" placeholder="Enter clinic name">
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label" for="appt-address">Address</label>
+                                            <textarea class="form-control" id="appt-address" rows="2" placeholder="Enter clinic address"></textarea>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label" for="appt-phone">Phone</label>
+                                            <input type="text" class="form-control" id="appt-phone" placeholder="02-123-4567">
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label" for="appt-card-size">Card Size</label>
+                                            <select class="form-select" id="appt-card-size">
+                                                <option value="standard">Standard (3.5" x 2")</option>
+                                                <option value="large">Large (4" x 6")</option>
+                                                <option value="a6">A6 (105mm x 148mm)</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label" for="appt-header-color">Header Color</label>
+                                            <div class="color-picker-wrapper">
+                                                <input type="color" class="form-control form-control-color" id="appt-header-color" value="#667eea">
+                                                <span id="appt-header-color-value">#667eea</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label" for="appt-doctor-name">Doctor/Therapist Name (Default)</label>
+                                            <input type="text" class="form-control" id="appt-doctor-name" placeholder="Dr. Somchai / นพ.สมชาย">
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label" for="appt-instructions">Instructions Text</label>
+                                            <textarea class="form-control" id="appt-instructions" rows="3" placeholder="กรุณามาถึงก่อนเวลานัด 15 นาที..."></textarea>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label" for="appt-map-link">Google Maps Link</label>
+                                            <input type="url" class="form-control" id="appt-map-link" placeholder="https://maps.google.com/?q=...">
+                                            <small class="text-muted">This link will be shown as a button and converted to QR code</small>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="appt-show-logo">
+                                                <label class="form-check-label" for="appt-show-logo">
+                                                    Show Clinic Logo
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="appt-show-qr" checked>
+                                                <label class="form-check-label" for="appt-show-qr">
+                                                    Show QR Code (for easy check-in)
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="appt-show-map">
+                                                <label class="form-check-label" for="appt-show-map">
+                                                    Show Location Map
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Preview Column -->
+                            <div class="col-lg-7">
+                                <div class="card preview-card">
+                                    <div class="card-header d-flex justify-content-between align-items-center">
+                                        <span><i class="bi bi-eye me-2"></i>Live Preview</span>
+                                        <button class="btn btn-sm btn-outline-primary" onclick="document.getElementById('appt-preview-frame').contentWindow.location.reload()">
+                                            <i class="bi bi-arrow-clockwise me-1"></i> Refresh
+                                        </button>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <div class="preview-frame-container">
+                                            <iframe
+                                                id="appt-preview-frame"
+                                                src="/documents/preview/appointment_card"
+                                                style="width: 100%; height: 1400px; border: none; background: white; overflow-y: scroll;">
+                                            </iframe>
+                                        </div>
+                                        <p class="text-muted mt-2 text-center">
+                                            <small><i class="bi bi-info-circle me-1"></i>Save settings and refresh preview to see changes</small>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/public/js/document-settings.js?v=1765446492000"></script>
+</body>
+</html>

@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Statistics Dashboard - RehabPlus System</title>
+    <link rel="icon" href="/public/images/Fav.png" type="image/x-icon">
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#667eea">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Design System -->
+    <link href="/public/css/variables.css" rel="stylesheet">
+    <link href="/public/css/base.css" rel="stylesheet">
+    <link href="/public/css/accessibility.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        /* --- DASHBOARD THEME VARIABLES --- */
+        :root {
+            --primary-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            --surface-color: #ffffff;
+            --background-color: #f3f4f6;
+            --text-main: #1f2937;
+            --text-secondary: #6b7280;
+            --border-radius-md: 12px;
+            --border-radius-sm: 8px;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            
+            /* Legacy overrides */
+            --input-bg: #f8fafc;
+        }
+
+        body {
+            background-color: #f0f2f5; /* Matches dashboard.ejs exactly */
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* --- MAIN LAYOUT --- */
+        main {
+            padding-top: 1.5rem;
+            padding-bottom: 3rem;
+        }
+
+        /* --- PAGE HEADER (Dashboard Style) --- */
+        .page-header {
+            background: var(--surface-color);
+            border-radius: var(--border-radius-md);
+            padding: 0.8rem 1.2rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid rgba(255,255,255,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .page-header h1 {
+            font-weight: 800;
+            font-size: 1.4rem;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0;
+        }
+
+        .page-header .subtitle {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        /* --- CARDS --- */
+        .content-card {
+            background: var(--surface-color);
+            border-radius: var(--border-radius-md);
+            border: none;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 1.5rem;
+            position: relative;
+            overflow: hidden;
+            padding: 1.5rem;
+            transition: transform 0.2s ease;
+        }
+
+        .content-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        /* Decorative top border */
+        .content-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: var(--primary-gradient);
+            opacity: 0.8;
+        }
+
+        .card-header-custom {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .card-header-custom h5 {
+            font-weight: 700;
+            color: var(--text-main);
+            margin: 0;
+            font-size: 1.1rem;
+        }
+
+        /* --- STAT CARDS --- */
+        .stat-card {
+            background: var(--surface-color);
+            border-radius: var(--border-radius-md);
+            border: none;
+            box-shadow: var(--shadow-sm);
+            padding: 1.5rem;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: transform 0.2s ease;
+            position: relative;
+            overflow: hidden;
+            color: white;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        /* Gradient Variants */
+        .bg-gradient-primary { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); }
+        .bg-gradient-success { background: linear-gradient(135deg, #059669 0%, #34d399 100%); }
+        .bg-gradient-info { background: linear-gradient(135deg, #0ea5e9 0%, #38bdf8 100%); }
+        .bg-gradient-warning { background: linear-gradient(135deg, #d97706 0%, #fbbf24 100%); }
+
+        .stat-card h6 {
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+            font-weight: 700;
+            opacity: 0.9;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-card h2 {
+            font-weight: 800;
+            font-size: 2.2rem;
+            margin: 0;
+        }
+
+        /* --- FORM CONTROLS --- */
+        .form-label {
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.25rem;
+        }
+
+        .form-control {
+            background-color: var(--input-bg);
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 0.6rem 0.8rem;
+            font-size: 0.9rem;
+        }
+        
+        .form-control:focus {
+            background-color: #fff;
+            border-color: var(--theme-primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        /* --- BUTTONS --- */
+        .btn {
+            border: none;
+            font-weight: 600;
+            border-radius: 6px;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: var(--primary-gradient);
+            color: white;
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #059669 0%, #34d399 100%);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+            color: white;
+        }
+
+        /* --- TABLES --- */
+        .table th {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            border-bottom: 1px solid #e5e7eb;
+            font-weight: 600;
+            padding: 0.75rem 1rem;
+            background-color: #f9fafb;
+        }
+        
+        .table td {
+            padding: 0.75rem 1rem;
+            vertical-align: middle;
+            font-size: 0.9rem;
+            color: var(--text-main);
+        }
+
+        /* Chart Area */
+        #revenueChart {
+            width: 100% !important;
+            height: auto !important;
+        }
+    </style>
+</head>
+<body>
+    <%- include('partials/header') %>
+
+    <a href="#main-content" class="skip-link d-none">Skip to main content</a>
+
+    <!-- Mobile navbar toggle -->
+    <nav class="navbar navbar-dark bg-dark d-md-none">
+        <div class="container-fluid">
+            <span class="navbar-brand font-weight-bold">RehabPlus</span>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <%- include('partials/sidebar', { user, activePage: 'statistics' }) %>
+
+            <main id="main-content" class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                
+                <!-- Page Header (Dashboard Style) -->
+                <div class="page-header flex-column flex-md-row">
+                    <div>
+                        <h1 class="h2">Statistics Dashboard</h1>
+                        <span class="subtitle">Revenue analytics and performance metrics</span>
+                    </div>
+                    <div class="d-flex gap-2 mt-3 mt-md-0">
+                        <button class="btn btn-success" id="btn-export-csv">
+                            <i class="bi bi-file-earmark-spreadsheet me-2"></i> Export CSV
+                        </button>
+                        <button class="btn btn-primary" id="btn-refresh-stats">
+                            <i class="bi bi-arrow-clockwise me-2"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+
+                <div id="alerts-container"></div>
+
+                <!-- Date Filters -->
+                <div class="content-card mb-4">
+                    <div class="card-header-custom">
+                        <h5><i class="bi bi-calendar-range me-2 text-primary"></i> Date Range Filter</h5>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">From Date</label>
+                            <input type="date" id="filter-date-from" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">To Date</label>
+                            <input type="date" id="filter-date-to" class="form-control">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Summary Cards -->
+                <div class="row g-4 mb-4">
+                    <div class="col-md-3">
+                        <div class="stat-card bg-gradient-primary">
+                            <div class="card-body p-0 d-flex flex-column justify-content-between h-100">
+                                <div>
+                                    <h6>Total Bills</h6>
+                                    <h2 id="stat-total-bills">0</h2>
+                                </div>
+                                <i class="bi bi-receipt opacity-25 position-absolute end-0 bottom-0 me-3 mb-3 fs-1"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card bg-gradient-success">
+                            <div class="card-body p-0 d-flex flex-column justify-content-between h-100">
+                                <div>
+                                    <h6>Total Revenue</h6>
+                                    <h2 id="stat-total-revenue">฿0</h2>
+                                </div>
+                                <i class="bi bi-currency-dollar opacity-25 position-absolute end-0 bottom-0 me-3 mb-3 fs-1"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card bg-gradient-info">
+                            <div class="card-body p-0 d-flex flex-column justify-content-between h-100">
+                                <div>
+                                    <h6>Collected</h6>
+                                    <h2 id="stat-collected-revenue">฿0</h2>
+                                </div>
+                                <i class="bi bi-check-circle opacity-25 position-absolute end-0 bottom-0 me-3 mb-3 fs-1"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card bg-gradient-warning">
+                            <div class="card-body p-0 d-flex flex-column justify-content-between h-100">
+                                <div>
+                                    <h6>Outstanding</h6>
+                                    <h2 id="stat-outstanding-revenue">฿0</h2>
+                                </div>
+                                <i class="bi bi-hourglass-split opacity-25 position-absolute end-0 bottom-0 me-3 mb-3 fs-1"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chart Section -->
+                <div class="content-card mb-4">
+                    <div class="card-header-custom">
+                        <h5><i class="bi bi-bar-chart-fill me-2 text-primary"></i> Revenue by Clinic</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <canvas id="revenueChart" height="100"></canvas>
+                    </div>
+                </div>
+
+                <!-- Clinic Statistics Table -->
+                <div class="content-card p-0 mb-4">
+                    <div class="card-header-custom px-4 pt-4 border-bottom-0 mb-0">
+                        <h5><i class="bi bi-building me-2 text-primary"></i> Bill Statistics by Clinic</h5>
+                    </div>
+                    <div class="table-responsive px-4 pb-4">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Clinic</th>
+                                    <th>Total Bills</th>
+                                    <th class="text-end">Total Revenue</th>
+                                    <th class="text-end">Collected Revenue</th>
+                                </tr>
+                            </thead>
+                            <tbody id="clinic-stats-table-body">
+                                <tr><td colspan="4" class="text-center py-4 text-muted">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Detailed Bills Table -->
+                <div class="content-card p-0 mb-4">
+                    <div class="card-header-custom px-4 pt-4 border-bottom-0 mb-0">
+                        <h5><i class="bi bi-receipt-cutoff me-2 text-primary"></i> Detailed Bills (Top 50 by Amount)</h5>
+                    </div>
+                    <div class="table-responsive px-4 pb-4">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Bill Number</th>
+                                    <th>Date</th>
+                                    <th>Patient/Client</th>
+                                    <th>HN</th>
+                                    <th>Clinic</th>
+                                    <th>Services</th>
+                                    <th class="text-end">Amount</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="detailed-bills-table-body">
+                                <tr><td colspan="9" class="text-center py-4 text-muted">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Service Ranking Table -->
+                <div class="content-card p-0 mb-4">
+                    <div class="card-header-custom px-4 pt-4 border-bottom-0 mb-0">
+                        <h5><i class="bi bi-star-fill me-2 text-warning"></i> Top Services by Revenue</h5>
+                    </div>
+                    <div class="table-responsive px-4 pb-4">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>Service Name</th>
+                                    <th class="text-center">Usage Count</th>
+                                    <th class="text-center">Total Quantity</th>
+                                    <th class="text-end">Total Revenue</th>
+                                </tr>
+                            </thead>
+                            <tbody id="service-ranking-table-body">
+                                <tr><td colspan="5" class="text-center py-4 text-muted">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="/public/js/utils.js?v=1765446492000"></script>
+    <script src="/public/js/accessibility.js?v=1765446492000"></script>
+    <script src="/public/js/statistics.js?v=1765446492000"></script>
+</body>
+</html>

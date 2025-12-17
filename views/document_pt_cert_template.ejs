@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Certificate - <%= data.certificate.pn_code %></title>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    
+    <style>
+        @page {
+            size: A4;
+            margin: 0;
+        }
+
+        body {
+            font-family: 'Sarabun', 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f0f2f5;
+            -webkit-print-color-adjust: exact;
+            color-adjust: exact;
+        }
+
+        .certificate-container {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            padding: 5mm 5mm; /* A4 Padding */
+            background: white;
+            box-sizing: border-box;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* --- NEW: Watermark Style --- */
+        .watermark {
+            position: absolute; 
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-30deg);
+            opacity: 0.1;
+            width: 70%;
+            height: auto;
+            filter: grayscale(100%);
+            z-index: 0;
+            pointer-events: none;
+            display: block;
+            max-width: 150mm;
+        }
+        
+        @media print {
+            body {
+                margin: 0;
+                padding: 0;
+                background: white;
+            }
+            .no-print {
+                display: none;
+            }
+            
+            /* --- Multi-page & Watermark Print Fix --- */
+            .certificate-container {
+                width: 100%;
+                min-height: 0;
+                height: auto;
+                margin: 0;
+                box-shadow: none;
+                border: none;
+                padding: 5mm 5mm; /* This is the print margin */
+                overflow: visible;
+                position: relative;
+            }
+            
+            .watermark {
+                -webkit-print-color-adjust: exact;
+                color-adjust: exact;
+                position: fixed; /* This makes it repeat on every page */
+            }
+
+            .header,
+            .patient-info-box,
+            .diagnosis-section,
+            .subjective-section,
+            .notes-section,
+            .signature-section,
+            .footer {
+                page-break-inside: avoid;
+            }
+            
+            .certificate-title {
+                page-break-after: avoid;
+            }
+            /* --- End Fix --- */
+        }
+
+
+        /* --- Header (Logo Left, Info Right) --- */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 3px solid <%= data.clinic.border_color || '#333' %>;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header-left {}
+
+        .clinic-logo {
+            max-width: 150px; 
+            max-height: 100px;
+        }
+
+        .header-right {
+            text-align: right;
+        }
+
+        .clinic-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .clinic-details {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.0;
+            margin-bottom: 10px;
+        }
+        
+        .certificate-number {
+            text-align: right;
+            font-size: 12px;
+            color: #666;
+        }
+        /* --- End Header --- */
+
+
+        .certificate-title {
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            margin: 25px 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .certificate-body {
+            font-size: 14px;
+            line-height: 1.8;
+            color: #333;
+            position: relative;
+            z-index: 1;
+        }
+
+        .info-section {
+            margin-bottom: 10px;
+        }
+
+        /* --- Patient Info Box (Fixed Left/Right) --- */
+        .patient-info-box {
+            /* === CHANGED: Added RGBA for transparency === */
+            background-color: rgba(248, 249, 250, 0.85); /* 85% opacity */
+            padding: 15px 20px;
+            border: 1px solid #eee;
+            border-radius: 5px;
+            margin-top: 20px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .compact-info-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px 15px;
+        }
+        
+        .compact-info-layout > div {
+            display: flex;
+            gap: 5px;
+            font-size: 14px;
+        }
+
+        .compact-info-layout strong {
+            font-weight: 600;
+            color: #555;
+            white-space: nowrap;
+        }
+        /* --- End Info Box --- */
+
+
+        /* General Info Row (for other items) */
+        .info-row {
+            display: flex;
+            margin-bottom: 8px;
+            padding: 4px 0;
+        }
+
+        .info-label {
+            font-weight: 600;
+            min-width: 200px;
+            color: #555;
+        }
+
+        .info-value {
+            flex: 1;
+            color: #333;
+            border-bottom: 1px dotted #ccc;
+            padding-bottom: 2px;
+        }
+
+
+        /* Diagnosis Box */
+        .diagnosis-section {
+             /* === CHANGED: Added RGBA for transparency === */
+            background-color: rgba(248, 249, 250, 0.85);
+            padding: 15px;
+            border-left: 4px solid <%= data.clinic.border_color || '#007bff' %>;
+            margin: 20px 0;
+            border-radius: 4px;
+            position: relative;
+            z-index: 1;
+        }
+        .diagnosis-title {
+            font-weight: 700;
+            color: <%= data.clinic.border_color || '#007bff' %>;
+            margin-bottom: 10px;
+            font-size: 15px;
+        }
+        .diagnosis-content {
+            color: #333;
+            line-height: 1.8;
+            white-space: pre-wrap;
+        }
+
+        /* Subjective Box */
+        .subjective-section {
+            margin: 20px 0;
+            padding: 15px;
+            /* === CHANGED: Added RGBA for transparency === */
+            background-color: rgba(255, 243, 205, 0.85);
+            border-left: 4px solid #ffc107;
+            border-radius: 4px;
+            position: relative;
+            z-index: 1;
+        }
+        .subjective-title {
+            font-weight: 700;
+            color: #856404;
+            margin-bottom: 10px;
+            font-size: 15px;
+        }
+        .subjective-content {
+            color: #333;
+            line-height: 1.8;
+            white-space: pre-wrap;
+        }
+        
+        /* Notes Box */
+        .notes-section {
+            margin: 20px 0;
+            padding: 15px;
+            /* === CHANGED: Added RGBA for transparency === */
+            background-color: rgba(244, 244, 244, 0.85);
+            border-left: 4px solid #777;
+            border-radius: 4px;
+            position: relative;
+            z-index: 1;
+        }
+        .notes-title {
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 15px;
+        }
+        .notes-content {
+            color: #333;
+            line-height: 1.8;
+            white-space: pre-wrap;
+        }
+
+
+        .signature-section {
+            margin-top: 15px;
+            text-align: right;
+            position: relative;
+            z-index: 1;
+        }
+
+        .signature-line {
+            display: inline-block;
+            min-width: 250px;
+            border-bottom: 1px solid #333;
+            margin-bottom: 5px;
+            height: 15px;
+        }
+
+        .signature-label {
+            font-size: 13px;
+            color: #555;
+        }
+
+        .footer {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 11px;
+            color: #999;
+            border-top: 1px solid #ddd;
+            padding-top: 15px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .print-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 24px;
+            background: <%= data.clinic.border_color || '#007bff' %>;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <button class="print-button no-print" onclick="window.print()">
+        <i class="bi bi-printer"></i> พิมพ์ใบรับรอง
+    </button>
+
+    <div class="certificate-container">
+        
+        <img src="/uploads/Logo-Pink-En.png" alt="Watermark Logo" class="watermark">
+
+        <div class="header">
+            <div class="header-left">
+                <img src="/uploads/Logo-Pink-En.png" alt="Clinic Logo" class="clinic-logo">
+            </div>
+            <div class="header-right">
+                <div class="clinic-name"><%= data.clinic.name %></div>
+                <div class="clinic-details">
+                    <%= data.clinic.address %><br>
+                    <% if (data.clinic.phone) { %>โทร / Tel: <%= data.clinic.phone %><% } %>
+                    <% if (data.clinic.phone && data.clinic.email) { %> | <% } %>
+                    <% if (data.clinic.email) { %>Email: <%= data.clinic.email %><% } %>
+                </div>
+                <div class="certificate-number">
+                    เลขที่เอกสาร / Certificate No: <%= data.certificate.id %><br>
+                    วันที่ / Date: <%= new Date(data.certificate.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }) %>
+                </div>
+            </div>
+        </div>
+
+        <div class="certificate-title">
+            ใบรับรองกายภาพบำบัด
+            <br>
+            <span style="font-size: 0.8em;">PHYSIOTHERAPY CERTIFICATE</span>
+        </div>
+
+        <div class="certificate-body">
+            <div class="info-section">
+                <p style="margin-bottom: 10px;">เอกสารนี้รับรองว่า / This is to certify that:</p>
+
+                <div class="patient-info-box">
+                    <div class="compact-info-layout">
+                        <div>
+                            <strong>ชื่อผู้ป่วย / Patient Name:</strong>
+                            <span><%= data.patient.first_name %> <%= data.patient.last_name %></span>
+                        </div>
+                        <div>
+                            <strong>วันเกิด / Date of Birth:</strong>
+                            <span><%= data.patient.dob ? new Date(data.patient.dob).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'N/A' %></span>
+                        </div>
+                        <div>
+                            <strong>รหัสผู้ป่วย / Patient ID (HN):</strong>
+                            <span><%= data.patient.hn %></span>
+                        </div>
+                        <div>
+                            <strong>รหัสอ้างอิง / Referral Code (PN):</strong>
+                            <span><%= data.certificate.pn_code %></span>
+                        </div>
+                        <div>
+                            <strong>เบอร์ติดต่อ / Contact Number:</strong>
+                            <span><%= data.patient.phone || 'N/A' %></span>
+                        </div>
+                    </div>
+                </div>
+                </div>
+
+            <div class="diagnosis-section">
+                <div class="diagnosis-title">คำวินิจฉัย (กายภาพบำบัด) / Physiotherapy Diagnosis:</div>
+                <div class="diagnosis-content"><%= data.certData.pt_diagnosis || 'Not specified' %></div>
+            </div>
+
+            <% if (data.soap && data.soap.subjective) { %>
+            <div class="subjective-section">
+                <div class="subjective-title">อาการสำคัญ / Chief Complaint (Subjective):</div>
+                <div class="subjective-content"><%= data.soap.subjective %></div>
+            </div>
+            <% } %>
+
+            <div class="info-section" style="margin-top: 30px;">
+                <div class="info-row">
+                    <div class="info-label">ช่วงเวลาที่รักษา / Treatment Period:</div>
+                    <div class="info-value">
+                        <%= data.pnCase.created_at ? new Date(data.pnCase.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'N/A' %> -
+                        <%= data.pnCase.completed_at ? new Date(data.pnCase.completed_at).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'N/A' %>
+                    </div>
+                </div>
+
+                <% if (data.certData.additional_notes) { %>
+                <div class="notes-section">
+                     <div class="notes-title">หมายเหตุเพิ่มเติม / Additional Notes:</div>
+                     <div class="notes-content"><%= data.certData.additional_notes %></div>
+                </div>
+                <% } %>
+            </div>
+
+            <div class="signature-section">
+                <div class="signature-line"></div><br>
+                <div class="signature-label"><strong>นักกายภาพบำบัด / Physical Therapist</strong></div>
+                <div class="signature-label"><%= data.clinic.doctor_name || '.....................................' %></div>
+                <% if (data.clinic.license_number) { %>
+                <div class="signature-label" style="font-size: 11px; margin-top: 5px;">
+                    เลขที่ใบประกอบ / License No: <%= data.clinic.license_number %>
+                </div>
+                <% } %>
+            </div>
+        </div>
+
+        <div class="footer">
+            This is an official physiotherapy certificate issued by <%= data.clinic.name %><br>
+            Generated on <%= new Date().toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) %>
+        </div>
+    </div>
+
+    <script>
+        window.onload = function() {
+            <% if (!isPreview) { %>
+            window.print();
+            <% } %>
+        }
+    </script>
+</body>
+</html>

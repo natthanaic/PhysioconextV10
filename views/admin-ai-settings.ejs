@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Settings - RehabPlus</title>
+    <link rel="icon" href="/public/images/Fav.png" type="image/x-icon">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Libraries -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Design System -->
+    <link href="/public/css/variables.css" rel="stylesheet">
+    <link href="/public/css/base.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            --surface-color: #ffffff;
+            --background-color: #f0f2f5;
+            --text-main: #1f2937;
+            --text-secondary: #6b7280;
+            --border-radius-md: 12px;
+            --border-radius-sm: 8px;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            background-color: var(--background-color);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: var(--text-main);
+        }
+
+        /* --- Layout & Header --- */
+        main {
+            padding-top: 1.5rem;
+            padding-bottom: 1.5rem;
+        }
+
+        .page-header {
+            background: var(--surface-color);
+            border-radius: var(--border-radius-md);
+            padding: 0.8rem 1.2rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid rgba(255,255,255,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .page-header h1 {
+            font-weight: 800;
+            font-size: 1.4rem;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .page-header .subtitle {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-top: 2px;
+            display: block;
+        }
+
+        .bi-stars {
+            color: #8b5cf6; /* Matches gradient end */
+            animation: sparkle 3s ease-in-out infinite;
+        }
+
+        @keyframes sparkle {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.1); }
+        }
+
+        /* --- Cards --- */
+        .settings-card {
+            background: var(--surface-color);
+            border-radius: var(--border-radius-md);
+            border: 1px solid rgba(229, 231, 235, 0.8);
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+        }
+
+        .settings-card .card-header {
+            background: #fff;
+            border-bottom: 1px solid #f3f4f6;
+            padding: 1rem 1.5rem;
+        }
+
+        .settings-card .card-header h4 {
+            margin: 0;
+            font-weight: 700;
+            color: var(--text-main);
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .settings-card .card-body {
+            padding: 1.5rem;
+        }
+
+        /* --- Forms --- */
+        .form-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 0.4rem;
+        }
+
+        .form-control, .form-select {
+            font-size: 0.9rem;
+            padding: 0.6rem 0.8rem;
+            border-radius: var(--border-radius-sm);
+            border: 1px solid #d1d5db;
+            transition: all 0.2s;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: #8b5cf6;
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+        }
+
+        /* --- Buttons --- */
+        .btn {
+            border: none;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            border-radius: 6px;
+            padding: 0.5rem 1.2rem;
+            font-size: 0.9rem;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .btn-primary { background: var(--primary-gradient); color: white; }
+        .btn-success { background: #10b981; color: white; }
+        .btn-outline-secondary { border: 1px solid #d1d5db; background: white; color: var(--text-secondary); }
+        .btn-outline-secondary:hover { background: #f3f4f6; color: var(--text-main); }
+
+        /* --- Badges & Alerts --- */
+        .feature-badge {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            background: rgba(99, 102, 241, 0.1);
+            color: #6366f1;
+            border-radius: 50px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .warning-box {
+            background: #fffbeb;
+            border: 1px solid #fcd34d;
+            color: #92400e;
+            padding: 1rem;
+            border-radius: var(--border-radius-sm);
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+            display: flex;
+            gap: 0.75rem;
+            align-items: flex-start;
+        }
+
+        /* --- Status Indicators --- */
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 0.8rem;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 0.8rem;
+            border: 1px solid transparent;
+        }
+
+        .status-indicator.enabled {
+            background: rgba(16, 185, 129, 0.1);
+            color: #059669;
+            border-color: rgba(16, 185, 129, 0.2);
+        }
+
+        .status-indicator.disabled {
+            background: rgba(239, 68, 68, 0.1);
+            color: #dc2626;
+            border-color: rgba(239, 68, 68, 0.2);
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        .status-dot.enabled { background: #10b981; }
+        .status-dot.disabled { background: #ef4444; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Info Cards */
+        .info-icon-wrapper {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 0.5rem;
+            font-size: 1.2rem;
+        }
+    </style>
+</head>
+<body>
+    <%- include('partials/header') %>
+
+    <div class="container-fluid">
+        <div class="row">
+            <%- include('partials/sidebar', { user, activePage: 'ai-settings' }) %>
+
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <!-- Page Header -->
+                <div class="page-header">
+                    <div>
+                        <h1><i class="bi bi-stars"></i> AI Settings</h1>
+                        <span class="subtitle">Configure AI features for smart booking and assistance</span>
+                    </div>
+                    <div id="ai-status-container">
+                        <!-- Status will be loaded here via JS -->
+                    </div>
+                </div>
+
+                <!-- Alert Container -->
+                <div id="alert-container"></div>
+
+                <div class="row">
+                    <!-- Main Settings Column -->
+                    <div class="col-lg-8">
+                        <!-- Gemini AI Configuration -->
+                        <div class="settings-card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h4><i class="bi bi-robot text-primary"></i> Google Gemini AI</h4>
+                                <span class="feature-badge">Smart Booking</span>
+                            </div>
+                            <div class="card-body">
+                                <div class="warning-box">
+                                    <i class="bi bi-shield-lock-fill mt-1"></i>
+                                    <div>
+                                        <strong>Security Notice</strong><br>
+                                        Your API key is stored securely on the server and never exposed to public users. Only administrators can view and modify these settings.
+                                    </div>
+                                </div>
+
+                                <form id="gemini-settings-form">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label for="gemini-enabled" class="form-label">
+                                                Enable AI Features
+                                            </label>
+                                            <select class="form-select" id="gemini-enabled" name="enabled" required>
+                                                <option value="1">Enabled</option>
+                                                <option value="0">Disabled</option>
+                                            </select>
+                                            <div class="form-text small">Toggle AI on public booking page</div>
+                                        </div>
+
+                                        <div class="col-md-6">
+                                            <label for="gemini-model" class="form-label">
+                                                AI Model
+                                            </label>
+                                            <select class="form-select" id="gemini-model" name="model" required>
+                                                <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                                                <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash (Experimental)</option>
+                                                <option value="gemini-1.5-flash">Gemini 1.5 Flash (Stable)</option>
+                                                <option value="gemini-1.5-pro">Gemini 1.5 Pro (Advanced)</option>
+                                                <option value="gemini-exp-1206">Gemini Experimental (1206)</option>
+                                            </select>
+                                            <div class="form-text small">Select processing model</div>
+                                        </div>
+
+                                        <div class="col-12">
+                                            <label for="gemini-api-key" class="form-label">
+                                                API Key
+                                            </label>
+                                            <div class="input-group">
+                                                <input type="password" class="form-control" id="gemini-api-key" name="apiKey"
+                                                       placeholder="Enter your Gemini API key" required>
+                                                <button class="btn btn-outline-secondary" type="button" id="toggle-api-key" style="border-top-left-radius: 0; border-bottom-left-radius: 0;">
+                                                    <i class="bi bi-eye"></i>
+                                                </button>
+                                            </div>
+                                            <div class="form-text small">
+                                                Get your API key from <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-decoration-none">Google AI Studio</a>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-12 mt-4">
+                                            <label class="form-label mb-3">Active Features</label>
+                                            <div class="d-flex flex-column gap-2">
+                                                <div class="form-check form-switch p-3 border rounded bg-light">
+                                                    <input class="form-check-input ms-0 me-3" type="checkbox" id="feature-symptom-analysis" name="features.symptomAnalysis" checked>
+                                                    <label class="form-check-label fw-bold" for="feature-symptom-analysis">
+                                                        Symptom Analysis
+                                                    </label>
+                                                    <div class="text-muted small mt-1">Analyses patient descriptions to recommend pain zones</div>
+                                                </div>
+                                                <div class="form-check form-switch p-3 border rounded bg-light">
+                                                    <input class="form-check-input ms-0 me-3" type="checkbox" id="feature-note-polish" name="features.notePolish" checked>
+                                                    <label class="form-check-label fw-bold" for="feature-note-polish">
+                                                        Note Polishing
+                                                    </label>
+                                                    <div class="text-muted small mt-1">Professionalizes appointment notes automatically</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-4 pt-3 border-top d-flex gap-2">
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="bi bi-save me-2"></i>Save Settings
+                                        </button>
+                                        <button type="button" class="btn btn-success" id="test-ai-btn">
+                                            <i class="bi bi-lightning-charge me-2"></i>Test Connection
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Info Column -->
+                    <div class="col-lg-4">
+                        <div class="settings-card h-100">
+                            <div class="card-header">
+                                <h4><i class="bi bi-info-circle text-info"></i> How It Works</h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-4">
+                                    <div class="info-icon-wrapper bg-primary bg-opacity-10 text-primary">
+                                        <i class="bi bi-chat-heart-fill"></i>
+                                    </div>
+                                    <h6 class="fw-bold">Smart Symptom Detection</h6>
+                                    <p class="text-muted small mb-0">Users describe their symptoms in natural language, and AI recommends the appropriate pain zone and treatment plan.</p>
+                                </div>
+                                <div class="mb-4">
+                                    <div class="info-icon-wrapper bg-success bg-opacity-10 text-success">
+                                        <i class="bi bi-magic"></i>
+                                    </div>
+                                    <h6 class="fw-bold">Note Enhancement</h6>
+                                    <p class="text-muted small mb-0">AI automatically polishes rough notes into professional, medically accurate records.</p>
+                                </div>
+                                <div>
+                                    <div class="info-icon-wrapper bg-secondary bg-opacity-10 text-secondary">
+                                        <i class="bi bi-shield-lock-fill"></i>
+                                    </div>
+                                    <h6 class="fw-bold">Secure & Private</h6>
+                                    <p class="text-muted small mb-0">Processing happens securely on your server. API keys are never exposed to the client-side.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/public/js/admin-ai-settings.js?v=1765446492000"></script>
+</body>
+</html>

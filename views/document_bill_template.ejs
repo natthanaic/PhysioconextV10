@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ใบเสร็จ <%= data.bill_code %></title>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    
+    <style>
+        @page {
+            size: A5;
+            margin: 0; /* เราต้องการให้บราวเซอร์จัดการขอบกระดาษเอง */
+        }
+
+        body {
+            font-family: 'Sarabun', 'Arial', sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 10px;
+            -webkit-print-color-adjust: exact;
+            color-adjust: exact;
+            font-size: 11px;
+            color: #333;
+        }
+
+        .bill-container {
+            max-width: 500px; /* สำหรับแสดงบนจอคอม */
+            margin: 10px auto;
+            background: #ffffff;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .document-wrapper {
+            padding: 25px;
+        }
+        
+        @media print {
+            body { background-color: #ffffff; padding: 0; margin: 0; }
+            .bill-container {
+                margin: 0;
+                /* * === นี่คือ "ขนาดจริง" ที่แก้ไขแล้ว ===
+                 * เปลี่ยนจาก 15mm (1.5 ซม.) เป็น 10mm (1 ซม.)
+                 * ถ้าคุณอยากให้ "ไร้ขอบ" จริงๆ ให้ลองเปลี่ยนเป็น 5mm
+                 */
+                padding: 0mm; 
+                max-width: 100%;
+                border: none;
+                border-radius: 0;
+                box-shadow: none;
+            }
+            .no-print { display: none; }
+        }
+
+        /* --- Header --- */
+        .bill-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 5px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 5px;
+        }
+        
+        .header-left {
+            max-width: 60%;
+        }
+
+        .company-logo {
+            max-width: 90px;
+            max-height: 60px;
+            margin-bottom: 10px;
+            background: transparent;
+            padding: 0;
+        }
+
+        .company-info {
+            font-size: 11px;
+            line-height: 1.5;
+        }
+        .company-info strong {
+            font-size: 1.2em;
+            display: block;
+            margin-bottom: 5px;
+            color: #000;
+        }
+
+        .header-right {
+            text-align: right;
+            max-width: 40%;
+        }
+        .header-right h1 {
+            margin: 0;
+            font-size: 1.8em;
+            font-weight: 700;
+            color: <%= settings.header_color || '#000' %>;
+        }
+        .header-right .bill-code {
+            font-size: 1.1em;
+            margin-top: 3px;
+            font-weight: bold;
+        }
+        
+        /* --- Info Grid (2 Columns) --- */
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px; 
+            margin-bottom: 25px;
+        }
+        
+        .info-box h4 {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #000;
+            margin: 0 0 8px 0;
+            border-bottom: 2px solid <%= settings.header_color || '#eee' %>;
+            padding-bottom: 4px;
+        }
+        
+        .info-box p {
+            margin: 5px 0;
+            display: grid;
+            grid-template-columns: 80px 1fr; /* Adjusted label width */
+            gap: 5px;
+        }
+        .info-box strong {
+            font-weight: 500;
+        }
+        
+        /* --- Items Table --- */
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        .items-table th, .items-table td {
+            padding: 6px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        .items-table th {
+            background-color: <%= settings.header_color || '#333' %>;
+            color: #ffffff;
+            font-weight: bold;
+            font-size: 11px;
+        }
+        .items-table td {
+            font-size: 11px;
+        }
+        .text-right {
+            text-align: right;
+        }
+        .col-service { width: 55%; }
+        .col-qty { width: 10%; text-align: right; }
+        .col-price { width: 15%; text-align: right; }
+        .col-discount { width: 10%; text-align: right; }
+        .col-total { width: 10%; text-align: right; }
+
+        /* --- Summary Grid (2 Columns) --- */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+            page-break-inside: avoid;
+        }
+        
+        .notes-section {
+            font-size: 11px;
+        }
+        .notes-section h5 {
+            margin: 0 0 5px 0;
+            color: #000;
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+        
+        .totals-summary {
+            width: 100%;
+        }
+        .totals-table {
+            width: 100%;
+        }
+        .totals-table div {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            padding: 5px 0;
+            font-size: 12px;
+            border-bottom: 1px solid #eee;
+        }
+        .totals-table .label { font-weight: 500; text-align: left; }
+        .totals-table .value { font-weight: bold; text-align: right; }
+        .totals-table .grand-total {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: <%= settings.header_color || '#000' %>;
+            border-top: 3px double #333;
+            border-bottom: none;
+            margin-top: 5px;
+            padding-top: 8px;
+        }
+        .baht-text-total, .eng-text-total {
+            text-align: right;
+            font-weight: bold;
+            font-size: 1.05em;
+            color: #000;
+            padding: 5px 0 0 0;
+        }
+         .eng-text-total {
+            font-size: 0.95em;
+            font-weight: normal;
+        }
+
+        /* --- Footer Grid (2 Columns) --- */
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 5px;
+            margin-top: 5px;
+            padding-top: 10px;
+            page-break-inside: avoid;
+        }
+        
+        .footer-signatures {
+            text-align: center;
+            font-size: 11px;
+            color: #333;
+            margin-top: 10px;
+        }
+        .signature-box {
+            border-top: 1px solid #777;
+            padding-top: 8px;
+            margin: 30px auto 0 auto;
+            width: 200px; /* Fixed width */
+        }
+        .signature-box p { margin: 2px 0; }
+        .signature-box .signer-name {
+            margin-top: 5px;
+            font-size: 1.1em;
+        }
+
+        .footer-text {
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+            text-align: center;
+            color: #888;
+            font-size: 10px;
+        }
+
+        /* --- Print Button --- */
+        .print-button {
+            position: fixed;
+            top: 10px; right: 10px;
+            padding: 8px 15px; font-size: 12px;
+            background: <%= settings.header_color || '#007bff' %>;
+            color: white; border: none; border-radius: 5px;
+            cursor: pointer; z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <button class="print-button no-print" onclick="window.print()">
+        <i class="bi bi-printer"></i> พิมพ์
+    </button>
+
+    <div class="bill-container">
+        <div class="document-wrapper">
+
+            <div class="bill-header">
+                <div class="header-left">
+                    <% if (settings.show_logo === 'true') { %>
+                        <img src="/uploads/Logo-Pink-En.png" alt="Company Logo" class="company-logo">
+                    <% } %>
+                    <div class="company-info">
+                        <strong><%= settings.company_name || 'RehabPlus Clinic' %></strong>
+                        <% if (settings.company_address) { %><%= settings.company_address %><br><% } %>
+                        <% if (settings.company_phone) { %>โทร: <%= settings.company_phone %><br><% } %>
+                        <% if (settings.show_tax_id === 'true' && settings.tax_id) { %>เลขประจำตัวผู้เสียภาษี: <%= settings.tax_id %><br><% } %>
+                        <% if (settings.ho_code) { %>HO CODE: <%= settings.ho_code %><br><% } %>
+                        เลขสถานที่พยาบาล: 81106000368<br>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <h1>ใบเสร็จรับเงิน / RECEIPT</h1>
+                    <div class="bill-code">เลขที่ / No: 
+                        <span style="color: red; font-weight: bold;"><%= data.bill_code %></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-grid">
+                <div class="info-box patient-info">
+                    <h4>ข้อมูลผู้ป่วย / Patient Info</h4>
+                    <p><strong>ผู้ป่วย / Patient:</strong> <span><%= data.patient_name || data.walk_in_name || 'N/A' %></span></p>
+                    <% if (data.patient_hn) { %>
+                    <p><strong>HN:</strong> <span><%= data.patient_hn %></span></p>
+                    <% } %>
+                    <% if (data.walk_in_phone) { %>
+                    <p><strong>โทรศัพท์ / Phone:</strong> <span><%= data.walk_in_phone %></span></p>
+                    <% } %>
+                </div>
+                
+                <div class="info-box bill-info">
+                    <h4>รายละเอียดใบเสร็จ / Bill Details</h4>
+                    <p><strong>วันที่ / Date:</strong> <span><%= new Date(data.bill_date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }) %></span></p>
+                </div>
+            </div>
+
+            <table class="items-table">
+                <thead>
+                    <tr>
+                        <th class="col-service">รายการ / Service</th>
+                        <th class="col-qty">จำนวน / Qty</th>
+                        <th class="col-price">ราคาฯ / Price</th>
+                        <th class="col-discount">ส่วนลด / Discount</th>
+                        <th class="col-total">รวม / Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% data.items.forEach(item => { %>
+                        <tr>
+                            <td><%= item.service_name %></td>
+                            <td class="text-right"><%= item.quantity %></td>
+                            <td class="text-right">฿<%= parseFloat(item.unit_price).toFixed(2) %></td>
+                            <td class="text-right">฿<%= parseFloat(item.discount || 0).toFixed(2) %></td>
+                            <td class="text-right">฿<%= parseFloat(item.total_price).toFixed(2) %></td>
+                        </tr>
+                    <% }); %>
+                </tbody>
+            </table>
+
+            <div class="summary-grid">
+                <div class="notes-section">
+                    <% if (data.bill_notes) { %>
+                        <div style="margin-bottom: 10px;">
+                            <h5>หมายเหตุ / Notes:</h5>
+                            <p><%= data.bill_notes %></p>
+                        </div>
+                    <% } %>
+                    <% if (data.payment_notes) { %>
+                         <div>
+                            <h5>ข้อมูลการชำระเงิน / Payment Notes:</h5>
+                            <p><%= data.payment_notes %></p>
+                        </div>
+                    <% } %>
+                </div>
+
+                <div class="totals-summary">
+                    <div class="totals-table">
+                        <div>
+                            <span class="label">ราคารวม / Subtotal</span>
+                            <span class="value">฿<%= parseFloat(data.subtotal).toFixed(2) %></span>
+                        </div>
+                        <div>
+                            <span class="label">ส่วนลด / Discount</span>
+                            <span class="value">฿<%= parseFloat(data.discount || 0).toFixed(2) %></span>
+                        </div>
+                        <div>
+                            <span class="label">ภาษี / Tax</span>
+                            <span class="value">฿<%= parseFloat(data.tax || 0).toFixed(2) %></span>
+                        </div>
+                        <div class="grand-total">
+                            <span class="label">ยอดสุทธิ / TOTAL</span>
+                            <span class="value">฿<%= parseFloat(data.total_amount).toFixed(2) %></span>
+                        </div>
+                    </div>
+                    <div class="baht-text-total">
+                        ( <span id="baht-text-total">...</span> )
+                    </div>
+                    <div class="eng-text-total">
+                        ( <span id="eng-text-total">...</span> )
+                    </div>
+                </div>
+            </div>
+            
+            <div class="footer-grid">
+                <div class="footer-signatures">
+                    <div class="signature-box">
+                        <p>.................................................</p>
+                        <p><strong>ผู้ชำระเงิน / Payer</strong></p>
+                        <p class="signer-name">( <%= data.patient_name || data.walk_in_name || 'N/A' %> )</p>
+                    </div>
+                </div>
+                
+                <div class="footer-signatures">
+                    <div class="signature-box">
+                        <p>.................................................</p>
+                        <p><strong>ผู้รับเงิน / Receiver</strong></p>
+                        <p class="signer-name">( นายณัฐนัย ไชยบุตร )</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="footer-text">
+                <p><%= settings.footer_text || 'ขอบคุณที่ใช้บริการ / Thank you for your business' %></p>
+                <p>พิมพ์เมื่อ / Printed on <%= new Date().toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }) %></p>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // --- ThaiBaht Function ---
+        var ThaiBaht = function (inputNumber) {
+            let number = parseFloat(inputNumber);
+            if (isNaN(number)) { return "---"; }
+            var getText = function (input) {
+                var toNumber = input.toString();
+                var numbers = toNumber.split('').reverse();
+                var numberText = "/หนึ่ง/สอง/สาม/สี่/ห้า/หก/เจ็ด/แปด/เก้า/สิบ".split('/');
+                var unitText = "/สิบ/ร้อย/พัน/หมื่น/แสน/ล้าน".split('/');
+                var output = "";
+                for (var i = 0; i < numbers.length; i++) {
+                    var num = parseInt(numbers[i]);
+                    if (num === 0) continue;
+                    var text = numberText[num];
+                    var unit = unitText[i] || "";
+                    if (i === 0 && num === 1 && numbers.length > 1) {
+                        output = "เอ็ด" + output;
+                        continue;
+                    }
+                    if (i === 1 && num === 2) {
+                        output = "ยี่สิบ" + output;
+                        continue;
+                    }
+                    if (i === 1 && num === 1) {
+                        output = "สิบ" + output;
+                        continue;
+                    }
+                    output = text + unit + output;
+                }
+                return output;
+            }
+            let fullNumber = Math.floor(number);
+            let decimal = Math.round((number - fullNumber) * 100);
+            let fullText = getText(fullNumber);
+            if (fullNumber === 0) { fullText = "ศูนย์"; }
+            if (decimal === 0) {
+                return fullText + "บาทถ้วน";
+            }
+            let decimalText = getText(decimal);
+            if (decimal === 10) decimalText = "สิบ";
+            if (decimal === 20) decimalText = "ยี่สิบ";
+            if (decimal > 10 && decimal % 10 === 1) {
+                decimalText = decimalText.replace(/หนึ่ง$/, "เอ็ด");
+            }
+            return fullText + "บาท" + decimalText + "สตางค์";
+        };
+
+        // --- numberToEnglishWords Function ---
+        function numberToEnglishWords(n) {
+            var units = ['Zero', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+            var tens = ['Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+            function convert(num) {
+                if (num < 0) return "";
+                if (num < 20) return units[num];
+                if (num < 100) return tens[Math.floor(num / 10) - 2] + (num % 10 ? ' ' + units[num % 10] : '');
+                if (num < 1000) return units[Math.floor(num / 100)] + ' Hundred' + (num % 100 ? ' ' + convert(num % 100) : '');
+                if (num < 1000000) return convert(Math.floor(num / 1000)) + ' Thousand' + (num % 1000 ? ' ' + convert(num % 1000) : '');
+                return convert(Math.floor(num / 1000000)) + ' Million' + (num % 1000000 ? ' ' + convert(num % 1000000) : '');
+            }
+
+            let number = parseFloat(n);
+            if (isNaN(number)) return "---";
+            if (number === 0) return "Zero Baht Only";
+
+            let fullNumber = Math.floor(number);
+            let decimal = Math.round((number - fullNumber) * 100);
+
+            let fullText = convert(fullNumber);
+            
+            let output = fullText + ' Baht';
+            if (decimal > 0) {
+                let decimalText = convert(decimal);
+                output += ' and ' + decimalText + ' Satang';
+            } else {
+                output += ' Only';
+            }
+            return output.toUpperCase(); 
+        }
+
+        window.onload = function() {
+            try {
+                const totalAmount = <%= parseFloat(data.total_amount).toFixed(2) %>;
+                
+                document.getElementById('baht-text-total').textContent = ThaiBaht(totalAmount);
+                document.getElementById('eng-text-total').textContent = numberToEnglishWords(totalAmount);
+
+            } catch (e) {
+                console.error('Error generating text:', e);
+                document.getElementById('baht-text-total').textContent = '...';
+                document.getElementById('eng-text-total').textContent = '...';
+            }
+            
+            <% if (!isPreview) { %>
+                setTimeout(() => {
+                    window.print();
+                }, 500);
+            <% } %>
+        }
+    </script>
+</body>
+</html>

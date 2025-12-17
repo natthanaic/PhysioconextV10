@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static File Test</title>
+</head>
+<body>
+    <h1>Static File Test</h1>
+    <p>Testing if static files are accessible...</p>
+
+    <h2>Tests:</h2>
+    <ul>
+        <li>Dashboard JS: <a href="/public/js/dashboard.js" target="_blank">/public/js/dashboard.js</a></li>
+        <li>Appointments JS: <a href="/public/js/appointments.js" target="_blank">/public/js/appointments.js</a></li>
+        <li>RehabPlus Logo: <a href="/public/images/RehabPlus.png" target="_blank">/public/images/RehabPlus.png</a></li>
+    </ul>
+
+    <h2>Results:</h2>
+    <div id="results"></div>
+
+    <script>
+        async function testFiles() {
+            const files = [
+                '/public/js/dashboard.js',
+                '/public/js/appointments.js',
+                '/public/images/RehabPlus.png'
+            ];
+
+            const results = document.getElementById('results');
+            results.innerHTML = '<p>Testing...</p>';
+
+            let html = '<ul>';
+            for (const file of files) {
+                try {
+                    const res = await fetch(file, { method: 'HEAD' });
+                    const status = res.ok ? '✅ OK' : '❌ FAILED';
+                    const type = res.headers.get('content-type');
+                    html += `<li><strong>${file}</strong>: ${status} (${res.status}) - Type: ${type}</li>`;
+                } catch (e) {
+                    html += `<li><strong>${file}</strong>: ❌ ERROR - ${e.message}</li>`;
+                }
+            }
+            html += '</ul>';
+            results.innerHTML = html;
+        }
+
+        testFiles();
+    </script>
+</body>
+</html>

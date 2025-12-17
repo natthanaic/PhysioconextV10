@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Theme Settings - Admin</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Libraries -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Design System -->
+    <link href="/public/css/variables.css" rel="stylesheet">
+    <link href="/public/css/base.css" rel="stylesheet">
+    <link href="/public/css/accessibility.css" rel="stylesheet">
+
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        .settings-container {
+            padding: 2rem 0;
+            min-height: calc(100vh - 140px);
+        }
+
+        .settings-card {
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+
+        .settings-header {
+            text-align: center;
+            color: white;
+            margin-bottom: 2rem;
+            padding-top: 1rem;
+        }
+
+        .settings-header h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            margin-bottom: 0.5rem;
+        }
+
+        .settings-header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-control, .form-select {
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 0.75rem;
+            transition: all 0.2s ease;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-control-color {
+            width: 100%;
+            height: 45px;
+            padding: 0.375rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6b7280;
+            border: none;
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+            border-radius: 8px;
+        }
+
+        .logo-preview {
+            max-width: 300px;
+            max-height: 200px;
+            border: 2px dashed #e5e7eb;
+            border-radius: 8px;
+            padding: 1rem;
+            display: inline-block;
+            margin-top: 1rem;
+        }
+
+        .logo-preview img {
+            max-width: 100%;
+            max-height: 180px;
+            object-fit: contain;
+        }
+
+        .upload-area {
+            border: 2px dashed #667eea;
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            background: #f9fafb;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .upload-area:hover {
+            background: #f3f4f6;
+            border-color: #764ba2;
+        }
+
+        .upload-area i {
+            font-size: 3rem;
+            color: #667eea;
+            margin-bottom: 1rem;
+        }
+
+        .info-box {
+            background: #eff6ff;
+            border-left: 4px solid #3b82f6;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+        }
+
+        .info-box i {
+            color: #3b82f6;
+            margin-right: 0.5rem;
+        }
+
+        .preview-section {
+            background: #f9fafb;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .preview-app-name {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #667eea;
+            text-align: center;
+            padding: 1rem;
+            background: white;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <%- include('partials/header') %>
+    <%- include('partials/sidebar', { user, activePage: 'theme-settings' }) %>
+
+    <main class="main-content">
+        <div class="settings-container container">
+            <!-- Header -->
+            <div class="settings-header">
+                <h1><i class="bi bi-palette-fill me-3"></i>Theme Settings</h1>
+                <p>Customize application branding and appearance</p>
+            </div>
+
+            <!-- Info Box -->
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <div class="info-box">
+                        <i class="bi bi-info-circle-fill"></i>
+                        <strong>White-Label Configuration:</strong>
+                        These settings allow you to customize the application name, logo, and colors.
+                        This enables you to rebrand the system for different clinics.
+                    </div>
+
+                    <!-- Theme Settings Form -->
+                    <div class="settings-card">
+                        <form id="themeSettingsForm" enctype="multipart/form-data">
+                            <!-- Application Name -->
+                            <div class="mb-4">
+                                <label for="appName" class="form-label">
+                                    <i class="bi bi-pencil-square me-2"></i>Application Name
+                                </label>
+                                <input
+                                    type="text"
+                                    class="form-control"
+                                    id="appName"
+                                    name="appName"
+                                    placeholder="e.g., PhysioConext, HealthCare Plus, etc."
+                                    maxlength="100"
+                                    required
+                                >
+                                <small class="text-muted">
+                                    This name will appear in the header, footer, and throughout the application
+                                </small>
+                            </div>
+
+                            <!-- Color Customization -->
+                            <h5 class="mt-4 mb-3 border-bottom pb-2"><i class="bi bi-droplet-fill me-2"></i>Color Customization</h5>
+                            <div class="row mb-4">
+                                <!-- Header Colors -->
+                                <div class="col-md-6 mb-3 mb-md-0">
+                                    <label class="form-label d-block">Header Gradient (Top Bar)</label>
+                                    <div class="d-flex gap-2">
+                                        <div class="flex-grow-1">
+                                            <label class="small text-muted mb-1">Start Color</label>
+                                            <input type="color" class="form-control form-control-color" id="headerColorStart" name="headerColorStart" value="#0284c7" title="Header Start Color">
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <label class="small text-muted mb-1">End Color</label>
+                                            <input type="color" class="form-control form-control-color" id="headerColorEnd" name="headerColorEnd" value="#14b8a6" title="Header End Color">
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Sidebar Colors -->
+                                <div class="col-md-6">
+                                    <label class="form-label d-block">Sidebar Gradient</label>
+                                    <div class="d-flex gap-2">
+                                        <div class="flex-grow-1">
+                                            <label class="small text-muted mb-1">Start Color</label>
+                                            <input type="color" class="form-control form-control-color" id="sidebarColorStart" name="sidebarColorStart" value="#667eea" title="Sidebar Start Color">
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <label class="small text-muted mb-1">End Color</label>
+                                            <input type="color" class="form-control form-control-color" id="sidebarColorEnd" name="sidebarColorEnd" value="#764ba2" title="Sidebar End Color">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Logo Upload -->
+                            <div class="mb-4 mt-5">
+                                <label class="form-label">
+                                    <i class="bi bi-image me-2"></i>Application Logo
+                                </label>
+
+                                <!-- Upload Area -->
+                                <div class="upload-area" onclick="document.getElementById('logoInput').click()">
+                                    <i class="bi bi-cloud-upload d-block"></i>
+                                    <p class="mb-0"><strong>Click to upload</strong> or drag and drop</p>
+                                    <small class="text-muted">PNG, JPG, SVG up to 2MB</small>
+                                </div>
+                                <input
+                                    type="file"
+                                    id="logoInput"
+                                    name="logo"
+                                    accept="image/png,image/jpeg,image/svg+xml"
+                                    style="display: none;"
+                                    onchange="previewLogo(this)"
+                                >
+
+                                <!-- Current Logo Preview -->
+                                <div id="currentLogoPreview" class="logo-preview" style="display: none;">
+                                    <p class="mb-2"><strong>Current Logo:</strong></p>
+                                    <img id="currentLogoImg" src="" alt="Current Logo">
+                                </div>
+
+                                <!-- New Logo Preview -->
+                                <div id="newLogoPreview" class="logo-preview" style="display: none;">
+                                    <p class="mb-2"><strong>New Logo Preview:</strong></p>
+                                    <img id="newLogoImg" src="" alt="Logo Preview">
+                                    <button type="button" class="btn btn-sm btn-danger mt-2" onclick="clearLogoPreview()">
+                                        <i class="bi bi-x-circle me-1"></i>Remove
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Preview Section -->
+                            <div class="preview-section">
+                                <h6><i class="bi bi-eye me-2"></i>Preview</h6>
+                                <div class="preview-app-name" id="previewAppName">
+                                    PhysioConext
+                                </div>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="d-flex justify-content-between align-items-center mt-4">
+                                <a href="/admin/settings" class="btn btn-secondary">
+                                    <i class="bi bi-arrow-left me-2"></i>Back to Settings
+                                </a>
+                                <button type="submit" class="btn btn-primary" id="saveBtn">
+                                    <i class="bi bi-check-circle me-2"></i>Save Changes
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <%- include('partials/footer') %>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
+    <script src="/public/js/utils.js?v=1765446492000"></script>
+
+    <script>
+        // Load current settings on page load
+        document.addEventListener('DOMContentLoaded', async function() {
+            await loadCurrentSettings();
+        });
+
+        // Live preview of app name
+        document.getElementById('appName').addEventListener('input', function(e) {
+            const previewEl = document.getElementById('previewAppName');
+            previewEl.textContent = e.target.value || 'PhysioConext';
+        });
+
+        // Load current theme settings
+        async function loadCurrentSettings() {
+            try {
+                const response = await fetch('/api/admin/theme-settings', {
+                    headers: {}
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+
+                    // Set app name
+                    if (data.appName) {
+                        document.getElementById('appName').value = data.appName;
+                        document.getElementById('previewAppName').textContent = data.appName;
+                    }
+
+                    // Set Colors
+                    if (data.headerColorStart) document.getElementById('headerColorStart').value = data.headerColorStart;
+                    if (data.headerColorEnd) document.getElementById('headerColorEnd').value = data.headerColorEnd;
+                    if (data.sidebarColorStart) document.getElementById('sidebarColorStart').value = data.sidebarColorStart;
+                    if (data.sidebarColorEnd) document.getElementById('sidebarColorEnd').value = data.sidebarColorEnd;
+
+                    // Show current logo
+                    if (data.logoUrl) {
+                        document.getElementById('currentLogoImg').src = data.logoUrl;
+                        document.getElementById('currentLogoPreview').style.display = 'block';
+                    }
+                } else {
+                    console.error('Failed to load theme settings');
+                }
+            } catch (error) {
+                console.error('Error loading theme settings:', error);
+            }
+        }
+
+        // Preview logo before upload
+        function previewLogo(input) {
+            const file = input.files[0];
+            if (file) {
+                // Validate file size (2MB)
+                if (file.size > 2 * 1024 * 1024) {
+                    alert('File size must be less than 2MB');
+                    input.value = '';
+                    return;
+                }
+
+                // Validate file type
+                if (!['image/png', 'image/jpeg', 'image/svg+xml'].includes(file.type)) {
+                    alert('Only PNG, JPG, and SVG files are allowed');
+                    input.value = '';
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('newLogoImg').src = e.target.result;
+                    document.getElementById('newLogoPreview').style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // Clear logo preview
+        function clearLogoPreview() {
+            document.getElementById('logoInput').value = '';
+            document.getElementById('newLogoPreview').style.display = 'none';
+            document.getElementById('newLogoImg').src = '';
+        }
+
+        // Save theme settings
+        document.getElementById('themeSettingsForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const saveBtn = document.getElementById('saveBtn');
+            const originalText = saveBtn.innerHTML;
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Saving...';
+
+            try {
+                const formData = new FormData();
+                formData.append('appName', document.getElementById('appName').value);
+                
+                // Append Colors
+                formData.append('headerColorStart', document.getElementById('headerColorStart').value);
+                formData.append('headerColorEnd', document.getElementById('headerColorEnd').value);
+                formData.append('sidebarColorStart', document.getElementById('sidebarColorStart').value);
+                formData.append('sidebarColorEnd', document.getElementById('sidebarColorEnd').value);
+
+                const logoInput = document.getElementById('logoInput');
+                if (logoInput.files.length > 0) {
+                    formData.append('logo', logoInput.files[0]);
+                }                const response = await fetch('/api/admin/theme-settings', {
+                    method: 'POST',
+                    headers: {},
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    showAlert('success', 'Theme settings saved successfully! Reloading page...');
+
+                    // Reload page after 1.5 seconds to show updated theme
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    const error = await response.json();
+                    showAlert('danger', error.message || 'Failed to save theme settings');
+                    saveBtn.disabled = false;
+                    saveBtn.innerHTML = originalText;
+                }
+            } catch (error) {
+                console.error('Error saving theme settings:', error);
+                showAlert('danger', 'An error occurred while saving theme settings');
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = originalText;
+            }
+        });
+
+        // Show alert
+        function showAlert(type, message) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3`;
+            alertDiv.style.zIndex = '9999';
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(alertDiv);
+
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 5000);
+        }
+
+        // Helper to get cookie
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+        }
+    </script>
+</body>
+</html>

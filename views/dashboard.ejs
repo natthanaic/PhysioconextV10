@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - RehabPlus</title>
+
+    <!-- PWA Meta Tags -->
+    <meta name="application-name" content="RehabPlus">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="RehabPlus">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#667eea">
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/public/manifest.json">
+
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" sizes="152x152" href="/public/images/icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="/public/images/icon-192x192.png">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Libraries -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet">
+
+    <!-- Design System -->
+    <link href="/public/css/variables.css" rel="stylesheet">
+    <link href="/public/css/base.css" rel="stylesheet">
+    <link href="/public/css/accessibility.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            --surface-color: #ffffff;
+            --background-color: #f3f4f6;
+            --text-main: #1f2937;
+            --text-secondary: #6b7280;
+            --border-radius-md: 12px;
+            --border-radius-sm: 8px;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-glow: 0 0 15px rgba(99, 102, 241, 0.3);
+        }
+
+        body {
+            background-color: #f0f2f5;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: var(--text-main);
+            overflow-x: hidden;
+        }
+
+        /* --- Layout & Header --- */
+        main {
+            padding-top: 1.5rem;
+            padding-bottom: 1.5rem;
+        }
+
+        .page-header {
+            background: var(--surface-color);
+            border-radius: var(--border-radius-md);
+            padding: 0.8rem 1.2rem;
+            margin-bottom: 1rem;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid rgba(255,255,255,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .page-header h1 {
+            font-weight: 800;
+            font-size: 1.4rem;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0;
+        }
+
+        .page-header .subtitle {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        /* --- Global Button Styles --- */
+        .btn {
+            border: none;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            border-radius: 6px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        /* Header buttons use gradient */
+        .btn-primary { background: var(--primary-gradient); color: white; }
+        .btn-secondary { background: #6b7280; color: white; }
+        .btn-success { background: #10b981; color: white; }
+        .btn-warning { background: #f59e0b; color: white; }
+        .btn-light { background: #f3f4f6; color: var(--text-main); }
+
+        /* --- Stat Cards --- */
+        .stat-card {
+            background: var(--surface-color);
+            border-radius: var(--border-radius-md);
+            padding: 1rem;
+            height: 100%;
+            position: relative;
+            border: 1px solid rgba(229, 231, 235, 0.6);
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .bg-gradient-primary { background: linear-gradient(135deg, #4f46e5 0%, #818cf8 100%); color: white; }
+        .bg-gradient-warning { background: linear-gradient(135deg, #d97706 0%, #fbbf24 100%); color: white; }
+        .bg-gradient-info { background: linear-gradient(135deg, #0ea5e9 0%, #38bdf8 100%); color: white; }
+        .bg-gradient-success { background: linear-gradient(135deg, #059669 0%, #34d399 100%); color: white; }
+
+        .stat-content h6 { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.9; margin-bottom: 2px; font-weight: 700; }
+        .stat-content h2 { font-size: 1.6rem; font-weight: 800; margin: 0; line-height: 1.1; }
+        .stat-content small { font-size: 0.7rem; opacity: 0.9; }
+        .stat-icon { position: absolute; right: 0.8rem; top: 0.8rem; font-size: 1.5rem; opacity: 0.25; }
+
+        /* Financial Cards */
+        .stat-card-secondary {
+            background: var(--surface-color);
+            border-radius: var(--border-radius-md);
+            padding: 0.8rem;
+            height: 100%;
+            border: 1px solid rgba(229, 231, 235, 0.6);
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .stat-card-secondary h6 { font-size: 0.6rem; text-transform: uppercase; margin-bottom: 2px; font-weight: 700; }
+        .stat-card-secondary h3 { font-size: 1.1rem; font-weight: 800; margin: 0; }
+        .stat-card-secondary small { font-size: 0.65rem; color: var(--text-secondary); }
+        .icon-wrapper { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1rem; }
+
+        /* --- Filter Section --- */
+        .filter-card {
+            background: var(--surface-color);
+            border-radius: var(--border-radius-md);
+            border: 1px solid rgba(229, 231, 235, 0.8);
+            box-shadow: var(--shadow-sm);
+            padding: 0.8rem;
+            margin-bottom: 1rem;
+        }
+        
+        .filter-header {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 0.5rem;
+            display: flex; align-items: center;
+        }
+
+        .form-label { font-size: 0.7rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.1rem; }
+        .form-control, .form-select { font-size: 0.8rem; padding: 0.3rem 0.5rem; border-radius: 6px; border: 1px solid #d1d5db; }
+
+        /* --- Table Styles --- */
+        .table-card {
+            background: var(--surface-color);
+            border-radius: var(--border-radius-md);
+            border: 1px solid rgba(229, 231, 235, 0.8);
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+        }
+
+        .table-header-custom {
+            padding: 0.75rem 1rem;
+            background: #fff;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .table { 
+            margin-bottom: 0; 
+            table-layout: auto; /* Allows auto-expansion */
+            width: 100%;
+        }
+        
+        .table th {
+            background: #f8fafc;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.65rem;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            padding: 0.5rem 0.75rem; 
+            border-bottom: 1px solid #e5e7eb;
+            vertical-align: middle;
+            white-space: nowrap;
+        }
+
+        .table td {
+            padding: 0.5rem 0.75rem; 
+            vertical-align: top; /* Crucial for text wrapping */
+            font-size: 0.8rem;
+            color: var(--text-main);
+            border-bottom: 1px solid #f3f4f6;
+            
+            /* Default: Wrap text (Expand Line) */
+            white-space: normal; 
+            word-wrap: break-word;
+        }
+
+        /* 1. HN (First Column): Single Line */
+        .table td:nth-child(1) {
+            white-space: nowrap;
+        }
+
+        /* 6. Status: Single Line, Auto Expand */
+        .table td:nth-child(6) {
+            white-space: nowrap;
+            width: 1%;
+        }
+
+        /* Last Column: Action - Fill Height Trick */
+        .table td:last-child {
+            width: 130px;
+            min-width: 130px;
+            /* The 'height: 1px' on a TD forces the cell to take the row's height, 
+               allowing children with height: 100% to expand fully */
+            height: 1px; 
+            padding: 2px; /* Minimal padding for max expansion */
+        }
+
+        .badge, .rounded-pill {
+            white-space: nowrap !important; 
+            display: inline-block;
+            line-height: 1.3;
+            text-align: center;
+        }
+
+        /* --- 2x2 Action Grid (Full Fill & Auto Expand) --- */
+        #cases-tbody tr td:last-child,
+        #walkin-tbody tr td:last-child {
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* Always 2 cols */
+            /* 'auto-rows: 1fr' means:
+               - If 2 buttons -> 1 row -> each takes 100% height
+               - If 4 buttons -> 2 rows -> each takes 50% height
+            */
+            grid-auto-rows: 1fr;
+            gap: 4px;
+            width: 100%;
+            height: 100%; /* Fills the 'expanded' cell height */
+            min-height: 60px;
+        }
+
+        /* Disable grid for parent header rows - use flex instead */
+        #cases-tbody tr.pthn-group-header td:last-child {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2px;
+            align-items: center;
+            justify-content: center;
+            min-height: auto;
+        }
+
+        /* Normal button sizing for parent row */
+        #cases-tbody tr.pthn-group-header td:last-child .btn {
+            width: auto !important;
+            height: auto !important;
+            padding: 0.25rem 0.5rem !important;
+        }
+
+        /* Button Expansion */
+        #cases-tbody .btn, 
+        #walkin-tbody .btn {
+            width: 100% !important;
+            height: 100% !important; /* Fill their grid slot */
+            margin: 0 !important;
+            padding: 0 !important;
+            font-size: 0.7rem !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            color: white !important;
+        }
+        
+        #cases-tbody .btn i, 
+        #walkin-tbody .btn i {
+            font-size: 0.85rem;
+            margin: 0;
+            display: inline-block;
+        }
+
+        /* --- Distinct Action Colors & Icon Swap --- */
+        
+        /* 1st Button (View Case): Blue + Clipboard Pulse */
+        #cases-tbody td:last-child .btn:nth-of-type(1),
+        #walkin-tbody td:last-child .btn:nth-of-type(1) {
+            background: #0ea5e9 !important;
+            border: 1px solid #0284c7 !important;
+        }
+        #cases-tbody td:last-child .btn:nth-of-type(1) i::before,
+        #walkin-tbody td:last-child .btn:nth-of-type(1) i::before {
+            content: "\F2CA" !important; /* Bootstrap Icon Code for bi-clipboard-pulse */
+            font-weight: bold;
+        }
+        
+        /* 2nd Button: Purple */
+        #cases-tbody td:last-child .btn:nth-of-type(2),
+        #walkin-tbody td:last-child .btn:nth-of-type(2) {
+            background: #8b5cf6 !important;
+            border: 1px solid #7c3aed !important;
+        }
+
+        /* 3rd Button: Red */
+        #cases-tbody td:last-child .btn:nth-of-type(3),
+        #walkin-tbody td:last-child .btn:nth-of-type(3) {
+            background: #ef4444 !important;
+            border: 1px solid #dc2626 !important;
+        }
+
+        /* 4th Button: Gray */
+        #cases-tbody td:last-child .btn:nth-of-type(4),
+        #walkin-tbody td:last-child .btn:nth-of-type(4) {
+            background: #6b7280 !important;
+            border: 1px solid #4b5563 !important;
+        }
+
+        /* Pagination */
+        .pagination { margin-bottom: 0 !important; }
+        .pagination .page-link {
+            border: none;
+            min-width: 28px;
+            height: 28px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.75rem;
+            border-radius: 6px;
+            color: var(--text-secondary);
+            margin: 0 2px;
+            padding: 0 0.5rem;
+        }
+        .pagination .page-item.active .page-link {
+            background: var(--primary-gradient);
+            color: white;
+            box-shadow: 0 2px 4px rgba(99, 102, 241, 0.3);
+        }
+
+        /* Modals */
+        .modal-content { border: none; border-radius: 12px; overflow: hidden; }
+        .modal-header { padding: 1rem 1.5rem; border-bottom: 1px solid #eee; }
+
+        /* PTHN Collapsible Group Styles */
+        .pthn-group-header:hover {
+            background-color: #e9ecef !important;
+            transition: background-color 0.2s ease;
+        }
+
+        .pthn-toggle-icon {
+            transition: transform 0.2s ease, color 0.2s ease;
+        }
+
+        .pthn-group-header:hover .pthn-toggle-icon {
+            transform: scale(1.1);
+        }
+
+        .pthn-child-row td > div {
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .pthn-child-row:hover td > div {
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+            transition: box-shadow 0.2s ease;
+        }
+
+        @media (max-width: 768px) {
+            .pthn-child-row td > div {
+                flex-direction: column;
+            }
+
+            .pthn-child-row td > div > div {
+                flex: 1 1 100% !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <%- include('partials/header') %>
+
+    <!-- Skip to main content -->
+    <a href="#main-content" class="skip-link d-none">Skip to main content</a>
+
+    <!-- Mobile navbar toggle -->
+    <nav class="navbar navbar-dark bg-dark d-md-none">
+        <div class="container-fluid">
+            <span class="navbar-brand font-weight-bold">RehabPlus</span>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <%- include('partials/sidebar', { user, activePage: 'dashboard' }) %>
+
+            <!-- Main content -->
+            <main id="main-content" class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                
+                <!-- Header -->
+                <div class="page-header">
+                    <div>
+                        <h1 class="h2">Dashboard</h1>
+                        <span class="subtitle">Overview of clinic performance</span>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-primary btn-sm shadow-sm" onclick="location.href='/patient/register'">
+                            <i class="bi bi-person-plus-fill me-2"></i>New Patient
+                        </button>
+                        <button type="button" class="btn btn-success btn-sm shadow-sm" onclick="location.href='/appointments'">
+                            <i class="bi bi-calendar-plus-fill me-2"></i>New Appointment
+                        </button>
+                        <button type="button" class="btn btn-warning btn-sm shadow-sm" onclick="location.href='/bills'">
+                            <i class="bi bi-receipt-cutoff me-2"></i>Create Bills
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Primary Stats -->
+                <div class="row g-2 mb-3" id="statistics">
+                    <div class="col-xl-3 col-md-6">
+                        <div class="stat-card bg-gradient-primary">
+                            <div class="stat-content">
+                                <h6>Total Referrals</h6>
+                                <h2 id="stat-total">0</h2>
+                            </div>
+                            <div class="stat-icon"><i class="bi bi-clipboard2-pulse-fill"></i></div>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6">
+                        <div class="stat-card bg-gradient-warning">
+                            <div class="stat-content">
+                                <h6>Pending Review</h6>
+                                <h2 id="stat-waiting">0</h2>
+                            </div>
+                            <div class="stat-icon"><i class="bi bi-hourglass-split"></i></div>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6">
+                        <div class="stat-card bg-gradient-info">
+                            <div class="stat-content">
+                                <h6>Active Cases</h6>
+                                <h2 id="stat-accepted">0</h2>
+                            </div>
+                            <div class="stat-icon"><i class="bi bi-activity"></i></div>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6">
+                        <div class="stat-card bg-gradient-success">
+                            <div class="stat-content">
+                                <h6>Completed</h6>
+                                <h2 id="stat-completed">0</h2>
+                                <small>In clinic <span id="stat-month"></span></small>
+                            </div>
+                            <div class="stat-icon"><i class="bi bi-check-circle-fill"></i></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Financial Stats -->
+                <div class="row g-2 mb-3">
+                    <div class="col-xl-3 col-md-6">
+                        <div class="stat-card-secondary border-start border-4 border-success">
+                            <div>
+                                <h6 class="text-success">Monthly Revenue</h6>
+                                <h3 id="stat-bills-paid-amount">฿0.00</h3>
+                                <small><span id="stat-bills-paid-count">0</span> Paid Bills</small>
+                            </div>
+                            <div class="icon-wrapper bg-success bg-opacity-10 text-success"><i class="bi bi-currency-dollar"></i></div>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6">
+                        <div class="stat-card-secondary border-start border-4 border-warning">
+                            <div>
+                                <h6 class="text-warning">Bills Today</h6>
+                                <h3 id="stat-bills-today-amount">฿0.00</h3>
+                                <small><span id="stat-bills-today-count">0</span> Created</small>
+                            </div>
+                            <div class="icon-wrapper bg-warning bg-opacity-10 text-warning"><i class="bi bi-receipt"></i></div>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6">
+                        <div class="stat-card-secondary border-start border-4 border-primary">
+                            <div>
+                                <h6 class="text-primary">New Patients</h6>
+                                <h3>
+                                    <span id="stat-patients-month">0</span>
+                                    <small id="stat-patients-change" class="ms-1"></small>
+                                </h3>
+                                <small id="stat-patients-month-label">Loading...</small>
+                            </div>
+                            <div class="icon-wrapper bg-primary bg-opacity-10 text-primary"><i class="bi bi-person-plus-fill"></i></div>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6">
+                        <div class="stat-card-secondary border-start border-4 border-info">
+                            <div>
+                                <h6 class="text-info">Total Database</h6>
+                                <h3 id="stat-total-patients">0</h3>
+                                <small>All records</small>
+                            </div>
+                            <div class="icon-wrapper bg-info bg-opacity-10 text-info"><i class="bi bi-database-fill"></i></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filters -->
+                <div class="filter-card">
+                    <div class="filter-header">
+                        <i class="bi bi-funnel me-2 text-primary"></i> Filters & Search
+                    </div>
+                    <div class="row g-1">
+                        <div class="col-md-3">
+                            <label class="form-label">Clinic</label>
+                            <select class="form-select" id="filter-clinic">
+                                <option value="">All Clinics</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Status</label>
+                            <select class="form-select" id="filter-status">
+                                <option value="">All Status</option>
+                                <option value="PENDING">Pending</option>
+                                <option value="ACCEPTED">Accepted</option>
+                                <option value="IN_PROGRESS">In Progress</option>
+                                <option value="COMPLETED">Completed</option>
+                                <option value="CANCELLED">Cancelled</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">From</label>
+                            <input type="text" class="form-control" id="filter-from" placeholder="Date">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">To</label>
+                            <input type="text" class="form-control" id="filter-to" placeholder="Date">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Quick Filter</label>
+                            <div class="d-flex gap-1">
+                                <button class="btn btn-sm btn-outline-secondary flex-fill py-0" style="font-size: 0.7rem;" onclick="setQuickFilter('today')">
+                                    <i class="bi bi-calendar-day me-1"></i>Today
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary flex-fill py-0" style="font-size: 0.7rem;" onclick="setQuickFilter('week')">
+                                    <i class="bi bi-calendar-week me-1"></i>Week
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary flex-fill py-0" style="font-size: 0.7rem;" onclick="setQuickFilter('month')">
+                                    <i class="bi bi-calendar-month me-1"></i>Month
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary py-0" style="font-size: 0.7rem;" onclick="clearFilters()">
+                                    <i class="bi bi-x-circle me-1"></i>Clear
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-2 g-1">
+                        <div class="col-md-8">
+                             <div class="input-group input-group-sm">
+                                <span class="input-group-text bg-light border-end-0"><i class="bi bi-search"></i></span>
+                                <input type="text" class="form-control border-start-0" id="search-input" placeholder="Search by HN, Name, PN Code, Diagnosis...">
+                                <button class="btn btn-primary" onclick="loadCases()">
+                                    <i class="bi bi-search me-1"></i>Search
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-end">
+                             <button class="btn btn-sm btn-success text-white w-100 h-100 py-1" style="font-size: 0.8rem;" onclick="exportData()">
+                                <i class="bi bi-file-earmark-excel me-2"></i> Export
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cases Table -->
+                <div class="table-card mb-3">
+                    <div class="table-header-custom d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0 fw-bold text-secondary" style="font-size: 0.8rem;"><i class="bi bi-table me-2"></i>Case Records</h6>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th class="ps-4">HN</th>
+                                    <th>Patient Name</th>
+                                    <th>Ref. Code</th>
+                                    <th>Diagnosis</th>
+                                    <th>Purpose</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                    <th>Appt.</th>
+                                    <th class="text-center pe-4">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cases-tbody">
+                                <tr>
+                                    <td colspan="9" class="text-center py-4">
+                                        <div class="spinner-border spinner-border-sm text-primary mb-2"></div>
+                                        <div class="text-muted small">Loading records...</div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="p-2 border-top bg-light bg-opacity-25">
+                        <ul class="pagination justify-content-center mb-0" id="pagination"></ul>
+                    </div>
+                </div>
+
+                <!-- Walk-in Table -->
+                <div class="table-card">
+                    <div class="table-header-custom">
+                        <h6 class="mb-0 fw-bold text-secondary d-flex align-items-center" style="font-size: 0.8rem;">
+                            <i class="bi bi-person-walking me-2"></i>Walk-in Visitors
+                        </h6>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th class="ps-4">Date</th>
+                                    <th>Time</th>
+                                    <th>Name</th>
+                                    <th>Contact</th>
+                                    <th>PT</th>
+                                    <th>Clinic</th>
+                                    <th class="text-center pe-4">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="walkin-tbody">
+                                <tr>
+                                    <td colspan="7" class="text-center py-4 text-muted small">Loading walk-in data...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- PT Certificate Modal (RESTORED CONTENT) -->
+    <div class="modal fade" id="certificateModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-gradient-primary text-white">
+                    <h5 class="modal-title">
+                        <i class="bi bi-file-earmark-medical me-2"></i>
+                        <span id="certificateModalTitle">Physiotherapy Certificate</span>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Loading State -->
+                    <div id="certificateLoading" class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2 text-muted">Retrieving certificate data...</p>
+                    </div>
+
+                    <!-- Existing Certificates List -->
+                    <div id="existingCertificates" style="display:none;">
+                        <h6 class="mb-3 fw-bold text-primary border-bottom pb-2">Existing Certificates</h6>
+                        <div id="certificatesList" class="mb-4"></div>
+                    </div>
+
+                    <!-- Create New Certificate Form -->
+                    <div id="certificateForm" style="display:none;">
+                        <h6 class="mb-4 fw-bold text-primary border-bottom pb-2">Create New Certificate</h6>
+                        <form id="newCertificateForm">
+                            <input type="hidden" id="cert_pn_id">
+                            <input type="hidden" id="cert_edit_id">
+
+                            <div class="mb-3">
+                                <label class="form-label">Certificate Type</label>
+                                <select class="form-select" id="cert_type" required>
+                                    <option value="thai">Thai</option>
+                                    <option value="english">English</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">
+                                    Physiotherapy Diagnosis <span class="text-danger">*</span>
+                                </label>
+                                <textarea class="form-control" id="cert_pt_diagnosis" rows="4"
+                                          placeholder="Enter physiotherapy diagnosis..." required></textarea>
+                                <small class="text-muted">This diagnosis will appear on the official certificate.</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Additional Notes (Optional)</label>
+                                <textarea class="form-control" id="cert_notes" rows="3"
+                                          placeholder="Any additional comments or recommendations..."></textarea>
+                            </div>
+
+                            <div class="alert alert-info border-0 shadow-sm d-flex align-items-center">
+                                <i class="bi bi-info-circle-fill fs-4 me-3 text-info"></i>
+                                <div>Patient details and subjective assessment data will be automatically pulled from case records.</div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light border" data-bs-dismiss="modal">
+                        <i class="bi bi-x-lg me-2"></i>Close
+                    </button>
+                    <button type="button" class="btn btn-primary px-4" id="createCertBtn" onclick="createCertificate()">
+                        <i class="bi bi-plus-circle me-2"></i>Create Certificate
+                    </button>
+                    <button type="button" class="btn btn-success px-4" id="saveCertBtn" onclick="saveCertificate()" style="display:none;">
+                        <i class="bi bi-save me-2"></i>Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bill Detail Modal -->
+    <div class="modal fade" id="billDetailModal" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-white py-3">
+                    <h5 class="modal-title d-flex align-items-center fs-6 fw-bold">
+                        <i class="bi bi-receipt text-success me-2"></i>
+                        <span id="billDetailModalTitle">Bill Details</span>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-0 bg-light">
+                    <div id="billDetailLoading" class="text-center py-5">
+                        <div class="spinner-border spinner-border-sm text-success"></div>
+                    </div>
+                    <div id="billDetailContent" style="display:none;" class="p-4">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <div class="card border-0 shadow-sm rounded-3 p-3">
+                                    <div class="row text-center text-md-start align-items-center">
+                                        <div class="col-md-3 border-end"><small class="text-muted fw-bold">BILL NO.</small><h5 class="text-success mb-0 fw-bold" id="bill-detail-code">-</h5></div>
+                                        <div class="col-md-3 border-end"><small class="text-muted fw-bold">DATE</small><h6 class="mb-0" id="bill-detail-date">-</h6></div>
+                                        <div class="col-md-3 border-end">
+                                            <small class="text-muted fw-bold">PATIENT</small>
+                                            <div class="fw-bold text-primary text-truncate" id="bill-detail-patient">-</div>
+                                            <div id="bill-detail-clinic" class="d-none"></div>
+                                        </div>
+                                        <div class="col-md-3"><small class="text-muted fw-bold">STATUS</small><div id="bill-detail-status">-</div></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-8">
+                                <div class="card border-0 shadow-sm rounded-3 overflow-hidden h-100">
+                                    <table class="table table-striped mb-0 small">
+                                        <thead class="bg-light">
+                                            <tr><th class="ps-4">Item</th><th class="text-center">Qty</th><th class="text-end">Price</th><th class="text-end">Disc.</th><th class="text-end pe-4">Total</th></tr>
+                                        </thead>
+                                        <tbody id="bill-detail-items"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card border-0 shadow-sm rounded-3 bg-white h-100 p-3 d-flex flex-column justify-content-center">
+                                    <div class="d-flex justify-content-between small mb-1"><span>Subtotal</span><span class="fw-bold" id="bill-detail-subtotal">฿0.00</span></div>
+                                    <div class="d-flex justify-content-between small mb-1"><span>Discount</span><span class="text-danger fw-bold" id="bill-detail-discount">฿0.00</span></div>
+                                    <div class="d-flex justify-content-between small mb-2 pb-2 border-bottom"><span>Tax</span><span class="fw-bold" id="bill-detail-tax">฿0.00</span></div>
+                                    <div class="d-flex justify-content-between align-items-center"><span class="fw-bold text-success">TOTAL</span><span class="h4 mb-0 text-success fw-bold" id="bill-detail-total">฿0.00</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-white p-2">
+                    <div class="d-flex gap-2 ms-auto">
+                        <button class="btn btn-sm btn-light border" data-bs-dismiss="modal">
+                            <i class="bi bi-x-lg me-1"></i>Close
+                        </button>
+                        <button class="btn btn-sm btn-warning" id="editBillBtn" onclick="editBill()">
+                            <i class="bi bi-pencil-square me-1"></i>Edit
+                        </button>
+                        <button class="btn btn-sm btn-primary" id="printBillBtn" onclick="printBill()">
+                            <i class="bi bi-printer me-1"></i>Print
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Body Annotation Modal for Dashboard Accept -->
+    <div class="modal fade" id="dashboardBodyAnnotationModal" tabindex="-1" aria-labelledby="dashboardBodyAnnotationModalLabel" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="dashboardBodyAnnotationModalLabel">
+                        <i class="bi bi-person-bounding-box me-2"></i>Body Part Assessment
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-4">
+                        <!-- LEFT PANEL: Pain Assessment Form -->
+                        <div class="col-md-5">
+                            <div class="card h-100">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0">Pain Assessment</h6>
+                                </div>
+                                <div class="card-body">
+                                    <form id="dashboardBodyAnnotationForm">
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">Pain Type</label>
+                                            <div class="form-check">
+                                                <input type="checkbox" class="form-check-input" id="dashboardConstantPain">
+                                                <label class="form-check-label" for="dashboardConstantPain">Constant Pain</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input type="checkbox" class="form-check-input" id="dashboardIntermittentPain">
+                                                <label class="form-check-label" for="dashboardIntermittentPain">Intermittent Pain</label>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="dashboardPainType" class="form-label fw-bold">Type of Pain</label>
+                                            <textarea class="form-control" id="dashboardPainType" rows="2" placeholder="e.g., Sharp, dull, burning"></textarea>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="dashboardAggravation" class="form-label fw-bold">Aggravation</label>
+                                            <textarea class="form-control" id="dashboardAggravation" rows="2" placeholder="What makes the pain worse?"></textarea>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="dashboardEasingFactor" class="form-label fw-bold">Easing Factor</label>
+                                            <textarea class="form-control" id="dashboardEasingFactor" rows="2" placeholder="What makes the pain better?"></textarea>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="dashboardSeverity" class="form-label fw-bold">Pain Severity (1-10)</label>
+                                            <input type="range" class="form-range" id="dashboardSeverity" min="1" max="10" value="5" step="1">
+                                            <div class="text-center"><span id="dashboardSeverityValue">5</span>/10</div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="dashboardNotes" class="form-label fw-bold">Additional Notes</label>
+                                            <textarea class="form-control" id="dashboardNotes" rows="3" placeholder="Any additional observations"></textarea>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- RIGHT PANEL: Canvas Preview -->
+                        <div class="col-md-7">
+                            <div class="card h-100">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0">Body Diagram</h6>
+                                </div>
+                                <div class="card-body p-0">
+                                    <div class="text-center p-3">
+                                        <canvas id="dashboardBodyAnnotationPreview" width="800" height="1200" style="max-width: 100%; height: auto; border: 1px solid #dee2e6;"></canvas>
+                                    </div>
+                                    <div class="p-3 border-top">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span>Marks: <strong id="dashboardStrokeCount">0 strokes</strong></span>
+                                        </div>
+                                        <div class="d-grid gap-2">
+                                            <button type="button" class="btn btn-primary" id="dashboardDrawBodyButton">
+                                                <i class="bi bi-pencil me-1"></i> Draw on Body
+                                            </button>
+                                            <div class="btn-group">
+                                                <button type="button" class="btn btn-outline-secondary" id="dashboardUndoButton">
+                                                    <i class="bi bi-arrow-counterclockwise me-1"></i> Undo
+                                                </button>
+                                                <button type="button" class="btn btn-outline-danger" id="dashboardClearButton">
+                                                    <i class="bi bi-trash me-1"></i> Clear All
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="dashboardSaveAnnotationButton">
+                        <i class="bi bi-check-circle me-1"></i> Save & Accept Case
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Compact Drawing Modal for Dashboard -->
+    <div class="modal fade" id="dashboardBodyDrawingModal" tabindex="-1" aria-labelledby="dashboardBodyDrawingModalLabel" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-lg modal-dialog-centered" style="max-width: 700px;">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="dashboardBodyDrawingModalLabel">
+                        <i class="bi bi-pencil-square me-2"></i>Draw on Body Diagram
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" id="dashboardCloseDrawingButton" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" style="padding: 1rem; max-height: 70vh; overflow-y: auto;">
+                    <!-- Color and Tools Toolbar -->
+                    <div class="d-flex flex-wrap justify-content-center align-items-center gap-2 mb-3 p-2 bg-light border rounded">
+                        <button type="button" class="btn btn-sm btn-outline-danger active dashboard-color-btn" data-color="#FF0000">Red</button>
+                        <button type="button" class="btn btn-sm btn-outline-primary dashboard-color-btn" data-color="#0000FF">Blue</button>
+                        <button type="button" class="btn btn-sm btn-outline-success dashboard-color-btn" data-color="#00FF00">Green</button>
+                        <button type="button" class="btn btn-sm btn-outline-warning dashboard-color-btn" data-color="#FFFF00">Yellow</button>
+                        <div class="vr d-none d-md-block"></div>
+                        <div class="d-flex align-items-center gap-2">
+                            <label class="mb-0 small">Width:</label>
+                            <input type="range" id="dashboardStrokeWidth" min="1" max="20" value="3" step="1" style="width: 80px;">
+                            <span id="dashboardWidthValue" class="badge bg-secondary">3</span>
+                        </div>
+                        <div class="vr d-none d-md-block"></div>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="dashboardUndoDrawingButton">
+                            <i class="bi bi-arrow-counterclockwise"></i> Undo
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-danger" id="dashboardClearDrawingButton">
+                            <i class="bi bi-trash"></i> Clear
+                        </button>
+                    </div>
+                    <!-- Canvas Container -->
+                    <div class="d-flex justify-content-center" style="background: #f8f9fa; padding: 1rem; border-radius: 8px;">
+                        <canvas id="dashboardBodyAnnotationCanvas" width="600" height="900" style="border: 2px solid #dee2e6; background: white; max-width: 100%; height: auto; touch-action: none; border-radius: 4px;"></canvas>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="dashboardCancelDrawingButton">Cancel</button>
+                    <button type="button" class="btn btn-success" id="dashboardSaveDrawingButton">
+                        <i class="bi bi-check2-circle me-1"></i> Save & Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
+    <script src="/public/js/utils.js?v=1765446492000"></script>
+    <script src="/public/js/accessibility.js?v=1765446492000"></script>
+    <script src="/public/js/dashboard.js?v=1765446492000"></script>
+
+    <!-- PWA Service Worker -->
+    <script src="/public/js/pwa.js?v=1765446492000"></script>
+</body>
+</html>

@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bodycheck Details - RehabPlus</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --theme-primary: #667eea;
+            --theme-secondary: #764ba2;
+            --theme-bg: #f3f6f9;
+            --card-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
+        }
+
+        body {
+            background-color: var(--theme-bg);
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            color: #4a5568;
+        }
+
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 2px 0 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.85);
+            padding: 0.75rem 1rem;
+            margin: 0.25rem 1rem;
+            border-radius: 0.5rem;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            background: rgba(255, 255, 255, 0.25);
+            color: #fff;
+        }
+
+        main {
+            padding-top: 2rem;
+            padding-bottom: 4rem;
+        }
+
+        .page-header {
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .page-header h1 {
+            font-weight: 800;
+            color: #2d3748;
+            font-size: 2rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .btn-back {
+            background: white;
+            border: 1px solid #e2e8f0;
+            color: #718096;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 1rem;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .btn-back:hover {
+            background: #f8fafc;
+            color: var(--theme-primary);
+            transform: translateX(-3px);
+        }
+
+        .content-card {
+            background: #ffffff;
+            border-radius: 1.25rem;
+            border: none;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+
+        .content-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 6px;
+            background: linear-gradient(90deg, var(--theme-primary), var(--theme-secondary));
+        }
+
+        .card-header-custom {
+            padding: 1.5rem;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .card-header-custom h5 {
+            margin: 0;
+            font-weight: 700;
+            color: #2d3748;
+            display: flex;
+            align-items: center;
+        }
+
+        .region-card {
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            position: relative;
+        }
+
+        .region-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+            border-color: var(--theme-primary);
+        }
+
+        .region-card.has-data {
+            border-color: #10b981;
+        }
+
+        .region-card .badge-count {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 10;
+        }
+
+        /* 2-Column Layout Styles */
+        .bodycheck-layout {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 1.5rem;
+            min-height: 500px;
+        }
+
+        .region-toggle-column {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: var(--card-shadow);
+            max-height: 700px;
+            overflow-y: auto;
+        }
+
+        .region-toggle-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 0.5rem;
+            border: 2px solid #e2e8f0;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .region-toggle-item:hover {
+            border-color: var(--theme-primary);
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .region-toggle-item.active {
+            border-color: var(--theme-primary);
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .region-toggle-item.has-data {
+            border-color: #10b981;
+            background: rgba(16, 185, 129, 0.05);
+        }
+
+        .region-toggle-item.has-data.active {
+            border-color: #10b981;
+            background: rgba(16, 185, 129, 0.15);
+        }
+
+        .region-preview-column {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: var(--card-shadow);
+            max-height: 700px;
+            overflow-y: auto;
+        }
+
+        .region-preview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1rem;
+        }
+
+        .region-preview-card {
+            border: 2px solid #e2e8f0;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            background: #f8fafc;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .region-preview-card:hover {
+            border-color: var(--theme-primary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .region-preview-thumbnail {
+            width: 100%;
+            height: 150px;
+            background: white;
+            border-radius: 0.5rem;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #e2e8f0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .region-preview-thumbnail canvas {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        @media (max-width: 992px) {
+            .bodycheck-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .region-toggle-column {
+                max-height: 300px;
+            }
+        }
+
+        .symptom-tool {
+            cursor: pointer;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            border: 2px solid #e2e8f0;
+            transition: all 0.2s;
+            text-align: center;
+            background: white;
+        }
+
+        .symptom-tool.active {
+            border-color: var(--theme-primary);
+            background: rgba(102, 126, 234, 0.1);
+            transform: scale(1.05);
+        }
+
+        .symptom-tool:hover {
+            border-color: var(--theme-primary);
+        }
+
+        .drawing-canvas {
+            border: 2px solid #e2e8f0;
+            border-radius: 0.75rem;
+            cursor: crosshair;
+            touch-action: none;
+        }
+
+        /* Custom scrollbar for columns */
+        .region-toggle-column::-webkit-scrollbar,
+        .region-preview-column::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .region-toggle-column::-webkit-scrollbar-track,
+        .region-preview-column::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 10px;
+        }
+
+        .region-toggle-column::-webkit-scrollbar-thumb,
+        .region-preview-column::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+
+        .region-toggle-column::-webkit-scrollbar-thumb:hover,
+        .region-preview-column::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        .color-palette {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .color-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 3px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .color-btn.active {
+            border-color: #2d3748;
+            transform: scale(1.15);
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-dark bg-dark d-md-none">
+        <div class="container-fluid">
+            <span class="navbar-brand">RehabPlus System</span>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <%- include('partials/sidebar', { user, activePage: 'bodycheck' }) %>
+
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <div class="page-header">
+                    <h1>
+                        <a href="/patient/<%= bodycheckId %>" class="btn-back">
+                            <i class="bi bi-arrow-left"></i>
+                        </a>
+                        Bodycheck Details
+                    </h1>
+                    <div>
+                        <button class="btn btn-success" onclick="saveBodycheck()" id="saveBtn">
+                            <i class="bi bi-check-circle me-1"></i> Save Bodycheck
+                        </button>
+                        <button class="btn btn-primary ms-2" onclick="acceptBodycheck()" id="acceptBtn" style="display: none;">
+                            <i class="bi bi-check2-all me-1"></i> Accept
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Bodycheck Info -->
+                <div class="content-card">
+                    <div class="card-header-custom">
+                        <h5><i class="bi bi-info-circle me-2"></i> Bodycheck Information</h5>
+                        <span class="badge bg-secondary" id="statusBadge">Loading...</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="row" id="bodycheckInfo">
+                            <div class="col-12 text-center py-4">
+                                <div class="spinner-border text-primary"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Region Selection - 2 Column Layout -->
+                <div class="content-card">
+                    <div class="card-header-custom">
+                        <h5><i class="bi bi-grid-3x3 me-2"></i> Body Check Regions</h5>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="allRegionsToggle" onchange="toggleAllRegions()">
+                            <label class="form-check-label fw-bold" for="allRegionsToggle">All Regions</label>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="bodycheck-layout">
+                            <!-- Left Column: Region Toggles -->
+                            <div class="region-toggle-column">
+                                <h6 class="mb-3 text-muted fw-bold">SELECT REGIONS</h6>
+                                <div id="regionToggles">
+                                    <!-- Toggle items will be inserted here -->
+                                </div>
+                            </div>
+
+                            <!-- Right Column: Preview Data -->
+                            <div class="region-preview-column">
+                                <h6 class="mb-3 text-muted fw-bold">PREVIEW & EDIT</h6>
+                                <div id="regionPreviews">
+                                    <div class="text-center text-muted py-5">
+                                        <i class="bi bi-toggles2 fs-1 mb-3 d-block"></i>
+                                        <p>Select regions from the left to view and edit</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
+    <script>
+        const bodycheckId = <%= bodycheckId %>;
+        let bodycheckData = null;
+        let regions = [];
+        const REGION_NAMES = [
+            'Head and Neck',
+            'Thorax',
+            'Abdomen',
+            'Spine and Back',
+            'Right Shoulder/Arm/Hand',
+            'Left Shoulder/Arm/Hand',
+            'Pelvis and Hip',
+            'Right Leg and Foot',
+            'Left Leg and Foot'
+        ];
+
+        // Body image for preview rendering
+        let bodyImage = new Image();
+        let imageLoaded = false;
+
+        // Load body image for preview canvases
+        bodyImage.src = '/uploads/body.png';
+        bodyImage.onload = function() {
+            imageLoaded = true;
+        };
+
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+        }
+
+        async function loadBodycheckData() {
+            try {
+                const response = await fetch(`/api/bodychecks/${bodycheckId}`, {
+                    headers: {}
+                });
+
+                if (response.ok) {
+                    bodycheckData = await response.json();
+                    regions = bodycheckData.regions || [];
+                    displayBodycheckInfo();
+                    displayRegions();
+                } else {
+                    alert('Failed to load bodycheck');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        function displayBodycheckInfo() {
+            document.getElementById('statusBadge').textContent = bodycheckData.status;
+            document.getElementById('statusBadge').className = `badge bg-${
+                bodycheckData.status === 'ACCEPTED' ? 'success' :
+                (bodycheckData.status === 'SAVED' ? 'primary' : 'secondary')
+            }`;
+
+            document.getElementById('bodycheckInfo').innerHTML = `
+                <div class="col-md-6">
+                    <div class="mb-2"><strong>Bodycheck ID:</strong> ${bodycheckData.id}</div>
+                    <div class="mb-2"><strong>Patient:</strong> ${bodycheckData.first_name} ${bodycheckData.last_name}</div>
+                    <div class="mb-2"><strong>HN:</strong> ${bodycheckData.hn}</div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-2"><strong>PN Code:</strong> <a href="/pn/${bodycheckData.pn_id}">${bodycheckData.pn_code}</a></div>
+                    <div class="mb-2"><strong>Created:</strong> ${moment(bodycheckData.created_at).format('DD/MM/YYYY HH:mm')}</div>
+                    <div class="mb-2"><strong>All Regions:</strong> ${bodycheckData.all_regions ? 'Yes' : 'No'}</div>
+                </div>
+            `;
+
+            document.getElementById('allRegionsToggle').checked = bodycheckData.all_regions;
+
+            if (bodycheckData.status === 'SAVED') {
+                document.getElementById('acceptBtn').style.display = 'inline-block';
+            }
+        }
+
+        // Track selected regions for toggle view
+        let selectedRegions = new Set();
+
+        function displayRegions() {
+            const allRegions = document.getElementById('allRegionsToggle').checked;
+
+            // Display toggles
+            displayRegionToggles(allRegions);
+
+            // Display previews
+            displayRegionPreviews(allRegions);
+        }
+
+        function displayRegionToggles(allRegions) {
+            const toggleContainer = document.getElementById('regionToggles');
+
+            if (allRegions) {
+                toggleContainer.innerHTML = '<div class="text-center text-muted py-3 small"><i class="bi bi-check-circle me-2"></i>All regions selected</div>';
+                return;
+            }
+
+            toggleContainer.innerHTML = REGION_NAMES.map(regionName => {
+                const regionData = regions.find(r => r.region_name === regionName);
+                const hasData = regionData && regionData.strokes_json;
+                const totalSymptoms = hasData ?
+                    (regionData.pain_count + regionData.spasm_count + regionData.radicular_count + regionData.numbness_count) : 0;
+                const isActive = selectedRegions.has(regionName);
+
+                return `
+                    <div class="region-toggle-item ${isActive ? 'active' : ''} ${hasData ? 'has-data' : ''}"
+                         onclick="toggleRegion('${regionName}')"
+                         data-region="${regionName}">
+                        <div>
+                            <div class="fw-bold small">${regionName}</div>
+                            ${hasData ? `<small class="text-success"><i class="bi bi-check-circle-fill"></i> ${totalSymptoms} marks</small>` : '<small class="text-muted">No data</small>'}
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" ${isActive ? 'checked' : ''} onclick="event.stopPropagation(); toggleRegion('${regionName}')">
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function toggleRegion(regionName) {
+            if (selectedRegions.has(regionName)) {
+                selectedRegions.delete(regionName);
+            } else {
+                selectedRegions.add(regionName);
+            }
+            displayRegions();
+        }
+
+        function displayRegionPreviews(allRegions) {
+            const previewContainer = document.getElementById('regionPreviews');
+
+            if (allRegions) {
+                previewContainer.innerHTML = '<div class="text-center text-muted py-5"><i class="bi bi-check-circle fs-1 mb-3 d-block"></i><p>All regions mode enabled</p></div>';
+                return;
+            }
+
+            if (selectedRegions.size === 0) {
+                previewContainer.innerHTML = '<div class="text-center text-muted py-5"><i class="bi bi-toggles2 fs-1 mb-3 d-block"></i><p>Select regions from the left to view and edit</p></div>';
+                return;
+            }
+
+            const previews = Array.from(selectedRegions).map(regionName => {
+                const regionData = regions.find(r => r.region_name === regionName);
+                const hasData = regionData && regionData.strokes_json;
+                const totalSymptoms = hasData ?
+                    (regionData.pain_count + regionData.spasm_count + regionData.radicular_count + regionData.numbness_count) : 0;
+
+                return `
+                    <div class="region-preview-card" onclick="openDrawingModal('${regionName}')">
+                        <div class="region-preview-thumbnail">
+                            ${hasData ? `<canvas id="preview-${regionName.replace(/\s+/g, '-')}" width="200" height="300"></canvas>` : '<i class="bi bi-person-bounding-box fs-1 text-muted"></i>'}
+                        </div>
+                        <div class="fw-bold mb-1">${regionName}</div>
+                        ${hasData ? `
+                            <div class="d-flex gap-1 flex-wrap mb-2">
+                                <span class="badge bg-danger">${regionData.pain_count}</span>
+                                <span class="badge bg-warning">${regionData.spasm_count}</span>
+                                <span class="badge bg-primary">${regionData.radicular_count}</span>
+                                <span class="badge bg-secondary">${regionData.numbness_count}</span>
+                            </div>
+                            <small class="text-muted">Total: ${totalSymptoms} marks</small>
+                        ` : '<small class="text-muted">Click to add data</small>'}
+                    </div>
+                `;
+            }).join('');
+
+            previewContainer.innerHTML = `<div class="region-preview-grid">${previews}</div>`;
+
+            // Render preview canvases
+            setTimeout(() => {
+                Array.from(selectedRegions).forEach(regionName => {
+                    const regionData = regions.find(r => r.region_name === regionName);
+                    if (regionData && regionData.strokes_json) {
+                        renderPreviewCanvas(regionName, regionData);
+                    }
+                });
+            }, 50);
+        }
+
+        function renderPreviewCanvas(regionName, regionData) {
+            const canvasId = `preview-${regionName.replace(/\s+/g, '-')}`;
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+
+            const ctx = canvas.getContext('2d');
+            const strokes = JSON.parse(regionData.strokes_json);
+
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw body image if loaded
+            if (imageLoaded) {
+                ctx.drawImage(bodyImage, 0, 0, canvas.width, canvas.height);
+            }
+
+            // Draw strokes
+            strokes.forEach(stroke => {
+                if (stroke.type === 'radicular') {
+                    const startX = stroke.start.x * canvas.width;
+                    const startY = stroke.start.y * canvas.height;
+                    const endX = stroke.end.x * canvas.width;
+                    const endY = stroke.end.y * canvas.height;
+
+                    ctx.strokeStyle = stroke.color;
+                    ctx.lineWidth = stroke.width * (canvas.width / 800);
+                    ctx.beginPath();
+                    ctx.moveTo(startX, startY);
+                    ctx.lineTo(endX, endY);
+                    ctx.stroke();
+
+                    const angle = Math.atan2(endY - startY, endX - startX);
+                    ctx.beginPath();
+                    ctx.moveTo(endX, endY);
+                    ctx.lineTo(endX - 10 * Math.cos(angle - Math.PI / 6), endY - 10 * Math.sin(angle - Math.PI / 6));
+                    ctx.moveTo(endX, endY);
+                    ctx.lineTo(endX - 10 * Math.cos(angle + Math.PI / 6), endY - 10 * Math.sin(angle + Math.PI / 6));
+                    ctx.stroke();
+                } else {
+                    if (stroke.points.length < 2) return;
+
+                    ctx.strokeStyle = stroke.color;
+                    ctx.lineWidth = stroke.width * (canvas.width / 800);
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+
+                    ctx.beginPath();
+                    ctx.moveTo(stroke.points[0].x * canvas.width, stroke.points[0].y * canvas.height);
+
+                    for (let i = 1; i < stroke.points.length; i++) {
+                        ctx.lineTo(stroke.points[i].x * canvas.width, stroke.points[i].y * canvas.height);
+                    }
+                    ctx.stroke();
+                }
+            });
+        }
+
+        function toggleAllRegions() {
+            const allRegions = document.getElementById('allRegionsToggle').checked;
+            displayRegions();
+        }
+
+        function openDrawingModal(regionName) {
+            // Navigate to dedicated drawing page
+            window.location.href = `/bodycheck/${bodycheckId}/draw/${encodeURIComponent(regionName)}`;
+        }
+
+        async function saveBodycheck() {
+            try {
+            const allRegions = document.getElementById('allRegionsToggle').checked;
+
+                await fetch(`/api/bodychecks/${bodycheckId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'                    },
+                    body: JSON.stringify({
+                        status: 'SAVED',
+                        all_regions: allRegions ? 1 : 0
+                    })
+                });
+
+                alert('Bodycheck saved successfully');
+                await loadBodycheckData();
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to save bodycheck');
+            }
+        }
+
+        async function acceptBodycheck() {
+            if (!confirm('Accept this bodycheck? This will mark it as completed.')) return;
+
+            try {                await fetch(`/api/bodychecks/${bodycheckId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'                    },
+                    body: JSON.stringify({
+                        status: 'ACCEPTED'
+                    })
+                });
+
+                alert('Bodycheck accepted successfully');
+                await loadBodycheckData();
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to accept bodycheck');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadBodycheckData();
+        });
+    </script>
+</body>
+</html>

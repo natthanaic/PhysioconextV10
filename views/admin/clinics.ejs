@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clinic Management - RehabPlus System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    
+    <!-- Design System -->
+    <link href="/public/css/variables.css" rel="stylesheet">
+    <link href="/public/css/base.css" rel="stylesheet">
+    <link href="/public/css/accessibility.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --theme-primary: #667eea;
+            --theme-secondary: #764ba2;
+            --theme-bg: #f3f6f9;
+            --card-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
+            --input-bg: #f8fafc;
+        }
+
+        body {
+            background-color: var(--theme-bg);
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            color: #4a5568;
+            min-height: 100vh;
+        }
+
+        /* --- SIDEBAR (Standardized) --- */
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 2px 0 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.85);
+            padding: 0.75rem 1rem;
+            margin: 0.25rem 1rem;
+            border-radius: 0.5rem;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            background: rgba(255, 255, 255, 0.25);
+            color: #fff;
+        }
+
+        /* --- MAIN CONTENT LAYOUT --- */
+        main {
+            padding-top: 2rem;
+            padding-bottom: 4rem;
+        }
+
+        /* Page Header */
+        .page-header {
+            margin-bottom: 2.5rem;
+            position: relative;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .page-header h1 {
+            font-weight: 800;
+            color: #2d3748;
+            letter-spacing: -0.5px;
+            font-size: 2rem;
+        }
+
+        /* Stat Cards */
+        .stat-card {
+            background: white;
+            border-radius: 1.25rem;
+            border: none;
+            box-shadow: var(--card-shadow);
+            padding: 1.5rem;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: transform 0.2s ease;
+            position: relative;
+            overflow: hidden;
+            color: white;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+        }
+
+        .bg-gradient-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .bg-gradient-success { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); }
+        .bg-gradient-info { background: linear-gradient(135deg, #17a2b8 0%, #138496 100%); }
+        .bg-gradient-warning { background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%); }
+
+        .stat-card h6 {
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+            font-weight: 600;
+            opacity: 0.9;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-card h2 {
+            font-weight: 800;
+            font-size: 2.2rem;
+            margin: 0;
+        }
+
+        .stat-icon {
+            position: absolute;
+            right: 1rem;
+            bottom: 1rem;
+            font-size: 3rem;
+            opacity: 0.2;
+        }
+
+        /* Clinic Cards */
+        .clinic-card {
+            background: #ffffff;
+            border-radius: 1.25rem;
+            border: none;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 1.5rem;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .clinic-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
+        }
+
+        .clinic-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 6px;
+            background: linear-gradient(90deg, var(--theme-primary), var(--theme-secondary));
+            opacity: 0.8;
+        }
+
+        .clinic-card.inactive::before {
+            background: linear-gradient(90deg, #ff9a9e, #fecfef); /* Reddish for inactive */
+        }
+
+        .clinic-card .card-body {
+            padding: 1.5rem;
+            flex: 1;
+        }
+
+        .clinic-badge {
+            font-size: 0.75rem;
+            padding: 0.35em 0.65em;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid #f1f5f9;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-item .value {
+            font-weight: 700;
+            color: #2d3748;
+            display: block;
+        }
+
+        .stat-item .label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: #718096;
+        }
+
+        /* Buttons */
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 0.7rem 1.5rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            box-shadow: 0 4px 6px rgba(102, 126, 234, 0.25);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 7px 14px rgba(102, 126, 234, 0.3);
+            color: white;
+        }
+
+        /* Form Controls */
+        .form-label {
+            font-weight: 600;
+            color: #4a5568;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-control, .form-select {
+            background-color: var(--input-bg);
+            border: 2px solid transparent;
+            border-radius: 0.75rem;
+            padding: 0.6rem 1rem;
+        }
+
+        .form-control:focus, .form-select:focus {
+            background-color: #fff;
+            border-color: var(--theme-primary);
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+
+        /* Modals */
+        .modal-content {
+            border: none;
+            border-radius: 1.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-bottom: none;
+            padding: 1.5rem 2rem;
+        }
+
+        .modal-body {
+            padding: 2rem;
+        }
+
+        .modal-footer {
+            border-top: 1px solid #f1f5f9;
+            padding: 1.5rem 2rem;
+            background: #f8fafc;
+        }
+        
+        /* Details View */
+        .detail-group {
+            margin-bottom: 1rem;
+        }
+        .detail-label {
+            font-size: 0.75rem;
+            color: #718096;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+        .detail-value {
+            font-size: 1rem;
+            color: #2d3748;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <%- include('../partials/sidebar', { user, activePage: 'clinics' }) %>
+
+            <!-- Main content -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                
+                <!-- Page Header -->
+                <div class="page-header">
+                    <div>
+                        <h1 class="h2 mb-1">Clinic Management</h1>
+                        <p class="text-muted mb-0">Manage locations and facility details</p>
+                    </div>
+                    <button class="btn btn-primary shadow-lg" onclick="showAddClinicModal()">
+                        <i class="bi bi-plus-lg me-2"></i> Add New Clinic
+                    </button>
+                </div>
+
+                <!-- Statistics Cards -->
+                <div class="row g-4 mb-4">
+                    <div class="col-xl-3 col-md-6">
+                        <div class="stat-card bg-gradient-primary">
+                            <div class="card-body">
+                                <h6>Total Clinics</h6>
+                                <h2 id="totalClinics">0</h2>
+                                <i class="bi bi-hospital stat-icon"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6">
+                        <div class="stat-card bg-gradient-success">
+                            <div class="card-body">
+                                <h6>Active Locations</h6>
+                                <h2 id="activeClinics">0</h2>
+                                <i class="bi bi-check-circle stat-icon"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6">
+                        <div class="stat-card bg-gradient-info">
+                            <div class="card-body">
+                                <h6>Total Patients</h6>
+                                <h2 id="totalPatients">0</h2>
+                                <i class="bi bi-people stat-icon"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6">
+                        <div class="stat-card bg-gradient-warning">
+                            <div class="card-body">
+                                <h6>Total PN Cases</h6>
+                                <h2 id="totalCases">0</h2>
+                                <i class="bi bi-folder2-open stat-icon"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Clinics Grid -->
+                <div class="row" id="clinicsGrid">
+                    <div class="col-12 text-center py-5">
+                        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="text-muted mt-3">Loading clinic data...</p>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Add/Edit Clinic Modal -->
+    <div class="modal fade" id="clinicModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold" id="clinicModalTitle"><i class="bi bi-hospital me-2"></i>Add Clinic</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="clinicForm">
+                        <input type="hidden" id="clinicId">
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-4">
+                                <label for="clinicCode" class="form-label">Clinic Code</label>
+                                <input type="text" class="form-control" id="clinicCode" required placeholder="e.g. CL001">
+                            </div>
+                            <div class="col-md-8">
+                                <label for="clinicName" class="form-label">Clinic Name</label>
+                                <input type="text" class="form-control" id="clinicName" required placeholder="Full clinic name">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="clinicAddress" class="form-label">Address</label>
+                            <textarea class="form-control" id="clinicAddress" rows="2" placeholder="Full location address"></textarea>
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label for="clinicPhone" class="form-label">Phone</label>
+                                <input type="tel" class="form-control" id="clinicPhone" placeholder="Contact number">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="clinicEmail" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="clinicEmail" placeholder="contact@clinic.com">
+                            </div>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="clinicContact" class="form-label">Contact Person</label>
+                                <input type="text" class="form-control" id="clinicContact" placeholder="Manager name">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="clinicStatus" class="form-label">Status</label>
+                                <select class="form-select" id="clinicStatus">
+                                    <option value="1">Active</option>
+                                    <option value="0">Inactive</option>
+                                </select>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary px-4" onclick="saveClinic()">Save Clinic</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Clinic Details Modal -->
+    <div class="modal fade" id="clinicDetailsModal" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-gradient-info text-white" style="background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);">
+                    <h5 class="modal-title"><i class="bi bi-info-circle me-2"></i>Clinic Details</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-4">
+                        <!-- Info Column -->
+                        <div class="col-md-5">
+                            <div class="p-4 bg-light rounded-3 border h-100">
+                                <h6 class="text-primary fw-bold mb-3 border-bottom pb-2">Information</h6>
+                                <div class="detail-group">
+                                    <div class="detail-label">Clinic Name</div>
+                                    <div class="detail-value fs-5 fw-bold" id="detailName">-</div>
+                                </div>
+                                <div class="detail-group">
+                                    <div class="detail-label">Code</div>
+                                    <div class="detail-value"><span class="badge bg-secondary" id="detailCode">-</span></div>
+                                </div>
+                                <div class="detail-group">
+                                    <div class="detail-label">Address</div>
+                                    <div class="detail-value" id="detailAddress">-</div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-6 detail-group">
+                                        <div class="detail-label">Phone</div>
+                                        <div class="detail-value" id="detailPhone">-</div>
+                                    </div>
+                                    <div class="col-6 detail-group">
+                                        <div class="detail-label">Email</div>
+                                        <div class="detail-value" id="detailEmail">-</div>
+                                    </div>
+                                </div>
+                                <div class="detail-group mb-0">
+                                    <div class="detail-label">Contact Person</div>
+                                    <div class="detail-value" id="detailContact">-</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Stats & History Column -->
+                        <div class="col-md-7">
+                            <div class="row g-3 mb-4">
+                                <div class="col-4">
+                                    <div class="p-3 text-center border rounded-3 bg-white shadow-sm">
+                                        <h3 class="text-primary mb-0" id="detailPatients">0</h3>
+                                        <small class="text-muted text-uppercase" style="font-size:0.7rem">Patients</small>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="p-3 text-center border rounded-3 bg-white shadow-sm">
+                                        <h3 class="text-success mb-0" id="detailCases">0</h3>
+                                        <small class="text-muted text-uppercase" style="font-size:0.7rem">PN Cases</small>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="p-3 text-center border rounded-3 bg-white shadow-sm">
+                                        <h3 class="text-info mb-0" id="detailUsers">0</h3>
+                                        <small class="text-muted text-uppercase" style="font-size:0.7rem">Users</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h6 class="text-primary fw-bold mb-3">Recent PN Cases</h6>
+                            <div class="table-responsive border rounded-3">
+                                <table class="table table-hover mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th class="small text-uppercase text-muted">PN Code</th>
+                                            <th class="small text-uppercase text-muted">Patient</th>
+                                            <th class="small text-uppercase text-muted">Status</th>
+                                            <th class="small text-uppercase text-muted">Created</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="detailCasesTable">
+                                        <tr>
+                                            <td colspan="4" class="text-center py-3 text-muted">Loading...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let clinics = [];
+
+        async function loadClinics() {
+            try {
+                const response = await fetch('/api/admin/clinics', {
+                    headers: {}
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    clinics = data.clinics;
+                    displayClinics();
+                    updateStatistics(data.statistics);
+                }
+            } catch (error) {
+                console.error('Error loading clinics:', error);
+            }
+        }
+
+        function displayClinics() {
+            const grid = document.getElementById('clinicsGrid');
+            
+            if (clinics.length === 0) {
+                grid.innerHTML = '<div class="col-12 text-center py-5"><p class="text-muted lead">No clinics found</p></div>';
+                return;
+            }
+            
+            grid.innerHTML = clinics.map(clinic => `
+                <div class="col-md-6 col-xl-4 mb-4">
+                    <div class="clinic-card ${clinic.active ? '' : 'inactive'} h-100">
+                        <div class="card-body d-flex flex-column">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div>
+                                    <h5 class="card-title fw-bold text-dark mb-1">${clinic.name}</h5>
+                                    <span class="badge bg-light text-dark border">${clinic.code}</span>
+                                </div>
+                                <span class="clinic-badge badge bg-${clinic.active ? 'success' : 'danger'} bg-opacity-10 text-${clinic.active ? 'success' : 'danger'} border border-${clinic.active ? 'success' : 'danger'}">
+                                    ${clinic.active ? 'Active' : 'Inactive'}
+                                </span>
+                            </div>
+                            
+                            <div class="text-muted small mb-4 flex-grow-1">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="bi bi-geo-alt text-primary me-2"></i>
+                                    <span class="text-truncate">${clinic.address || 'No address provided'}</span>
+                                </div>
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="bi bi-telephone text-primary me-2"></i>
+                                    <span>${clinic.phone || '-'}</span>
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-envelope text-primary me-2"></i>
+                                    <span class="text-truncate">${clinic.email || '-'}</span>
+                                </div>
+                            </div>
+                            
+                            <div class="stat-row">
+                                <div class="stat-item">
+                                    <span class="value text-primary">${clinic.patient_count || 0}</span>
+                                    <span class="label">Patients</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="value text-success">${clinic.case_count || 0}</span>
+                                    <span class="label">PN Cases</span>
+                                </div>
+                            </div>
+
+                            <div class="d-flex gap-2 mt-3 pt-3 border-top">
+                                <button class="btn btn-sm btn-light border flex-grow-1" onclick="viewClinicDetails(${clinic.id})">
+                                    <i class="bi bi-eye me-1"></i> View
+                                </button>
+                                <button class="btn btn-sm btn-light border flex-grow-1" onclick="editClinic(${clinic.id})">
+                                    <i class="bi bi-pencil me-1"></i> Edit
+                                </button>
+                                <button class="btn btn-sm btn-outline-${clinic.active ? 'danger' : 'success'} border" onclick="toggleClinicStatus(${clinic.id}, ${clinic.active})" title="${clinic.active ? 'Deactivate' : 'Activate'}">
+                                    <i class="bi bi-power"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateStatistics(stats) {
+            document.getElementById('totalClinics').textContent = stats.total || 0;
+            document.getElementById('activeClinics').textContent = stats.active || 0;
+            document.getElementById('totalPatients').textContent = stats.total_patients || 0;
+            document.getElementById('totalCases').textContent = stats.total_cases || 0;
+        }
+
+        function showAddClinicModal() {
+            document.getElementById('clinicModalTitle').innerHTML = '<i class="bi bi-hospital me-2"></i>Add Clinic';
+            document.getElementById('clinicForm').reset();
+            document.getElementById('clinicId').value = '';
+            new bootstrap.Modal(document.getElementById('clinicModal')).show();
+        }
+
+        function editClinic(clinicId) {
+            const clinic = clinics.find(c => c.id === clinicId);
+            if (!clinic) return;
+            
+            document.getElementById('clinicModalTitle').innerHTML = '<i class="bi bi-pencil-square me-2"></i>Edit Clinic';
+            document.getElementById('clinicId').value = clinic.id;
+            document.getElementById('clinicCode').value = clinic.code;
+            document.getElementById('clinicName').value = clinic.name;
+            document.getElementById('clinicAddress').value = clinic.address || '';
+            document.getElementById('clinicPhone').value = clinic.phone || '';
+            document.getElementById('clinicEmail').value = clinic.email || '';
+            document.getElementById('clinicContact').value = clinic.contact_person || '';
+            document.getElementById('clinicStatus').value = clinic.active ? '1' : '0';
+            
+            new bootstrap.Modal(document.getElementById('clinicModal')).show();
+        }
+
+        async function saveClinic() {
+            const clinicId = document.getElementById('clinicId').value;
+            const isEdit = !!clinicId;
+            
+            const clinicData = {
+                code: document.getElementById('clinicCode').value,
+                name: document.getElementById('clinicName').value,
+                address: document.getElementById('clinicAddress').value,
+                phone: document.getElementById('clinicPhone').value,
+                email: document.getElementById('clinicEmail').value,
+                contact_person: document.getElementById('clinicContact').value,
+                active: document.getElementById('clinicStatus').value === '1'
+            };
+            
+            try {
+            const url = isEdit ? `/api/admin/clinics/${clinicId}` : '/api/admin/clinics';
+                const method = isEdit ? 'PUT' : 'POST';
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json'                    },
+                    body: JSON.stringify(clinicData)
+                });
+                
+                if (response.ok) {
+                    alert(`Clinic ${isEdit ? 'updated' : 'created'} successfully!`);
+                    bootstrap.Modal.getInstance(document.getElementById('clinicModal')).hide();
+                    loadClinics();
+                } else {
+                    const error = await response.json();
+                    alert('Error: ' + error.error);
+                }
+            } catch (error) {
+                alert('Network error. Please try again.');
+            }
+        }
+
+        async function toggleClinicStatus(clinicId, currentStatus) {
+            if (!confirm(`Are you sure you want to ${currentStatus ? 'deactivate' : 'activate'} this clinic?`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/admin/clinics/${clinicId}/status`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json'                    },
+                    body: JSON.stringify({ active: !currentStatus })
+                });
+                
+                if (response.ok) {
+                    loadClinics();
+                } else {
+                    const error = await response.json();
+                    alert('Error: ' + error.error);
+                }
+            } catch (error) {
+                alert('Network error. Please try again.');
+            }
+        }
+
+        async function viewClinicDetails(clinicId) {
+            const clinic = clinics.find(c => c.id === clinicId);
+            if (!clinic) return;
+            
+            // Fill basic info
+            document.getElementById('detailCode').textContent = clinic.code;
+            document.getElementById('detailName').textContent = clinic.name;
+            document.getElementById('detailAddress').textContent = clinic.address || '-';
+            document.getElementById('detailPhone').textContent = clinic.phone || '-';
+            document.getElementById('detailEmail').textContent = clinic.email || '-';
+            document.getElementById('detailContact').textContent = clinic.contact_person || '-';
+            
+            // Load detailed statistics
+            try {
+                const response = await fetch(`/api/admin/clinics/${clinicId}/details`, {
+                    headers: {}
+                });
+                
+                if (response.ok) {
+                    const details = await response.json();
+                    document.getElementById('detailPatients').textContent = details.patient_count || 0;
+                    document.getElementById('detailCases').textContent = details.case_count || 0;
+                    document.getElementById('detailUsers').textContent = details.user_count || 0;
+                    
+                    // Display recent cases
+                    const casesTable = document.getElementById('detailCasesTable');
+                    if (details.recent_cases && details.recent_cases.length > 0) {
+                        casesTable.innerHTML = details.recent_cases.map(c => `
+                            <tr>
+                                <td><span class="badge bg-light text-dark border">${c.pn_code}</span></td>
+                                <td>${c.patient_name}</td>
+                                <td><span class="badge bg-${getStatusColor(c.status)}">${c.status}</span></td>
+                                <td>${formatDate(c.created_at)}</td>
+                            </tr>
+                        `).join('');
+                    } else {
+                        casesTable.innerHTML = '<tr><td colspan="4" class="text-center py-3 text-muted">No recent cases</td></tr>';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading clinic details:', error);
+            }
+            
+            new bootstrap.Modal(document.getElementById('clinicDetailsModal')).show();
+        }
+
+        function getStatusColor(status) {
+            const colors = {
+                'PENDING': 'warning',
+                'ACCEPTED': 'info',
+                'IN_PROGRESS': 'primary',
+                'COMPLETED': 'success',
+                'CANCELLED': 'danger'
+            };
+            return colors[status] || 'secondary';
+        }
+
+        function formatDate(date) {
+            return new Date(date).toLocaleDateString('en-GB');
+        }
+
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+        }
+
+        function logout() {
+            document.cookie = 'authToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+            localStorage.clear();
+            window.location.href = '/login';
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', loadClinics);
+    </script>
+</body>
+</html>

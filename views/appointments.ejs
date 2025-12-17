@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Appointments - RehabPlus System</title>
+    <link rel="icon" href="/public/images/Fav.png" type="image/x-icon">
+
+    <!-- PWA Meta Tags -->
+    <meta name="application-name" content="RehabPlus">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="RehabPlus">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#6366f1">
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/public/manifest.json">
+
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" sizes="152x152" href="/public/images/icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="/public/images/icon-192x192.png">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Design System & FullCalendar -->
+    <link href="/public/css/variables.css" rel="stylesheet">
+    <link href="/public/css/base.css" rel="stylesheet">
+    <link href="/public/css/accessibility.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css" rel="stylesheet">
+    
+    <style>
+        /* --- DASHBOARD THEME VARIABLES --- */
+        :root {
+            --primary-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            --surface-color: #ffffff;
+            --background-color: #f3f4f6;
+            --text-main: #1f2937;
+            --text-secondary: #6b7280;
+            --border-radius-md: 12px;
+            --border-radius-sm: 8px;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            
+            /* Legacy/Specific Overrides for Appointments */
+            --theme-primary: #6366f1; /* Matching dashboard primary start */
+            --theme-secondary: #8b5cf6;
+            --input-bg: #f8fafc;
+        }
+
+        body {
+            background-color: var(--background-color);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* --- MAIN LAYOUT --- */
+        main {
+            padding-top: 1.5rem;
+            padding-bottom: 2rem;
+        }
+
+        /* --- PAGE HEADER (Dashboard Style) --- */
+        .page-header {
+            background: var(--surface-color);
+            border-radius: var(--border-radius-md);
+            padding: 0.8rem 1.2rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid rgba(255,255,255,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .page-header h1 {
+            font-weight: 800;
+            font-size: 1.4rem;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0;
+        }
+
+        .page-header .subtitle {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        /* --- BUTTONS (Dashboard Style) --- */
+        .btn {
+            border: none;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            border-radius: 6px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .btn-primary { 
+            background: var(--primary-gradient); 
+            color: white; 
+        }
+        
+        .btn-primary:hover {
+            color: white;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+        }
+
+        /* --- STAT CARDS (Dashboard Gradient Style) --- */
+        .stat-card {
+            background: var(--surface-color);
+            border-radius: var(--border-radius-md);
+            padding: 1rem;
+            height: 100%;
+            position: relative;
+            border: 1px solid rgba(229, 231, 235, 0.6);
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            overflow: hidden;
+        }
+        
+        .bg-gradient-primary { background: linear-gradient(135deg, #4f46e5 0%, #818cf8 100%); color: white; }
+        .bg-gradient-warning { background: linear-gradient(135deg, #d97706 0%, #fbbf24 100%); color: white; }
+        .bg-gradient-info { background: linear-gradient(135deg, #0ea5e9 0%, #38bdf8 100%); color: white; }
+        .bg-gradient-success { background: linear-gradient(135deg, #059669 0%, #34d399 100%); color: white; }
+
+        .stat-content h6 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.9; margin-bottom: 4px; font-weight: 700; }
+        .stat-content h2 { font-size: 1.8rem; font-weight: 800; margin: 0; line-height: 1.1; }
+        .stat-content small { font-size: 0.75rem; opacity: 0.9; }
+        
+        /* Different icon positioning for Appointment stats */
+        .stat-icon { 
+            position: absolute; 
+            right: 1rem; 
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 2.5rem; 
+            opacity: 0.2; 
+        }
+
+        /* --- CONTAINERS & CARDS --- */
+        .filter-card, .content-card {
+            background: var(--surface-color);
+            border-radius: var(--border-radius-md);
+            border: 1px solid rgba(229, 231, 235, 0.8);
+            box-shadow: var(--shadow-sm);
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .filter-header, .card-header-custom h5 {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 0;
+            display: flex; align-items: center;
+        }
+
+        .card-header-custom {
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #f3f4f6;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* --- FORM CONTROLS --- */
+        .form-label { font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.25rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        .form-control, .form-select { font-size: 0.9rem; padding: 0.5rem 0.75rem; border-radius: 8px; border: 1px solid #d1d5db; background-color: var(--input-bg); }
+        .form-control:focus, .form-select:focus { border-color: var(--theme-primary); box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); }
+
+        /* --- FULLCALENDAR CUSTOMIZATION --- */
+        #calendar {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        
+        .fc-toolbar-title {
+            font-weight: 700 !important;
+            color: var(--text-main) !important;
+            font-size: 1.25rem !important;
+        }
+
+        .fc-button {
+            background: var(--theme-primary) !important;
+            border: none !important;
+            border-radius: 6px !important;
+            font-weight: 600 !important;
+            text-transform: capitalize;
+            box-shadow: var(--shadow-sm) !important;
+            padding: 0.4rem 1rem !important;
+        }
+        
+        .fc-button:active, .fc-button:focus {
+            background: var(--theme-secondary) !important;
+        }
+
+        .fc-daygrid-day-frame {
+            border: 1px solid #f3f4f6;
+        }
+        
+        .fc-col-header-cell {
+            background-color: #f8fafc;
+            padding: 10px 0;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+        }
+
+        .fc-event {
+            border-radius: 4px;
+            border: none;
+            padding: 2px 4px;
+            font-weight: 500;
+            font-size: 0.8rem;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        /* --- LISTS --- */
+        .list-group-item {
+            border: none;
+            border-bottom: 1px solid #f3f4f6;
+            padding: 0.75rem 0;
+            transition: background 0.2s;
+        }
+        
+        .list-group-item:last-child { border-bottom: none; }
+        
+        .legend-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: #f8fafc;
+            color: var(--text-secondary);
+            padding: 0.3rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+        /* --- MODALS --- */
+        .modal-content { border: none; border-radius: 16px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); }
+        .modal-header { background: var(--primary-gradient); color: white; padding: 1rem 1.5rem; border-bottom: none; }
+        .modal-body { padding: 1.5rem; }
+        .modal-footer { border-top: 1px solid #f3f4f6; padding: 1rem 1.5rem; background: #f9fafb; }
+        .btn-close-white { filter: invert(1) grayscale(100%) brightness(200%); }
+
+        /* --- UTILITIES --- */
+        .appointment-status-SCHEDULED { background-color: #3b82f6 !important; }
+        .appointment-status-COMPLETED { background-color: #10b981 !important; }
+        .appointment-status-CANCELLED { background-color: #94a3b8 !important; }
+        .appointment-status-NO_SHOW { background-color: #ef4444 !important; }
+
+        .btn-check:checked + .btn-outline-primary {
+            background-color: var(--theme-primary);
+            border-color: var(--theme-primary);
+        }
+
+        .conflict-warning {
+            background-color: #fffbeb;
+            border: 1px solid #fcd34d;
+            color: #b45309;
+            border-radius: 8px;
+            padding: 0.75rem;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            display: none;
+        }
+        
+        /* Mobile adjustments */
+        @media (max-width: 768px) {
+            .fc-toolbar { flex-direction: column; gap: 10px; }
+            .stat-card { margin-bottom: 1rem; }
+            .content-card { padding: 0.75rem; }
+        }
+    </style>
+</head>
+<body>
+    <%- include('partials/header') %>
+
+    <a href="#main-content" class="skip-link d-none">Skip to main content</a>
+
+    <!-- Mobile navbar toggle -->
+    <nav class="navbar navbar-dark bg-dark d-md-none">
+        <div class="container-fluid">
+            <span class="navbar-brand">RehabPlus System</span>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+        </div>
+    </nav>
+
+    <% const canManageAppointments = (user.role === 'ADMIN' || user.role === 'PT'); %>
+    
+    <div class="container-fluid">
+        <div class="row">
+            <%- include('partials/sidebar', { user, activePage: 'appointments' }) %>
+
+            <main id="main-content" class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                
+                <!-- Page Header (Dashboard Style) -->
+                <div class="page-header">
+                    <div>
+                        <h1 class="h2">Appointments</h1>
+                        <span class="subtitle">Manage schedules and patient bookings</span>
+                    </div>
+                    <% if (canManageAppointments) { %>
+                        <button type="button" class="btn btn-primary btn-sm shadow-sm" onclick="showBookingModal()">
+                            <i class="bi bi-plus-lg me-2"></i> New Appointment
+                        </button>
+                    <% } %>
+                </div>
+
+                <% if (!canManageAppointments) { %>
+                    <div class="alert alert-info border-0 shadow-sm rounded-3 mb-4" role="alert">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-info-circle-fill fs-4 me-3"></i>
+                            <div>
+                                <strong>Read-only Access</strong>
+                                <div class="small">Clinic accounts can view appointments but cannot make changes.</div>
+                            </div>
+                        </div>
+                    </div>
+                <% } %>
+
+                <!-- Stats Row (Dashboard Gradient Style) -->
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <div class="stat-card bg-gradient-info">
+                            <div class="stat-content">
+                                <h6>Today</h6>
+                                <h2 id="todayCount">0</h2>
+                                <small>Scheduled sessions</small>
+                            </div>
+                            <div class="stat-icon">
+                                <i class="bi bi-calendar-day"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="stat-card bg-gradient-primary">
+                            <div class="stat-content">
+                                <h6>This Week</h6>
+                                <h2 id="weekCount">0</h2>
+                                <small>Active bookings</small>
+                            </div>
+                            <div class="stat-icon">
+                                <i class="bi bi-calendar-week"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="stat-card bg-gradient-success">
+                            <div class="stat-content">
+                                <h6>This Month</h6>
+                                <h2 id="monthCount">0</h2>
+                                <small>Total sessions</small>
+                            </div>
+                            <div class="stat-icon">
+                                <i class="bi bi-calendar-month"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filters Section (Dashboard Filter Card Style) -->
+                <div class="filter-card">
+                    <div class="filter-header mb-3">
+                        <i class="bi bi-funnel me-2 text-primary"></i> Filters
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-md-4">
+                            <label for="filterPT" class="form-label">Therapist</label>
+                            <select id="filterPT" class="form-select">
+                                <option value="">All Therapists</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="filterClinic" class="form-label">Clinic</label>
+                            <select id="filterClinic" class="form-select">
+                                <option value="">All Clinics</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="filterStatus" class="form-label">Status</label>
+                            <select id="filterStatus" class="form-select">
+                                <option value="">All Statuses</option>
+                                <option value="SCHEDULED">Scheduled</option>
+                                <option value="COMPLETED">Completed</option>
+                                <option value="CANCELLED">Cancelled</option>
+                                <option value="NO_SHOW">No Show</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Calendar & Upcoming -->
+                <div class="row g-4">
+                    <!-- Calendar Column -->
+                    <div class="col-lg-8">
+                        <div class="content-card h-100 p-0 overflow-hidden">
+                            <div class="p-3">
+                                <div id="calendar"></div>
+                            </div>
+                            <div class="bg-light border-top px-4 py-3">
+                                <div class="d-flex flex-wrap gap-2">
+                                    <div class="legend-item"><span class="legend-dot" style="background:#3b82f6"></span>Scheduled</div>
+                                    <div class="legend-item"><span class="legend-dot" style="background:#10b981"></span>Completed</div>
+                                    <div class="legend-item"><span class="legend-dot" style="background:#94a3b8"></span>Cancelled</div>
+                                    <div class="legend-item"><span class="legend-dot" style="background:#ef4444"></span>No Show</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Upcoming Column -->
+                    <div class="col-lg-4">
+                        <div class="content-card h-100">
+                            <div class="card-header-custom pt-0">
+                                <h5><i class="bi bi-clock-history me-2 text-primary"></i> Upcoming</h5>
+                                <span class="badge bg-primary rounded-pill" id="upcomingCount">0</span>
+                            </div>
+                            <div class="card-body p-0">
+                                <ul class="list-group list-group-flush" id="upcomingAppointments">
+                                    <!-- Populated by JS -->
+                                </ul>
+                                <div id="upcomingEmptyState" class="text-center text-muted py-5">
+                                    <i class="bi bi-calendar-x display-4 mb-3 d-block opacity-50"></i>
+                                    <p class="mb-0 small">No appointments soon.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- New Appointment Modal -->
+    <% if (canManageAppointments) { %>
+    <div class="modal fade" id="bookingModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-plus-circle me-2"></i><span id="modalTitle">New Appointment</span></h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="conflict-warning" id="conflictWarning">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-exclamation-triangle-fill fs-5 me-3"></i>
+                            <div>
+                                <strong>Scheduling Conflict</strong>
+                                <div id="conflictMessage" class="small"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form id="appointmentForm">
+                        <input type="hidden" id="selectedPatientId">
+                        
+                        <div class="row g-4">
+                            <!-- Left: Patient & Mode -->
+                            <div class="col-md-6">
+                                <div class="p-3 bg-light rounded-3 border mb-3">
+                                    <label class="form-label mb-2">Booking Mode</label>
+                                    <div class="btn-group w-100" role="group">
+                                        <input type="radio" class="btn-check" name="bookingType" id="bookingTypeOld" value="OLD_PATIENT" autocomplete="off" checked>
+                                        <label class="btn btn-outline-primary" for="bookingTypeOld">Existing Patient</label>
+                                        
+                                        <input type="radio" class="btn-check" name="bookingType" id="bookingTypeWalkIn" value="WALK_IN" autocomplete="off">
+                                        <label class="btn btn-outline-primary" for="bookingTypeWalkIn">Walk-in / New</label>
+                                    </div>
+                                </div>
+
+                                <div id="existingPatientSection" class="mb-3">
+                                    <label for="patientSearch" class="form-label required">Search Patient</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                                        <input type="text" class="form-control border-start-0 ps-0" id="patientSearch" placeholder="Enter Name, HN, or PT Number" autocomplete="off">
+                                        <button type="button" class="btn btn-primary" onclick="searchPatients()">Search</button>
+                                    </div>
+                                    
+                                    <div id="patientSearchResults" class="list-group mt-2 shadow-sm" style="display:none; max-height:200px; overflow-y:auto;"></div>
+                                    
+                                    <div id="selectedPatientInfo" class="alert alert-success mt-3 d-flex align-items-center border-0 shadow-sm" style="display:none;">
+                                        <i class="bi bi-person-check-fill fs-4 me-3"></i>
+                                        <div>
+                                            <div class="small text-uppercase fw-bold opacity-75">Selected Patient</div>
+                                            <div id="selectedPatientDisplay" class="fw-bold"></div>
+                                        </div>
+                                    </div>
+
+                                    <!-- SMS Notification Option (for Existing Patients) -->
+                                    <div id="smsNotificationSection" class="mt-3 p-3 bg-light rounded border" style="display:none;">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="sendSMSCheckbox">
+                                            <label class="form-check-label fw-bold" for="sendSMSCheckbox">
+                                                📱 Send SMS appointment confirmation to patient
+                                            </label>
+                                        </div>
+                                        <small class="text-muted d-block mt-1">
+                                            <i class="bi bi-info-circle me-1"></i>Calendar invitation will always be sent automatically
+                                        </small>
+                                    </div>
+
+                                    <div id="linkedPNInfo" class="alert alert-info mt-2 border-0 shadow-sm" style="display:none;">
+                                        <small><strong>Linked PN Case:</strong> <span id="linkedPNCodeDisplay"></span></small>
+                                    </div>
+                                </div>
+
+                                <div id="walkInSection" class="mb-3 p-3 bg-light rounded-3 border" style="display:none;">
+                                    <label class="form-label">Visitor Details</label>
+                                    <input type="text" class="form-control mb-2" id="walkInName" placeholder="Full Name">
+                                    <input type="email" class="form-control mb-2" id="walkInEmail" placeholder="Email Address (optional)">
+                                    <input type="tel" class="form-control mb-2" id="walkInPhone" placeholder="Phone Number (optional)">
+
+                                    <div class="form-check form-switch mt-2">
+                                        <input class="form-check-input" type="checkbox" id="walkInSendSMSCheckbox">
+                                        <label class="form-check-label" for="walkInSendSMSCheckbox">
+                                            📱 Send SMS appointment confirmation
+                                        </label>
+                                    </div>
+                                    <small class="text-muted">Calendar invitation will always be sent automatically</small>
+                                </div>
+
+                                <div class="mb-3" id="courseSection" style="display:none;">
+                                    <label for="appointmentCourse" class="form-label text-success"><i class="bi bi-bookmark-star-fill me-1"></i> Use Course Package</label>
+                                    <select id="appointmentCourse" class="form-select">
+                                        <option value="">No course (Pay per session)</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="mb-3" id="autoCreatePNSection" style="display:none;">
+                                    <div class="form-check form-switch p-2 bg-white border rounded">
+                                        <input class="form-check-input ms-0 me-2" type="checkbox" id="autoCreatePN" checked>
+                                        <label class="form-check-label" for="autoCreatePN">Auto-create PN Case</label>
+                                    </div>
+                                </div>
+
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label for="appointmentPT" class="form-label required">Therapist</label>
+                                        <select id="appointmentPT" class="form-select" onchange="checkConflicts()" required>
+                                            <option value="">Select...</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="appointmentClinic" class="form-label required">Clinic</label>
+                                        <select id="appointmentClinic" class="form-select" required>
+                                            <option value="">Select...</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Right: Time & Details -->
+                            <div class="col-md-6">
+                                <div class="p-3 bg-light rounded-3 border h-100">
+                                    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-clock me-2"></i>Schedule</h6>
+                                    
+                                    <div class="mb-3">
+                                        <label for="appointmentDate" class="form-label required">Date</label>
+                                        <input type="date" class="form-control" id="appointmentDate" onchange="checkConflicts()" required>
+                                    </div>
+                                    
+                                    <div class="row g-2 mb-3">
+                                        <div class="col-6">
+                                            <label for="appointmentStartTime" class="form-label required">Start</label>
+                                            <input type="time" class="form-control" id="appointmentStartTime" onchange="checkConflicts()" required>
+                                        </div>
+                                        <div class="col-6">
+                                            <label for="appointmentEndTime" class="form-label required">End</label>
+                                            <input type="time" class="form-control" id="appointmentEndTime" onchange="checkConflicts()" required>
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex gap-2 mb-4">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" onclick="setDuration(30)">30m</button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" onclick="setDuration(45)">45m</button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" onclick="setDuration(60)">1h</button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" onclick="setDuration(90)">1.5h</button>
+                                    </div>
+
+                                    <hr>
+
+                                    <div class="mb-3">
+                                        <label for="appointmentType" class="form-label">Type</label>
+                                        <select id="appointmentType" class="form-select">
+                                            <option value="">Select Type</option>
+                                            <option value="Initial Assessment">Initial Assessment</option>
+                                            <option value="Body Check">Body Check</option>
+                                            <option value="Follow-up">Follow-up</option>
+                                            <option value="Treatment Session">Treatment Session</option>
+                                            <option value="Re-evaluation">Re-evaluation</option>
+                                            <option value="Discharge">Discharge</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="appointmentReason" class="form-label">Reason / Notes</label>
+                                        <textarea id="appointmentReason" class="form-control" rows="2" placeholder="Reason for visit..."></textarea>
+                                    </div>
+                                    <div class="mb-0">
+                                        <label for="appointmentNotes" class="form-label">Internal Notes</label>
+                                        <textarea id="appointmentNotes" class="form-control" rows="2" placeholder="Private notes..."></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary px-4" onclick="saveAppointment()">
+                        <i class="bi bi-check-lg me-2"></i> Save Appointment
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <% } %>
+
+    <!-- View Appointment Modal -->
+    <div class="modal fade" id="viewAppointmentModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-white text-dark border-bottom">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-calendar-event me-2 text-primary"></i>Appointment Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4" id="appointmentDetails">
+                    <!-- Populated dynamically via JS -->
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-white border" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="printAppointmentCard()">
+                        <i class="bi bi-printer-fill me-1"></i> Print Card
+                    </button>
+                    <% if (canManageAppointments) { %>
+                        <div class="d-flex gap-2 ms-auto">
+                            <button type="button" class="btn btn-warning text-white" onclick="rescheduleAppointment()">
+                                <i class="bi bi-calendar-range me-1"></i> Reschedule
+                            </button>
+                            <button type="button" class="btn btn-success text-white" onclick="markAsCompleted()">
+                                <i class="bi bi-check2-circle me-1"></i> Complete
+                            </button>
+                            <button type="button" class="btn btn-danger text-white" onclick="cancelAppointment()">
+                                <i class="bi bi-x-lg me-1"></i> Cancel
+                            </button>
+                        </div>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Body Annotation Modal for Initial Assessment -->
+    <div class="modal fade" id="appointmentBodyAnnotationModal" tabindex="-1" aria-labelledby="appointmentBodyAnnotationModalLabel" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="appointmentBodyAnnotationModalLabel">
+                        <i class="bi bi-person-bounding-box me-2"></i>Body Part Assessment
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-4">
+                        <!-- LEFT PANEL: Pain Assessment Form -->
+                        <div class="col-md-5">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0 fw-bold">Pain Assessment</h6>
+                                </div>
+                                <div class="card-body">
+                                    <form id="appointmentBodyAnnotationForm">
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">Pain Type</label>
+                                            <div class="form-check">
+                                                <input type="checkbox" class="form-check-input" id="appointmentConstantPain">
+                                                <label class="form-check-label" for="appointmentConstantPain">Constant Pain</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input type="checkbox" class="form-check-input" id="appointmentIntermittentPain">
+                                                <label class="form-check-label" for="appointmentIntermittentPain">Intermittent Pain</label>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="appointmentPainType" class="form-label fw-bold">Type of Pain</label>
+                                            <textarea class="form-control" id="appointmentPainType" rows="2" placeholder="e.g., Sharp, dull, burning"></textarea>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="appointmentAggravation" class="form-label fw-bold">Aggravation</label>
+                                            <textarea class="form-control" id="appointmentAggravation" rows="2" placeholder="What makes the pain worse?"></textarea>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="appointmentEasingFactor" class="form-label fw-bold">Easing Factor</label>
+                                            <textarea class="form-control" id="appointmentEasingFactor" rows="2" placeholder="What makes the pain better?"></textarea>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="appointmentSeverity" class="form-label fw-bold">Pain Severity (1-10)</label>
+                                            <input type="range" class="form-range" id="appointmentSeverity" min="1" max="10" value="5" step="1">
+                                            <div class="text-center fw-bold text-primary"><span id="appointmentSeverityValue">5</span>/10</div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="appointmentNotes" class="form-label fw-bold">Additional Notes</label>
+                                            <textarea class="form-control" id="appointmentBodyNotes" rows="3" placeholder="Any additional observations"></textarea>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- RIGHT PANEL: Canvas Preview -->
+                        <div class="col-md-7">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0 fw-bold">Body Diagram</h6>
+                                </div>
+                                <div class="card-body p-0">
+                                    <div class="text-center p-3" style="background: #f8f9fa;">
+                                        <canvas id="appointmentBodyAnnotationPreview" width="600" height="900" style="max-width: 100%; height: auto; border: 2px solid #dee2e6; border-radius: 8px; background: white;"></canvas>
+                                    </div>
+                                    <div class="p-3 border-top">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span>Marks: <strong id="appointmentStrokeCount">0 strokes</strong></span>
+                                        </div>
+                                        <div class="d-grid gap-2">
+                                            <button type="button" class="btn btn-primary" id="appointmentDrawBodyButton">
+                                                <i class="bi bi-pencil me-1"></i> Draw on Body
+                                            </button>
+                                            <div class="btn-group">
+                                                <button type="button" class="btn btn-outline-secondary" id="appointmentUndoButton">
+                                                    <i class="bi bi-arrow-counterclockwise me-1"></i> Undo
+                                                </button>
+                                                <button type="button" class="btn btn-outline-danger" id="appointmentClearButton">
+                                                    <i class="bi bi-trash me-1"></i> Clear All
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="appointmentSaveAnnotationButton">
+                        <i class="bi bi-check-circle me-1"></i> Save & Continue
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Compact Drawing Modal for Appointments -->
+    <div class="modal fade" id="appointmentBodyDrawingModal" tabindex="-1" aria-labelledby="appointmentBodyDrawingModalLabel" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-lg modal-dialog-centered" style="max-width: 700px;">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="appointmentBodyDrawingModalLabel">
+                        <i class="bi bi-pencil-square me-2"></i>Draw on Body Diagram
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" id="appointmentCloseDrawingButton" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" style="padding: 1rem; max-height: 70vh; overflow-y: auto;">
+                    <!-- Color and Tools Toolbar -->
+                    <div class="d-flex flex-wrap justify-content-center align-items-center gap-2 mb-3 p-2 bg-light border rounded">
+                        <button type="button" class="btn btn-sm btn-outline-danger active appointment-color-btn" data-color="#FF0000">Red</button>
+                        <button type="button" class="btn btn-sm btn-outline-primary appointment-color-btn" data-color="#0000FF">Blue</button>
+                        <button type="button" class="btn btn-sm btn-outline-success appointment-color-btn" data-color="#00FF00">Green</button>
+                        <button type="button" class="btn btn-sm btn-outline-warning appointment-color-btn" data-color="#FFFF00">Yellow</button>
+                        <div class="vr d-none d-md-block"></div>
+                        <div class="d-flex align-items-center gap-2">
+                            <label class="mb-0 small">Width:</label>
+                            <input type="range" id="appointmentStrokeWidth" min="1" max="20" value="3" step="1" style="width: 80px;">
+                            <span id="appointmentWidthValue" class="badge bg-secondary">3</span>
+                        </div>
+                        <div class="vr d-none d-md-block"></div>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="appointmentUndoDrawingButton">
+                            <i class="bi bi-arrow-counterclockwise"></i> Undo
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-danger" id="appointmentClearDrawingButton">
+                            <i class="bi bi-trash"></i> Clear
+                        </button>
+                    </div>
+                    <!-- Canvas Container -->
+                    <div class="d-flex justify-content-center" style="background: #f8f9fa; padding: 1rem; border-radius: 8px;">
+                        <canvas id="appointmentBodyAnnotationCanvas" width="600" height="900" style="border: 2px solid #dee2e6; background: white; max-width: 100%; height: auto; touch-action: none; border-radius: 4px;"></canvas>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="appointmentCancelDrawingButton">Cancel</button>
+                    <button type="button" class="btn btn-success" id="appointmentSaveDrawingButton">
+                        <i class="bi bi-check2-circle me-1"></i> Save & Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+
+    <script>
+        window.userInfo = {
+            id: <%= user.id %>,
+            role: <%- JSON.stringify(user.role) %>,
+            email: <%- JSON.stringify(user.email || '') %>
+        };
+    </script>
+    <script src="/public/js/appointments.js?v=1765514243876"></script>
+
+    <!-- PWA Service Worker -->
+    <script src="/public/js/pwa.js?v=1765446492000"></script>
+</body>
+</html>

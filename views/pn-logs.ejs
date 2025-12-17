@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PN Case Logs - Medical Records</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --success-gradient: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+            --medical-blue: #4a90e2;
+            --medical-green: #50c878;
+            --medical-orange: #ff9f43;
+            --medical-red: #ee5a6f;
+            --bg-light: #f8f9fa;
+            --card-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            min-height: 100vh;
+            background: var(--primary-gradient);
+            box-shadow: 2px 0 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.85);
+            padding: 0.75rem 1.25rem;
+            margin: 0.25rem 1rem;
+            border-radius: 0.75rem;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            background: rgba(255, 255, 255, 0.25);
+            color: #fff;
+            transform: translateX(5px);
+        }
+
+        /* Main Content */
+        main {
+            padding: 2rem;
+        }
+
+        /* Page Header */
+        .page-header {
+            background: white;
+            border-radius: 1.5rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--card-shadow);
+        }
+
+        .page-header h1 {
+            font-weight: 800;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Stats Cards */
+        .stats-card {
+            background: white;
+            border-radius: 1.25rem;
+            padding: 1.5rem;
+            box-shadow: var(--card-shadow);
+            border-left: 4px solid;
+            transition: transform 0.2s;
+            height: 100%;
+        }
+
+        .stats-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stats-card.total { border-left-color: var(--medical-blue); }
+        .stats-card.pending { border-left-color: var(--medical-orange); }
+        .stats-card.active { border-left-color: var(--medical-green); }
+        .stats-card.completed { border-left-color: #6c757d; }
+
+        .stats-card .icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        /* Filters Section */
+        .filters-section {
+            background: white;
+            border-radius: 1.25rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--card-shadow);
+        }
+
+        /* Main Content Card */
+        .content-card {
+            background: white;
+            border-radius: 1.25rem;
+            padding: 0;
+            box-shadow: var(--card-shadow);
+            overflow: hidden;
+        }
+
+        .content-card-header {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 1.5rem;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        /* Table Styles */
+        .logs-table {
+            margin-bottom: 0;
+        }
+
+        .logs-table thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .logs-table thead th {
+            border: none;
+            padding: 1rem;
+            font-weight: 600;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .logs-table tbody tr {
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .logs-table tbody tr:hover {
+            background: #f8f9fa;
+            transform: scale(1.01);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .logs-table tbody td {
+            padding: 1rem;
+            vertical-align: middle;
+            border-bottom: 1px solid #f1f3f5;
+        }
+
+        /* Status Badges */
+        .status-badge {
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-badge i {
+            font-size: 0.875rem;
+        }
+
+        .status-badge.pending {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffe69c 100%);
+            color: #856404;
+        }
+
+        .status-badge.accepted {
+            background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+            color: #0c5460;
+        }
+
+        .status-badge.in-progress {
+            background: linear-gradient(135deg, #cfe2ff 0%, #9ec5fe 100%);
+            color: #084298;
+        }
+
+        .status-badge.completed {
+            background: linear-gradient(135deg, #d1e7dd 0%, #a3cfbb 100%);
+            color: #0f5132;
+        }
+
+        .status-badge.cancelled {
+            background: linear-gradient(135deg, #f8d7da 0%, #f1aeb5 100%);
+            color: #842029;
+        }
+
+        /* PN Code Badge */
+        .pn-code {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.75rem;
+            font-weight: 700;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+            letter-spacing: 1px;
+        }
+
+        /* Timeline View */
+        .timeline-view {
+            padding: 2rem;
+        }
+
+        .timeline-item {
+            position: relative;
+            padding-left: 3rem;
+            padding-bottom: 2rem;
+            border-left: 3px solid #e9ecef;
+        }
+
+        .timeline-item:last-child {
+            border-left: 3px solid transparent;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -9px;
+            top: 0;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: var(--medical-blue);
+            border: 3px solid white;
+            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
+        }
+
+        .timeline-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: all 0.3s;
+        }
+
+        .timeline-card:hover {
+            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+            transform: translateX(10px);
+        }
+
+        /* Pagination */
+        .pagination-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem;
+            background: #f8f9fa;
+            border-top: 2px solid #dee2e6;
+        }
+
+        .pagination .page-link {
+            border-radius: 0.5rem;
+            margin: 0 0.25rem;
+            font-weight: 600;
+            border: 2px solid #dee2e6;
+        }
+
+        .pagination .page-link:hover {
+            background: var(--primary-gradient);
+            color: white;
+            border-color: transparent;
+        }
+
+        .pagination .page-item.active .page-link {
+            background: var(--primary-gradient);
+            border-color: transparent;
+        }
+
+        /* Quick Actions */
+        .quick-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .quick-actions .btn {
+            padding: 0.375rem 0.75rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        /* Form Controls */
+        .form-control, .form-select {
+            border-radius: 0.75rem;
+            border: 2px solid #e9ecef;
+            padding: 0.625rem 1rem;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--medical-blue);
+            box-shadow: 0 0 0 0.2rem rgba(74, 144, 226, 0.15);
+        }
+
+        /* Buttons */
+        .btn-primary {
+            background: var(--primary-gradient);
+            border: none;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            padding: 0.625rem 1.5rem;
+        }
+
+        .btn-export {
+            background: var(--success-gradient);
+            border: none;
+            color: #155724;
+            border-radius: 0.75rem;
+            font-weight: 600;
+        }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .spinner-custom {
+            width: 3rem;
+            height: 3rem;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--medical-blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            color: #dee2e6;
+            margin-bottom: 1rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            main {
+                padding: 1rem;
+            }
+
+            .page-header {
+                padding: 1rem;
+            }
+
+            .logs-table {
+                font-size: 0.875rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <%- include('partials/sidebar', { user, activePage: 'pn-logs' }) %>
+
+            <!-- Main Content -->
+            <main class="col-md-10 ms-sm-auto px-md-4">
+                <!-- Page Header -->
+                <div class="page-header">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                        <div>
+                            <h1><i class="bi bi-journal-medical me-2"></i>PN Case Logs</h1>
+                            <p class="text-muted mb-0">Comprehensive medical records and case tracking</p>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-export" onclick="exportLogs()">
+                                <i class="bi bi-download me-2"></i>Export
+                            </button>
+                            <button class="btn btn-primary" onclick="window.history.back()">
+                                <i class="bi bi-arrow-left me-2"></i>Back
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Statistics Cards -->
+                <div class="row g-3 mb-4">
+                    <div class="col-md-3">
+                        <div class="stats-card total">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="text-muted small mb-1">Total Cases</div>
+                                    <h2 class="mb-0 fw-bold" id="stat-total">0</h2>
+                                </div>
+                                <div class="icon" style="background: rgba(74, 144, 226, 0.1); color: var(--medical-blue);">
+                                    <i class="bi bi-folder2-open"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stats-card pending">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="text-muted small mb-1">Pending</div>
+                                    <h2 class="mb-0 fw-bold" id="stat-pending">0</h2>
+                                </div>
+                                <div class="icon" style="background: rgba(255, 159, 67, 0.1); color: var(--medical-orange);">
+                                    <i class="bi bi-clock-history"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stats-card active">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="text-muted small mb-1">Active</div>
+                                    <h2 class="mb-0 fw-bold" id="stat-active">0</h2>
+                                </div>
+                                <div class="icon" style="background: rgba(80, 200, 120, 0.1); color: var(--medical-green);">
+                                    <i class="bi bi-activity"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stats-card completed">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="text-muted small mb-1">Completed</div>
+                                    <h2 class="mb-0 fw-bold" id="stat-completed">0</h2>
+                                </div>
+                                <div class="icon" style="background: rgba(108, 117, 125, 0.1); color: #6c757d;">
+                                    <i class="bi bi-check-circle"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filters Section -->
+                <div class="filters-section">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">
+                                <i class="bi bi-search me-1"></i>Search
+                            </label>
+                            <input type="text" class="form-control" id="search-input" placeholder="PN code, patient name, HN...">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-semibold">
+                                <i class="bi bi-filter me-1"></i>Status
+                            </label>
+                            <select class="form-select" id="filter-status">
+                                <option value="">All Status</option>
+                                <option value="PENDING">Pending</option>
+                                <option value="ACCEPTED">Accepted</option>
+                                <option value="IN_PROGRESS">In Progress</option>
+                                <option value="COMPLETED">Completed</option>
+                                <option value="CANCELLED">Cancelled</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-semibold">
+                                <i class="bi bi-building me-1"></i>Clinic
+                            </label>
+                            <select class="form-select" id="filter-clinic">
+                                <option value="">All Clinics</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-semibold">
+                                <i class="bi bi-calendar me-1"></i>Date From
+                            </label>
+                            <input type="date" class="form-control" id="filter-date-from">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-semibold">
+                                <i class="bi bi-calendar me-1"></i>Date To
+                            </label>
+                            <input type="date" class="form-control" id="filter-date-to">
+                        </div>
+                        <div class="col-md-1">
+                            <button class="btn btn-primary w-100" onclick="applyFilters()">
+                                <i class="bi bi-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Content Card -->
+                <div class="content-card">
+                    <div class="content-card-header">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                            <div class="d-flex align-items-center gap-3">
+                                <h5 class="mb-0 fw-bold">
+                                    <i class="bi bi-list-ul me-2"></i>Case Records
+                                </h5>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-primary active" id="btn-table-view" onclick="switchView('table')">
+                                        <i class="bi bi-table"></i> Table
+                                    </button>
+                                    <button class="btn btn-outline-primary" id="btn-timeline-view" onclick="switchView('timeline')">
+                                        <i class="bi bi-clock-history"></i> Timeline
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="text-muted small">Show:</span>
+                                <select class="form-select form-select-sm" id="per-page" onchange="changePerPage()" style="width: auto;">
+                                    <option value="20">20</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                </select>
+                                <span class="text-muted small">per page</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Table View -->
+                    <div id="table-view">
+                        <div class="table-responsive">
+                            <table class="table logs-table">
+                                <thead>
+                                    <tr>
+                                        <th>PN Code</th>
+                                        <th>Patient</th>
+                                        <th>HN</th>
+                                        <th>Diagnosis</th>
+                                        <th>Clinic</th>
+                                        <th>Status</th>
+                                        <th>Created</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="logs-table-body">
+                                    <!-- Populated by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Timeline View -->
+                    <div id="timeline-view" class="timeline-view" style="display: none;">
+                        <!-- Populated by JavaScript -->
+                    </div>
+
+                    <!-- Pagination -->
+                    <div class="pagination-controls">
+                        <div class="text-muted">
+                            Showing <span id="showing-from">0</span> to <span id="showing-to">0</span> of <span id="total-records">0</span> records
+                        </div>
+                        <nav>
+                            <ul class="pagination mb-0" id="pagination">
+                                <!-- Populated by JavaScript -->
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loading-overlay" style="display: none;">
+        <div>
+            <div class="spinner-custom"></div>
+            <p class="mt-3 text-muted">Loading case logs...</p>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/Public/js/pn-logs.js"></script>
+</body>
+</html>

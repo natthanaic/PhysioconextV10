@@ -306,6 +306,8 @@ router.post('/campaigns/:id/send', authenticateToken, authorize('ADMIN', 'PT'), 
             const customList = JSON.parse(campaign.custom_recipients || '[]');
             const patientIds = customList.map(r => r.id);
 
+            console.log('[BROADCAST] Custom recipients:', { customList, patientIds });
+
             if (patientIds.length > 0) {
                 const placeholders = patientIds.map(() => '?').join(',');
                 const [patients] = await db.execute(`
@@ -320,8 +322,12 @@ router.post('/campaigns/:id/send', authenticateToken, authorize('ADMIN', 'PT'), 
                     WHERE id IN (${placeholders})
                 `, patientIds);
 
+                console.log('[BROADCAST] Found patients from DB:', patients);
+
                 // Build recipients list based on campaign type
                 for (const patient of patients) {
+                    console.log(`[BROADCAST] Processing patient ${patient.id}: type=${campaign.campaign_type}, email=${patient.email}, phone=${patient.phone}`);
+
                     if ((campaign.campaign_type === 'email' || campaign.campaign_type === 'both') && patient.email) {
                         recipients.push({
                             type: 'email',
@@ -335,10 +341,13 @@ router.post('/campaigns/:id/send', authenticateToken, authorize('ADMIN', 'PT'), 
                             value: patient.phone,
                             patientData: patient
                         });
+                        console.log(`[BROADCAST] Added SMS recipient: ${patient.phone}`);
                     }
                 }
             }
         }
+
+        console.log(`[BROADCAST] Total recipients built: ${recipients.length}`);
 
         // Update total recipients
         await db.execute(

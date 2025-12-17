@@ -17,11 +17,16 @@ router.get('/courses', authenticateToken, async (req, res) => {
             // Get courses owned by patient OR shared with patient
             const [courses] = await db.execute(`
                 SELECT DISTINCT c.*,
+                    CONCAT(COALESCE(p.first_name, ''), ' ', COALESCE(p.last_name, '')) as patient_name,
+                    p.hn as patient_hn,
+                    cl.name as clinic_name,
                     CASE
                         WHEN c.patient_id = ? THEN 'owner'
                         ELSE 'shared'
                     END as access_type
                 FROM courses c
+                LEFT JOIN patients p ON c.patient_id = p.id
+                LEFT JOIN clinics cl ON c.clinic_id = cl.id
                 LEFT JOIN course_shared_users csu ON c.id = csu.course_id
                 WHERE c.patient_id = ?
                    OR (csu.patient_id = ? AND csu.is_active = 1)
@@ -31,8 +36,17 @@ router.get('/courses', authenticateToken, async (req, res) => {
             console.log('[COURSES] Found', courses.length, 'courses for patient', patient_id);
             res.json(courses);
         } else {
-            // Get all courses
-            const [courses] = await db.execute('SELECT * FROM courses ORDER BY created_at DESC');
+            // Get all courses with patient and clinic names
+            const [courses] = await db.execute(`
+                SELECT c.*,
+                    CONCAT(COALESCE(p.first_name, ''), ' ', COALESCE(p.last_name, '')) as patient_name,
+                    p.hn as patient_hn,
+                    cl.name as clinic_name
+                FROM courses c
+                LEFT JOIN patients p ON c.patient_id = p.id
+                LEFT JOIN clinics cl ON c.clinic_id = cl.id
+                ORDER BY c.created_at DESC
+            `);
 
             console.log('[COURSES] Found', courses.length, 'courses');
             if (courses.length > 0) {

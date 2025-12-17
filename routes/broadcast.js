@@ -548,44 +548,6 @@ async function sendBroadcastSMS(db, phoneNumber, message) {
 }
 
 // ========================================
-// SEARCH PATIENTS FOR BROADCAST
-// ========================================
-router.get('/search-patients', authenticateToken, authorize('ADMIN', 'PT'), async (req, res) => {
-    try {
-        const db = req.app.locals.db;
-        const searchTerm = req.query.q || '';
-
-        if (!searchTerm) {
-            return res.json([]);
-        }
-
-        const [patients] = await db.execute(`
-            SELECT
-                id,
-                CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, '')) as name,
-                email,
-                phone
-            FROM patients
-            WHERE (
-                CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, '')) LIKE ?
-                OR email LIKE ?
-                OR phone LIKE ?
-            )
-            LIMIT 50
-        `, [
-            `%${searchTerm}%`,
-            `%${searchTerm}%`,
-            `%${searchTerm}%`
-        ]);
-
-        res.json(patients);
-    } catch (error) {
-        console.error('Search patients error:', error);
-        res.status(500).json({ error: 'Failed to search patients' });
-    }
-});
-
-// ========================================
 // GET BROADCAST STATISTICS
 // ========================================
 router.get('/stats', authenticateToken, authorize('ADMIN', 'PT'), async (req, res) => {

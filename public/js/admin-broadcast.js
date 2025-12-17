@@ -752,7 +752,7 @@ async function searchPatients() {
         searchResults.innerHTML = '<div class="text-center py-2"><div class="spinner-border spinner-border-sm" role="status"></div></div>';
         searchResults.style.display = 'block';
 
-        const response = await fetch(`/api/broadcast/search-patients?q=${encodeURIComponent(searchTerm)}`);
+        const response = await fetch(`/api/patients/search?q=${encodeURIComponent(searchTerm)}`);
 
         if (!response.ok) {
             searchResults.innerHTML = '<div class="text-danger text-center py-2">Search failed. Please try again.</div>';
@@ -766,15 +766,19 @@ async function searchPatients() {
             return;
         }
 
-        searchResults.innerHTML = patients.map(p => `
-            <div class="search-result-item" onclick="addRecipient(${p.id}, '${escapeHtml(p.name)}', '${escapeHtml(p.email || '')}', '${escapeHtml(p.phone || '')}')">
-                <div><strong>${escapeHtml(p.name)}</strong></div>
-                <div class="small text-muted">
-                    ${p.email ? `<i class="bi bi-envelope me-1"></i>${escapeHtml(p.email)}` : ''}
-                    ${p.phone ? `<i class="bi bi-phone ms-2 me-1"></i>${escapeHtml(p.phone)}` : ''}
+        searchResults.innerHTML = patients.map(p => {
+            const fullName = `${p.first_name || ''} ${p.last_name || ''}`.trim();
+            return `
+                <div class="search-result-item" onclick="addRecipient(${p.id}, '${escapeHtml(fullName)}', '${escapeHtml(p.email || '')}', '${escapeHtml(p.phone || '')}')">
+                    <div><strong>${escapeHtml(fullName)}</strong></div>
+                    <div class="small text-muted">
+                        ${p.hn ? `HN: ${escapeHtml(p.hn)} | ` : ''}
+                        ${p.email ? `<i class="bi bi-envelope me-1"></i>${escapeHtml(p.email)}` : ''}
+                        ${p.phone ? `<i class="bi bi-phone ms-2 me-1"></i>${escapeHtml(p.phone)}` : ''}
+                    </div>
                 </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
     } catch (error) {
         console.error('Patient search error:', error);
         searchResults.innerHTML = '<div class="text-danger text-center py-2">Search failed</div>';

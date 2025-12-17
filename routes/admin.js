@@ -2145,55 +2145,19 @@ router.get('/bills', authenticateToken, async (req, res) => {
 router.get('/bills/services', authenticateToken, async (req, res) => {
     try {
         const db = req.app.locals.db;
+        console.log('[SERVICES] Fetching services from database');
 
-        // Check if services table exists
-        const [tables] = await db.execute(`
-            SELECT TABLE_NAME
-            FROM information_schema.TABLES
-            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'services'
-        `);
+        const [services] = await db.execute('SELECT * FROM services ORDER BY service_name');
 
-        if (tables.length === 0) {
-            console.log('Services table does not exist, returning empty array');
-            return res.json([]);
+        console.log('[SERVICES] Found', services.length, 'services');
+        if (services.length > 0) {
+            console.log('[SERVICES] Sample:', JSON.stringify(services[0]).substring(0, 200));
         }
 
-        const { clinic_id, active } = req.query;
-
-        let query = `
-            SELECT
-                id,
-                service_name as name,
-                service_code as code,
-                price,
-                category,
-                description,
-                active,
-                clinic_id
-            FROM services
-            WHERE 1=1
-        `;
-        const params = [];
-
-        if (active !== undefined) {
-            query += ` AND active = ?`;
-            params.push(active === 'true' || active === '1' ? 1 : 0);
-        } else {
-            query += ` AND active = 1`;
-        }
-
-        if (clinic_id) {
-            query += ` AND (clinic_id = ? OR clinic_id IS NULL)`;
-            params.push(clinic_id);
-        }
-
-        query += ` ORDER BY category, service_name`;
-
-        const [services] = await db.execute(query, params);
         res.json(services);
     } catch (error) {
-        console.error('Get services error:', error);
-        console.error('Error details:', error.message);
+        console.error('[SERVICES] Error:', error);
+        console.error('[SERVICES] Error details:', error.message);
         return res.json([]); // Return empty array instead of error
     }
 });

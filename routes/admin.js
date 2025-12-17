@@ -1130,24 +1130,36 @@ router.get('/notification/sms/credit', authenticateToken, authorize('ADMIN'), as
     try {
         const db = req.app.locals.db;
 
+        console.log('💳 Checking SMS credit balance...');
+
         // Get SMS settings
         const [settings] = await db.execute(`
             SELECT setting_value FROM notification_settings WHERE setting_type = 'sms' LIMIT 1
         `);
 
         if (settings.length === 0) {
+            console.log('❌ No SMS settings found');
             return res.status(404).json({ error: 'SMS settings not configured' });
         }
 
         const smsConfig = JSON.parse(settings[0].setting_value);
 
+        console.log('📋 SMS Config loaded:', {
+            hasApiKey: !!smsConfig.apiKey,
+            hasApiSecret: !!smsConfig.apiSecret,
+            smsType: smsConfig.smsType
+        });
+
         if (!smsConfig.apiKey || !smsConfig.apiSecret) {
+            console.log('❌ Missing API credentials');
             return res.status(400).json({ error: 'API credentials not configured' });
         }
 
         // Check credit via Thai Bulk SMS API
         const axios = require('axios');
         const authString = Buffer.from(`${smsConfig.apiKey}:${smsConfig.apiSecret}`).toString('base64');
+
+        console.log('🔄 Calling Thai Bulk SMS credit API...');
 
         const response = await axios.get(
             'https://api-v2.thaibulksms.com/credit',
@@ -1159,14 +1171,20 @@ router.get('/notification/sms/credit', authenticateToken, authorize('ADMIN'), as
             }
         );
 
+        console.log('✅ Credit API response:', response.data);
+
         res.json({
             success: true,
             credit: response.data.credit || 0,
             smsType: response.data.sms_type || 'unknown'
         });
     } catch (error) {
-        console.error('Check SMS credit error:', error);
+        console.error('❌ Check SMS credit error:', error.message);
         if (error.response) {
+            console.error('API Error Response:', {
+                status: error.response.status,
+                data: error.response.data
+            });
             res.status(400).json({
                 error: 'Failed to check SMS credit',
                 details: error.response.data

@@ -425,6 +425,7 @@ async function sendBroadcastMessages(db, campaignId, campaign, recipients) {
                 if (recipient.type === 'email' && (campaign.campaign_type === 'email' || campaign.campaign_type === 'both')) {
                     // Send email with template variables replaced
                     success = await sendBroadcastEmail(db, smtpConfig, recipient, campaign, clinicName);
+                    console.log(`[BROADCAST] Email to ${recipient.value}: ${success ? 'success' : 'failed'}`);
                 } else if (recipient.type === 'phone' && (campaign.campaign_type === 'sms' || campaign.campaign_type === 'both')) {
                     // Send SMS with template variables replaced
                     const personalizedMessage = replaceTemplateVariables(
@@ -432,7 +433,9 @@ async function sendBroadcastMessages(db, campaignId, campaign, recipients) {
                         recipient.patientData,
                         clinicName
                     );
+                    console.log(`[BROADCAST] Sending SMS to ${recipient.value}...`);
                     success = await sendBroadcastSMS(db, recipient.value, personalizedMessage);
+                    console.log(`[BROADCAST] SMS to ${recipient.value}: ${success ? 'success' : 'failed'}`);
                 }
 
                 if (success) {

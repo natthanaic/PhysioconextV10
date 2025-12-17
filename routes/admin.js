@@ -1884,20 +1884,46 @@ router.get('/theme-settings', async (req, res) => {
     try {
         const db = req.app.locals.db;
 
-        // Get app name
-        const [appNameRows] = await db.execute(
-            `SELECT setting_value FROM system_settings WHERE setting_key = 'app_name' LIMIT 1`
+        // Get all theme settings
+        const [settings] = await db.execute(
+            `SELECT setting_key, setting_value FROM system_settings
+             WHERE setting_key IN ('app_name', 'app_logo_url', 'header_color_start', 'header_color_end', 'sidebar_color_start', 'sidebar_color_end')`
         );
 
-        // Get logo URL
-        const [logoRows] = await db.execute(
-            `SELECT setting_value FROM system_settings WHERE setting_key = 'app_logo_url' LIMIT 1`
-        );
+        // Build response object
+        const themeSettings = {
+            appName: 'PhysioConext',
+            logoUrl: null,
+            headerColorStart: '#0284c7',
+            headerColorEnd: '#14b8a6',
+            sidebarColorStart: '#667eea',
+            sidebarColorEnd: '#764ba2'
+        };
 
-        res.json({
-            appName: appNameRows.length > 0 ? appNameRows[0].setting_value : 'PhysioConext',
-            logoUrl: logoRows.length > 0 ? logoRows[0].setting_value : null
+        settings.forEach(row => {
+            switch (row.setting_key) {
+                case 'app_name':
+                    themeSettings.appName = row.setting_value;
+                    break;
+                case 'app_logo_url':
+                    themeSettings.logoUrl = row.setting_value;
+                    break;
+                case 'header_color_start':
+                    themeSettings.headerColorStart = row.setting_value;
+                    break;
+                case 'header_color_end':
+                    themeSettings.headerColorEnd = row.setting_value;
+                    break;
+                case 'sidebar_color_start':
+                    themeSettings.sidebarColorStart = row.setting_value;
+                    break;
+                case 'sidebar_color_end':
+                    themeSettings.sidebarColorEnd = row.setting_value;
+                    break;
+            }
         });
+
+        res.json(themeSettings);
     } catch (error) {
         console.error('Error fetching theme settings:', error);
         res.status(500).json({ error: 'Failed to fetch theme settings' });
@@ -1908,8 +1934,16 @@ router.get('/theme-settings', async (req, res) => {
 router.post('/theme-settings', uploadLogo.single('logo'), async (req, res) => {
     try {
         const db = req.app.locals.db;
-        const { appName } = req.body;
+        const {
+            appName,
+            headerColorStart,
+            headerColorEnd,
+            sidebarColorStart,
+            sidebarColorEnd
+        } = req.body;
         const userId = req.user.id;
+
+        console.log('[THEME] Saving theme settings:', { appName, headerColorStart, headerColorEnd, sidebarColorStart, sidebarColorEnd });
 
         if (!appName || appName.trim() === '') {
             return res.status(400).json({ error: 'Application name is required' });
@@ -1923,6 +1957,44 @@ router.post('/theme-settings', uploadLogo.single('logo'), async (req, res) => {
             [appName.trim(), userId, appName.trim(), userId]
         );
 
+        // Save header colors
+        if (headerColorStart) {
+            await db.execute(
+                `INSERT INTO system_settings (setting_key, setting_value, updated_by)
+                 VALUES ('header_color_start', ?, ?)
+                 ON DUPLICATE KEY UPDATE setting_value = ?, updated_by = ?, updated_at = CURRENT_TIMESTAMP`,
+                [headerColorStart, userId, headerColorStart, userId]
+            );
+        }
+
+        if (headerColorEnd) {
+            await db.execute(
+                `INSERT INTO system_settings (setting_key, setting_value, updated_by)
+                 VALUES ('header_color_end', ?, ?)
+                 ON DUPLICATE KEY UPDATE setting_value = ?, updated_by = ?, updated_at = CURRENT_TIMESTAMP`,
+                [headerColorEnd, userId, headerColorEnd, userId]
+            );
+        }
+
+        // Save sidebar colors
+        if (sidebarColorStart) {
+            await db.execute(
+                `INSERT INTO system_settings (setting_key, setting_value, updated_by)
+                 VALUES ('sidebar_color_start', ?, ?)
+                 ON DUPLICATE KEY UPDATE setting_value = ?, updated_by = ?, updated_at = CURRENT_TIMESTAMP`,
+                [sidebarColorStart, userId, sidebarColorStart, userId]
+            );
+        }
+
+        if (sidebarColorEnd) {
+            await db.execute(
+                `INSERT INTO system_settings (setting_key, setting_value, updated_by)
+                 VALUES ('sidebar_color_end', ?, ?)
+                 ON DUPLICATE KEY UPDATE setting_value = ?, updated_by = ?, updated_at = CURRENT_TIMESTAMP`,
+                [sidebarColorEnd, userId, sidebarColorEnd, userId]
+            );
+        }
+
         // Save logo URL if file was uploaded
         if (req.file) {
             const logoUrl = `/public/images/logos/${req.file.filename}`;
@@ -1935,7 +2007,13 @@ router.post('/theme-settings', uploadLogo.single('logo'), async (req, res) => {
         }
 
         // Audit log
-        await auditLog(db, userId, 'update', 'theme_settings', 0, null, { appName, logoUpdated: !!req.file }, req);
+        await auditLog(db, userId, 'update', 'theme_settings', 0, null, {
+            appName,
+            logoUpdated: !!req.file,
+            colorsUpdated: !!(headerColorStart || headerColorEnd || sidebarColorStart || sidebarColorEnd)
+        }, req);
+
+        console.log('[THEME] Theme settings saved successfully');
 
         res.json({
             success: true,
@@ -1943,8 +2021,9 @@ router.post('/theme-settings', uploadLogo.single('logo'), async (req, res) => {
             appName: appName.trim()
         });
     } catch (error) {
-        console.error('Error saving theme settings:', error);
-        res.status(500).json({ error: 'Failed to save theme settings' });
+        console.error('[THEME] Error saving theme settings:', error);
+        console.error('[THEME] Error details:', error.message);
+        res.status(500).json({ error: 'Failed to save theme settings', details: error.message });
     }
 });
 

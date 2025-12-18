@@ -10,6 +10,7 @@ const compression = require('compression');
 const morgan = require('morgan');
 const cookieParser = require('cookie-parser');
 const session = require('express-session');
+const MySQLStore = require('express-mysql-session')(session);
 const rateLimit = require('express-rate-limit');
 
 // Import app configuration
@@ -149,7 +150,7 @@ const setupSecurity = (app) => {
 };
 
 // Middleware setup
-const setupMiddleware = (app) => {
+const setupMiddleware = (app, pool) => { // Updated to receive pool
     // Compression
     app.use(compression());
 
@@ -164,11 +165,27 @@ const setupMiddleware = (app) => {
         app.use(morgan('dev', { skip: skipStatic }));
     }
 
+    // Initialize MySQL Session Store
+    const sessionStore = new MySQLStore({
+        expiration: 86400000, // Session duration in milliseconds (24 hours)
+        createDatabaseTable: true, // Whether to create the table automatically
+        schema: {
+            tableName: 'sessions',
+            columnNames: {
+                session_id: 'session_id',
+                expires: 'expires',
+                data: 'data'
+            }
+        }
+    }, pool); // Pass the existing database pool
+
     // Session configuration (cookie parser and body parsing already in app.js)
     app.use(session({
+        key: 'pn_app_session', // Recommended: explicit cookie name
         secret: process.env.SESSION_SECRET || 'default-secret-change-in-production',
-        resave: false,
-        saveUninitialized: false,
+        store: sessionStore, // Use the MySQL store
+        resave: false, // Recommended for MySQL store
+        saveUninitialized: false, // Recommended for login sessions
         cookie: {
             secure: process.env.NODE_ENV === 'production',
             httpOnly: true,
@@ -293,8 +310,8 @@ const initializeServer = async () => {
         // Setup security
         setupSecurity(app);
         
-        // Setup middleware
-        setupMiddleware(app);
+        // Setup middleware (Pass pool for session store)
+        setupMiddleware(app, pool);
         
         // Setup error handling
         setupErrorHandling(app);

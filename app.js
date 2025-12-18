@@ -84,6 +84,7 @@ const webhooksRoutes = require('./routes/webhooks');
 const viewsRoutes = require('./routes/views');
 const chatRoutes = require('./routes/chat');
 const testRoutes = require('./routes/test');
+const shinoaiRoutes = require('./routes/shinoai');
 
 // Optional broadcast routes
 let broadcastRoutes;
@@ -115,6 +116,10 @@ app.use('/api/expenses', expensesRoutes);
 // --- BROADCAST MARKETING ROUTE ---
 // Admin and PT broadcast marketing for SMS and Email campaigns
 if (broadcastRoutes) app.use('/api/broadcast', broadcastRoutes);
+
+// --- SHINOAI ASSISTANT ROUTE ---
+// AI-powered assistant for clinic management and recommendations
+app.use('/api/shinoai', shinoaiRoutes);
 
 app.use('/api/pn', pnCasesRoutes);
 app.use('/api', pnCasesRoutes);

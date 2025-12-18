@@ -66,6 +66,108 @@ router.post('/chat', authenticateToken, async (req, res) => {
 });
 
 // ==========================================
+// 📊 Database Schema Discovery
+// ==========================================
+
+async function getCompleteDBSchema(db) {
+    try {
+        // Get current database name
+        const [dbInfo] = await db.execute(`SELECT DATABASE() as db_name`);
+        const dbName = dbInfo[0].db_name;
+
+        // Get all tables with their columns
+        const [tables] = await db.execute(`
+            SELECT
+                TABLE_NAME,
+                TABLE_COMMENT
+            FROM INFORMATION_SCHEMA.TABLES
+            WHERE TABLE_SCHEMA = ?
+            AND TABLE_TYPE = 'BASE TABLE'
+            ORDER BY TABLE_NAME
+        `, [dbName]);
+
+        const schema = {
+            database: dbName,
+            tables: {},
+            relationships: []
+        };
+
+        // For each table, get columns and relationships
+        for (const table of tables) {
+            const tableName = table.TABLE_NAME;
+
+            // Get columns for this table
+            const [columns] = await db.execute(`
+                SELECT
+                    COLUMN_NAME,
+                    DATA_TYPE,
+                    IS_NULLABLE,
+                    COLUMN_KEY,
+                    COLUMN_DEFAULT,
+                    EXTRA,
+                    COLUMN_COMMENT
+                FROM INFORMATION_SCHEMA.COLUMNS
+                WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?
+                ORDER BY ORDINAL_POSITION
+            `, [dbName, tableName]);
+
+            // Get foreign key relationships
+            const [foreignKeys] = await db.execute(`
+                SELECT
+                    COLUMN_NAME,
+                    REFERENCED_TABLE_NAME,
+                    REFERENCED_COLUMN_NAME,
+                    CONSTRAINT_NAME
+                FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+                WHERE TABLE_SCHEMA = ?
+                AND TABLE_NAME = ?
+                AND REFERENCED_TABLE_NAME IS NOT NULL
+            `, [dbName, tableName]);
+
+            schema.tables[tableName] = {
+                comment: table.TABLE_COMMENT || '',
+                columns: columns.map(col => ({
+                    name: col.COLUMN_NAME,
+                    type: col.DATA_TYPE,
+                    nullable: col.IS_NULLABLE === 'YES',
+                    key: col.COLUMN_KEY,
+                    default: col.COLUMN_DEFAULT,
+                    extra: col.EXTRA,
+                    comment: col.COLUMN_COMMENT || ''
+                })),
+                foreignKeys: foreignKeys.map(fk => ({
+                    column: fk.COLUMN_NAME,
+                    referencesTable: fk.REFERENCED_TABLE_NAME,
+                    referencesColumn: fk.REFERENCED_COLUMN_NAME,
+                    constraintName: fk.CONSTRAINT_NAME
+                }))
+            };
+
+            // Add to relationships array for easier reference
+            foreignKeys.forEach(fk => {
+                schema.relationships.push({
+                    fromTable: tableName,
+                    fromColumn: fk.COLUMN_NAME,
+                    toTable: fk.REFERENCED_TABLE_NAME,
+                    toColumn: fk.REFERENCED_COLUMN_NAME
+                });
+            });
+        }
+
+        return schema;
+
+    } catch (error) {
+        console.error('[ShinoAI] Schema discovery error:', error.message);
+        return {
+            database: 'unknown',
+            tables: {},
+            relationships: [],
+            error: error.message
+        };
+    }
+}
+
+// ==========================================
 // 📊 Comprehensive Context Gathering (READ-ONLY Patient Data Access)
 // ==========================================
 
@@ -292,21 +394,8 @@ async function gatherContext(db, userId, query) {
             }
         }
 
-        // 9. ALWAYS provide database schema info
-        context.dbSchema = {
-            tables: {
-                patients: 'Patient records with HN, demographics, medical history, conditions, allergies, medications',
-                appointments: 'Scheduled appointments with dates, times, status (SCHEDULED, COMPLETED, CANCELLED)',
-                pn_cases: 'Physiotherapy Notes cases with diagnosis, chief complaint, treatment plan, status',
-                soap_notes: 'SOAP notes (Subjective, Objective, Assessment, Plan) with pain levels and functional status',
-                bills: 'Bills and invoices with payment status (PAID, UNPAID), amounts, payment methods',
-                courses: 'Treatment courses for patients with sessions and status',
-                clinics: 'Clinic locations and information',
-                users: 'Staff users with roles (ADMIN, THERAPIST, etc.)'
-            },
-            hnFormat: 'HN format is like HNPT250112 (contains letters and numbers)',
-            dateFormat: 'Dates stored as YYYY-MM-DD'
-        };
+        // 9. ALWAYS load complete database schema from INFORMATION_SCHEMA
+        context.dbSchema = await getCompleteDBSchema(db);
 
         return context;
 
@@ -457,31 +546,77 @@ Current Time: ${moment().format('YYYY-MM-DD HH:mm')}
         prompt += '\n';
     }
 
-    // Add database schema information
-    if (context.dbSchema) {
-        prompt += `DATABASE SCHEMA:\n`;
-        prompt += `Available Tables:\n`;
-        Object.entries(context.dbSchema.tables).forEach(([table, desc]) => {
-            prompt += `- ${table}: ${desc}\n`;
+    // Add complete database schema information
+    if (context.dbSchema && context.dbSchema.tables) {
+        prompt += `========================================\n`;
+        prompt += `COMPLETE DATABASE SCHEMA (MySQL)\n`;
+        prompt += `========================================\n`;
+        prompt += `Database: ${context.dbSchema.database}\n\n`;
+
+        // List all tables with their columns
+        const tableNames = Object.keys(context.dbSchema.tables);
+        prompt += `Tables (${tableNames.length} total):\n\n`;
+
+        Object.entries(context.dbSchema.tables).forEach(([tableName, tableInfo]) => {
+            prompt += `TABLE: ${tableName}\n`;
+            if (tableInfo.comment) prompt += `Description: ${tableInfo.comment}\n`;
+
+            prompt += `Columns:\n`;
+            tableInfo.columns.forEach(col => {
+                let colDesc = `  - ${col.name} (${col.type})`;
+                if (col.key === 'PRI') colDesc += ' PRIMARY KEY';
+                if (col.key === 'UNI') colDesc += ' UNIQUE';
+                if (col.extra === 'auto_increment') colDesc += ' AUTO_INCREMENT';
+                if (!col.nullable) colDesc += ' NOT NULL';
+                if (col.comment) colDesc += ` // ${col.comment}`;
+                prompt += colDesc + '\n';
+            });
+
+            // Show foreign key relationships
+            if (tableInfo.foreignKeys && tableInfo.foreignKeys.length > 0) {
+                prompt += `Foreign Keys:\n`;
+                tableInfo.foreignKeys.forEach(fk => {
+                    prompt += `  - ${fk.column} → ${fk.referencesTable}.${fk.referencesColumn}\n`;
+                });
+            }
+
+            prompt += '\n';
         });
-        prompt += `\nData Formats:\n`;
-        prompt += `- HN Format: ${context.dbSchema.hnFormat}\n`;
-        prompt += `- Date Format: ${context.dbSchema.dateFormat}\n`;
-        prompt += '\n';
+
+        // Show all relationships
+        if (context.dbSchema.relationships && context.dbSchema.relationships.length > 0) {
+            prompt += `Table Relationships:\n`;
+            context.dbSchema.relationships.forEach(rel => {
+                prompt += `- ${rel.fromTable}.${rel.fromColumn} → ${rel.toTable}.${rel.toColumn}\n`;
+            });
+            prompt += '\n';
+        }
+
+        prompt += `Common Query Patterns:\n`;
+        prompt += `- Patient with appointments: JOIN patients p ON appointments.patient_id = p.id\n`;
+        prompt += `- PN case with patient: JOIN patients p ON pn_cases.patient_id = p.id\n`;
+        prompt += `- SOAP notes with PN case: JOIN pn_cases pn ON soap_notes.pn_case_id = pn.id\n`;
+        prompt += `- Bills with patient: JOIN patients p ON bills.patient_id = p.id\n`;
+        prompt += `- HN format: Like 'HNPT250112' (contains letters and numbers)\n`;
+        prompt += `- Date format: YYYY-MM-DD (e.g., 2025-01-15)\n`;
+        prompt += `========================================\n\n`;
     }
 
     prompt += `IMPORTANT INSTRUCTIONS:
 - You have READ-ONLY access to ALL patient data for analysis and recommendations
 - You CANNOT modify, enter, or update any patient records
-- ALWAYS have complete database context - no need to ask for missing data
+- You have COMPLETE knowledge of the database schema - all tables, columns, and relationships
+- Use the schema above to understand how to query related data
+- When answering questions, you can reference ANY table in the database
+- Understand foreign key relationships to join tables correctly
 - Provide specific, actionable recommendations based on the comprehensive data
 - Reference patients by HN number when making recommendations
-- When asked about specific HN (like HNPT250112), look for it in the patient database
+- When asked about specific HN (like HNPT250112), search in the patient database
 - Be professional, empathetic, and HIPAA-compliant in responses
 - Keep responses concise but informative (2-4 paragraphs max)
 - When recommending priorities, explain WHY based on medical conditions, pain levels, or SOAP trends
 - Answer in a friendly, helpful tone that makes complex medical information accessible
-- You understand the complete database structure - use this knowledge to answer any question`;
+- You fully understand the database structure - use this knowledge to give accurate, complete answers`;
 
     return prompt;
 }

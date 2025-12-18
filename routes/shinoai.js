@@ -510,34 +510,77 @@ Current Time: ${moment().format('YYYY-MM-DD HH:mm')}
         prompt += '\n';
     }
 
-    // Add specific patient details if queried
+    // Add specific patient details if queried (COMPLETE DATA FOR THIS PATIENT)
     if (context.specificPatient) {
         const p = context.specificPatient;
-        prompt += `DETAILED PATIENT INFO - HN: ${p.hn}\n`;
-        prompt += `Name: ${p.first_name} ${p.last_name}\n`;
-        prompt += `Age: ${p.age} | Gender: ${p.gender} | DOB: ${p.date_of_birth}\n`;
-        if (p.phone) prompt += `Phone: ${p.phone}\n`;
-        if (p.email) prompt += `Email: ${p.email}\n`;
-        if (p.medical_conditions) prompt += `Medical Conditions: ${p.medical_conditions}\n`;
-        if (p.allergies) prompt += `Allergies: ${p.allergies}\n`;
-        if (p.current_medications) prompt += `Current Medications: ${p.current_medications}\n`;
-        if (p.latest_diagnosis) prompt += `Latest Diagnosis: ${p.latest_diagnosis}\n`;
-        prompt += `Total Visits: ${p.total_visits} | Total Cases: ${p.total_cases}\n`;
+        prompt += `========================================\n`;
+        prompt += `🔍 SPECIFIC PATIENT QUERY RESULT\n`;
+        prompt += `========================================\n`;
+        prompt += `USER ASKED ABOUT: HN ${p.hn}\n`;
+        prompt += `THIS IS THE COMPLETE DATA FOR THIS PATIENT:\n\n`;
+
+        prompt += `PATIENT DETAILS:\n`;
+        prompt += `- HN: ${p.hn}\n`;
+        prompt += `- Name: ${p.first_name} ${p.last_name}\n`;
+        prompt += `- Age: ${p.age} years | Gender: ${p.gender} | DOB: ${p.date_of_birth}\n`;
+        if (p.phone) prompt += `- Phone: ${p.phone}\n`;
+        if (p.email) prompt += `- Email: ${p.email}\n`;
+        if (p.address) prompt += `- Address: ${p.address}\n`;
+        if (p.medical_conditions) prompt += `- Medical Conditions: ${p.medical_conditions}\n`;
+        if (p.allergies) prompt += `- ⚠️ ALLERGIES: ${p.allergies}\n`;
+        if (p.current_medications) prompt += `- Current Medications: ${p.current_medications}\n`;
+        if (p.notes) prompt += `- Notes: ${p.notes}\n`;
+        prompt += `- Total Visits: ${p.total_visits}\n`;
+        prompt += `- Total PN Cases: ${p.total_cases}\n`;
+        if (p.last_visit) prompt += `- Last Visit: ${p.last_visit}\n`;
+        if (p.latest_diagnosis) prompt += `- Latest Diagnosis: ${p.latest_diagnosis}\n\n`;
 
         if (p.pnCases && p.pnCases.length > 0) {
-            prompt += `\nPN Cases for this patient:\n`;
-            p.pnCases.forEach(pn => {
-                prompt += `  - ${pn.pn_code}: ${pn.diagnosis || 'No diagnosis'} (${pn.status})\n`;
+            prompt += `PN CASES (${p.pnCases.length} total):\n`;
+            p.pnCases.forEach((pn, idx) => {
+                prompt += `${idx + 1}. ${pn.pn_code || 'PN-' + pn.id}\n`;
+                prompt += `   Status: ${pn.status}\n`;
+                if (pn.diagnosis) prompt += `   Diagnosis: ${pn.diagnosis}\n`;
+                if (pn.chief_complaint) prompt += `   Chief Complaint: ${pn.chief_complaint}\n`;
+                if (pn.treatment_plan) prompt += `   Treatment Plan: ${pn.treatment_plan}\n`;
+                if (pn.clinic_name) prompt += `   Clinic: ${pn.clinic_name}\n`;
+                prompt += `   Created: ${pn.created_at}\n\n`;
             });
         }
 
         if (p.soapNotes && p.soapNotes.length > 0) {
-            prompt += `\nRecent SOAP Notes:\n`;
-            p.soapNotes.slice(0, 3).forEach(soap => {
-                prompt += `  - ${soap.created_at}: ${soap.subjective?.substring(0, 80) || 'N/A'}...\n`;
+            prompt += `SOAP NOTES (${p.soapNotes.length} total):\n`;
+            p.soapNotes.forEach((soap, idx) => {
+                prompt += `${idx + 1}. Date: ${soap.created_at} | PN: ${soap.pn_code}\n`;
+                if (soap.subjective) prompt += `   S: ${soap.subjective}\n`;
+                if (soap.objective) prompt += `   O: ${soap.objective}\n`;
+                if (soap.assessment) prompt += `   A: ${soap.assessment}\n`;
+                if (soap.plan) prompt += `   P: ${soap.plan}\n`;
+                if (soap.pain_level) prompt += `   Pain Level: ${soap.pain_level}/10\n`;
+                if (soap.functional_status) prompt += `   Functional Status: ${soap.functional_status}\n\n`;
             });
         }
-        prompt += '\n';
+
+        if (p.bills && p.bills.length > 0) {
+            prompt += `BILLS (${p.bills.length} bills):\n`;
+            p.bills.forEach((bill, idx) => {
+                prompt += `${idx + 1}. ${bill.bill_code}: ${bill.total_amount} THB - ${bill.payment_status}\n`;
+                if (bill.bill_date) prompt += `   Date: ${bill.bill_date}\n`;
+                if (bill.payment_date) prompt += `   Paid: ${bill.payment_date}\n\n`;
+            });
+        }
+
+        if (p.appointments && p.appointments.length > 0) {
+            prompt += `APPOINTMENTS (${p.appointments.length} appointments):\n`;
+            p.appointments.forEach((apt, idx) => {
+                prompt += `${idx + 1}. ${apt.appointment_date} ${apt.appointment_time} - ${apt.status}\n`;
+            });
+            prompt += '\n';
+        }
+
+        prompt += `⚠️ USE ONLY THIS DATA ABOVE TO ANSWER QUESTIONS ABOUT HN ${p.hn}\n`;
+        prompt += `IF USER ASKS ANYTHING NOT IN THIS DATA → SAY "ไม่มีข้อมูลส่วนนี้"\n`;
+        prompt += `========================================\n\n`;
     }
 
     // Add today's appointments
@@ -881,20 +924,36 @@ Current Time: ${moment().format('YYYY-MM-DD HH:mm')}
     }
 
     prompt += `========================================\n`;
-    prompt += `⚠️ CRITICAL INSTRUCTIONS\n`;
+    prompt += `🚨 CRITICAL INSTRUCTIONS - READ CAREFULLY\n`;
     prompt += `========================================\n\n`;
 
-    prompt += `DATA ACCESS:\n`;
-    prompt += `- You have READ-ONLY access to ALL patient data\n`;
-    prompt += `- You CANNOT modify, enter, or update any patient records\n`;
-    prompt += `- You have complete database schema and sample data above\n\n`;
+    prompt += `⛔ STRICT DATA RULES (MANDATORY):\n`;
+    prompt += `1. ONLY use data from the context above (patients, appointments, pnCases, bills, statistics)\n`;
+    prompt += `2. NEVER use general knowledge or external information\n`;
+    prompt += `3. NEVER make up or guess data that is not in the context\n`;
+    prompt += `4. If HN not found in context → Say "ไม่พบข้อมูล HN นี้ในระบบ" and stop\n`;
+    prompt += `5. If data missing → Say "ไม่มีข้อมูล" - DO NOT create fake data\n`;
+    prompt += `6. You CANNOT access data outside of what's provided in this context\n\n`;
+
+    prompt += `❌ FORBIDDEN ACTIONS:\n`;
+    prompt += `- Creating patient data that doesn't exist\n`;
+    prompt += `- Using medical knowledge not tied to specific patient in context\n`;
+    prompt += `- Answering questions about patients not in the data above\n`;
+    prompt += `- Making assumptions about patient conditions without data\n`;
+    prompt += `- Providing statistics or numbers not from context.statistics\n\n`;
+
+    prompt += `✅ CORRECT BEHAVIOR:\n`;
+    prompt += `- Search for exact HN in context.patients array\n`;
+    prompt += `- If found → Show data from that patient object\n`;
+    prompt += `- If NOT found → Say "ไม่พบ HN นี้ในระบบ คุณหมายถึง HN ไหนครับ/ค่ะ?"\n`;
+    prompt += `- List available HN from sample data if user seems confused\n`;
+    prompt += `- Only answer questions with data you can see in context\n\n`;
 
     prompt += `WHEN TO ASK FOR CLARIFICATION (MANDATORY):\n`;
-    prompt += `- If user mentions HN but you don't see it in the data → ASK: "คุณหมายถึง HN เลขไหนครับ/ค่ะ? ระบุเลข HN เต็มได้ไหม"\n`;
-    prompt += `- If multiple patients could match → ASK: "พบผู้ป่วยหลายคน กรุณาระบุ HN เต็ม เช่น HNPT250112"\n`;
-    prompt += `- If query is ambiguous or unclear → ASK for clarification instead of guessing\n`;
-    prompt += `- If data is missing or incomplete → SAY "ไม่มีข้อมูล" and ASK if user wants different information\n`;
-    prompt += `- NEVER make assumptions about which patient user means if HN is unclear\n\n`;
+    prompt += `- HN not found in context → "ไม่พบ HN [number] ในระบบ กรุณาตรวจสอบเลข HN อีกครั้ง"\n`;
+    prompt += `- Multiple matches → "พบผู้ป่วยหลายคน กรุณาระบุ HN เต็ม"\n`;
+    prompt += `- Query unclear → ASK for clarification, NEVER guess\n`;
+    prompt += `- Data missing → SAY "ไม่มีข้อมูลส่วนนี้ในระบบ"\n\n`;
 
     prompt += `RESPONSE STYLE:\n`;
     prompt += `- NO greetings like "สวัสดี", "Hello", "ยินดีให้บริการ"\n`;

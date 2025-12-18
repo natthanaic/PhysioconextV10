@@ -1,13 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const { authenticateToken } = require('../middleware/auth');
-const moment = require('moment'); // Required for date handling
+const moment = require('moment');
 
 // =======================================================================
 // 🔧 MANUAL CONFIGURATION (ใช้เมื่อ DB Settings ไม่พร้อม)
 // =======================================================================
 const MANUAL_CONFIG = {
-    apiKey: 'AIzaSyAAD5JRfykE_7sz53Vsw4VGeriHZcEuQ68', 
+    apiKey: 'AIzaSyAAD5JRfykE_7sz53Vsw4VGeriHZcEuQ68',
     model: 'gemini-2.5-flash',
     forceEnable: true
 };
@@ -18,14 +18,14 @@ router.post('/chat', authenticateToken, async (req, res) => {
     try {
         const db = req.app.locals.db;
         const { message } = req.body;
-        const userRole = req.user.role; 
+        const userId = req.user.id;
+        const userRole = req.user.role;
 
         if (!message) {
             return res.status(400).json({ error: 'Message is required' });
         }
 
         // 1. Check API Key
-        // Priority: Manual > DB > Env
         let settings = {};
         try {
             const [allSettings] = await db.execute(`SELECT setting_key, setting_value FROM system_settings`);
@@ -33,24 +33,23 @@ router.post('/chat', authenticateToken, async (req, res) => {
         } catch (e) { /* Ignore DB error */ }
 
         const apiKey = MANUAL_CONFIG.apiKey || settings.ai_api_key || settings.apiKey || process.env.GEMINI_API_KEY;
-        
+
         if (!apiKey) {
             return res.status(400).json({ error: 'AI API key not configured.' });
         }
 
-        // 2. Gather Context (Management Data Only)
-        // STRICTLY NO USER PROFILE / SECURITY DATA
-        const context = await gatherManagementContext(db, userRole);
+        // 2. Gather comprehensive context with patient data (READ-ONLY)
+        const context = await gatherContext(db, userId, message);
 
-        // 3. Build Prompt
+        // 3. Build system prompt with all patient data
         const systemPrompt = buildSystemPrompt(context, userRole);
 
-        // 4. Model Selection
+        // 4. Model selection
         let selectedModel = MANUAL_CONFIG.model || settings.model || 'gemini-1.5-flash';
         if (!MANUAL_CONFIG.model && selectedModel.includes(' ')) {
-             selectedModel = selectedModel.toLowerCase().replace(/\s+/g, '-');
+            selectedModel = selectedModel.toLowerCase().replace(/\s+/g, '-');
         }
-        
+
         // 5. Call AI
         const aiResponse = await callGeminiAI(apiKey, systemPrompt, message, selectedModel);
 
@@ -67,157 +66,375 @@ router.post('/chat', authenticateToken, async (req, res) => {
 });
 
 // ==========================================
-// 📊 Management Context (Safe Data Only)
+// 📊 Comprehensive Context Gathering (READ-ONLY Patient Data Access)
 // ==========================================
 
-async function gatherManagementContext(db, role) {
-    const context = {
-        timestamp: new Date().toLocaleString('th-TH'),
-        data: null
-    };
-
-    // Only Admin/Owner/Manager can access management stats
-    if (role === 'ADMIN' || role === 'OWNER' || role === 'MANAGER') {
-        context.data = await getClinicStats(db);
-    }
-
-    return context;
-}
-
-// Function to fetch ONLY clinic management stats
-// No sensitive user data
-async function getClinicStats(db) {
+async function gatherContext(db, userId, query) {
     const today = moment().format('YYYY-MM-DD');
-    const startOfMonth = moment().startOf('month').format('YYYY-MM-DD');
-    const endOfMonth = moment().endOf('month').format('YYYY-MM-DD');
 
-    const stats = {
-        appointments: { totalToday: 0, pending: 0, briefList: [] },
-        finance: { incomeMonth: 0, expenseMonth: 0 },
-        patients: { newThisMonth: 0 },
-        cases: { activeCount: 0 }
+    const context = {
+        user: {},
+        patients: [],
+        todayCases: [],
+        appointments: [],
+        pnCases: [],
+        soapNotes: [],
+        statistics: {},
+        recentActivity: [],
+        features: null
     };
 
     try {
-        // 1. APPOINTMENTS (Operational Data)
-        // Count today's volume
-        try {
-            const [todayCount] = await db.execute(
-                `SELECT COUNT(*) as count FROM appointments WHERE date = ? AND status != 'cancelled'`, [today]
-            );
-            stats.appointments.totalToday = todayCount[0]?.count || 0;
+        // Get user info (non-sensitive)
+        const [userInfo] = await db.execute(
+            `SELECT id, username, role, first_name, last_name FROM users WHERE id = ? LIMIT 1`,
+            [userId]
+        );
+        if (userInfo.length > 0) {
+            context.user = userInfo[0];
+        }
 
-            // Count pending requests (Action items for admin)
-            const [pendingCount] = await db.execute(
-                `SELECT COUNT(*) as count FROM appointments WHERE status = 'pending'`
-            );
-            stats.appointments.pending = pendingCount[0]?.count || 0;
+        // Check if query is about patients generally
+        const isAboutPatients = /patient|patients|who|list|show me|all/i.test(query);
 
-            // Get Brief Schedule (Time + Patient Name ONLY - No contact info/medical history)
-            // Used for "What is the schedule today?"
-            const [briefList] = await db.execute(
-                `SELECT a.time, p.first_name, p.last_name, a.status 
-                 FROM appointments a
-                 JOIN patients p ON a.patient_id = p.id
-                 WHERE a.date = ? AND a.status != 'cancelled'
-                 ORDER BY a.time ASC LIMIT 10`,
-                [today]
-            );
-            stats.appointments.briefList = briefList;
-        } catch (e) { console.log('Appt Error:', e.message); }
+        if (isAboutPatients) {
+            // Get recent active patients with their key information
+            const [patients] = await db.execute(`
+                SELECT
+                    p.id,
+                    p.hn,
+                    CONCAT(p.first_name, ' ', p.last_name) as full_name,
+                    p.first_name,
+                    p.last_name,
+                    p.date_of_birth,
+                    YEAR(CURDATE()) - YEAR(p.date_of_birth) as age,
+                    p.gender,
+                    p.phone,
+                    p.email,
+                    p.address,
+                    p.emergency_contact_name,
+                    p.emergency_contact_phone,
+                    p.medical_conditions,
+                    p.allergies,
+                    p.current_medications,
+                    p.notes,
+                    p.created_at,
+                    (SELECT COUNT(*) FROM appointments WHERE patient_id = p.id) as total_appointments,
+                    (SELECT COUNT(*) FROM pn_cases WHERE patient_id = p.id) as total_pn_cases,
+                    (SELECT MAX(appointment_date) FROM appointments WHERE patient_id = p.id) as last_visit
+                FROM patients p
+                ORDER BY p.created_at DESC
+                LIMIT 50
+            `);
+            context.patients = patients;
+        }
 
-        // 2. FINANCE (Business Data)
-        // Monthly Income Summary
-        try {
-            const [income] = await db.execute(
-                `SELECT SUM(final_amount) as total FROM bills 
-                 WHERE status = 'paid' AND created_at BETWEEN ? AND ?`,
-                [startOfMonth, endOfMonth]
-            );
-            stats.finance.incomeMonth = income[0]?.total || 0;
-        } catch (e) { /* Ignore */ }
+        // Check if query is about today's cases/appointments
+        const isAboutToday = /today|today's|current|now|schedule/i.test(query);
 
-        // Monthly Expenses Summary (from routes/expenses.js logic)
-        try {
-            const [expenses] = await db.execute(
-                `SELECT SUM(amount) as total FROM expenses 
-                 WHERE date BETWEEN ? AND ?`,
-                [startOfMonth, endOfMonth]
-            );
-            stats.finance.expenseMonth = expenses[0]?.total || 0;
-        } catch (e) { /* Ignore */ }
+        if (isAboutToday) {
+            // Get today's appointments with patient details
+            const [appointments] = await db.execute(`
+                SELECT a.*,
+                       CONCAT(p.first_name, ' ', p.last_name) as patient_name,
+                       p.hn,
+                       p.phone as patient_phone,
+                       p.medical_conditions,
+                       c.name as clinic_name
+                FROM appointments a
+                LEFT JOIN patients p ON a.patient_id = p.id
+                LEFT JOIN clinics c ON a.clinic_id = c.id
+                WHERE DATE(a.appointment_date) = ?
+                ORDER BY a.appointment_time
+                LIMIT 30
+            `, [today]);
+            context.appointments = appointments;
 
-        // 3. PATIENTS (Growth Data)
-        // Count new registrations
-        try {
-            const [newP] = await db.execute(
-                `SELECT COUNT(*) as count FROM patients WHERE created_at BETWEEN ? AND ?`,
-                [startOfMonth, endOfMonth]
-            );
-            stats.patients.newThisMonth = newP[0]?.count || 0;
-        } catch (e) { /* Ignore */ }
+            // Get active PN cases with patient details
+            const [pnCases] = await db.execute(`
+                SELECT pn.*,
+                       CONCAT(p.first_name, ' ', p.last_name) as patient_name,
+                       p.hn,
+                       p.medical_conditions,
+                       p.current_medications,
+                       c.name as clinic_name
+                FROM pn_cases pn
+                LEFT JOIN patients p ON pn.patient_id = p.id
+                LEFT JOIN clinics c ON pn.clinic_id = c.id
+                WHERE pn.status IN ('PENDING', 'IN_PROGRESS')
+                ORDER BY pn.created_at DESC
+                LIMIT 20
+            `);
+            context.pnCases = pnCases;
+        }
 
-        // 4. PN CASES (Clinical Volume)
-        // Count active cases only
-        try {
-            const [pn] = await db.execute(
-                `SELECT COUNT(*) as count FROM pn_cases WHERE status = 'active'`
-            );
-            stats.cases.activeCount = pn[0]?.count || 0;
-        } catch (e) { /* Ignore */ }
+        // Check if query is about priorities/recommendations/SOAP
+        const isAboutPriorities = /priority|urgent|recommend|important|soap|progress|treatment/i.test(query);
 
-        return stats;
+        if (isAboutPriorities) {
+            // Get PN cases with comprehensive SOAP notes and patient data
+            const [pnWithSoap] = await db.execute(`
+                SELECT pn.id, pn.pn_code,
+                       CONCAT(p.first_name, ' ', p.last_name) as patient_name,
+                       p.hn,
+                       p.medical_conditions,
+                       p.current_medications,
+                       p.allergies,
+                       YEAR(CURDATE()) - YEAR(p.date_of_birth) as age,
+                       p.gender,
+                       pn.status,
+                       pn.diagnosis,
+                       pn.chief_complaint,
+                       pn.treatment_plan,
+                       pn.created_at,
+                       s.subjective,
+                       s.objective,
+                       s.assessment,
+                       s.plan,
+                       s.created_at as soap_date,
+                       s.pain_level,
+                       s.functional_status
+                FROM pn_cases pn
+                LEFT JOIN patients p ON pn.patient_id = p.id
+                LEFT JOIN soap_notes s ON pn.id = s.pn_case_id
+                WHERE pn.status IN ('PENDING', 'IN_PROGRESS')
+                ORDER BY pn.created_at DESC, s.created_at DESC
+                LIMIT 15
+            `);
+            context.pnCases = pnWithSoap;
+
+            // Get recent SOAP notes for trend analysis
+            const [recentSoap] = await db.execute(`
+                SELECT s.*,
+                       CONCAT(p.first_name, ' ', p.last_name) as patient_name,
+                       p.hn,
+                       pn.pn_code,
+                       pn.diagnosis
+                FROM soap_notes s
+                LEFT JOIN pn_cases pn ON s.pn_case_id = pn.id
+                LEFT JOIN patients p ON pn.patient_id = p.id
+                WHERE s.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAYS)
+                ORDER BY s.created_at DESC
+                LIMIT 20
+            `);
+            context.soapNotes = recentSoap;
+        }
+
+        // Get overall statistics
+        const [stats] = await db.execute(`
+            SELECT
+                (SELECT COUNT(*) FROM patients) as total_patients,
+                (SELECT COUNT(*) FROM appointments WHERE DATE(appointment_date) = ?) as today_appointments,
+                (SELECT COUNT(*) FROM appointments WHERE status = 'SCHEDULED' AND appointment_date >= CURDATE()) as upcoming_appointments,
+                (SELECT COUNT(*) FROM pn_cases WHERE status = 'PENDING') as pending_cases,
+                (SELECT COUNT(*) FROM pn_cases WHERE status = 'IN_PROGRESS') as in_progress_cases,
+                (SELECT COUNT(*) FROM pn_cases WHERE status = 'COMPLETED' AND DATE(updated_at) = ?) as completed_today,
+                (SELECT COUNT(*) FROM bills WHERE payment_status = 'UNPAID') as unpaid_bills,
+                (SELECT COUNT(*) FROM soap_notes WHERE DATE(created_at) = ?) as soap_notes_today
+        `, [today, today, today]);
+        context.statistics = stats[0] || {};
+
+        // Check if asking about specific patient by HN
+        const hnMatch = query.match(/HN[:\s]*(\d+)|patient\s+(\d+)/i);
+        if (hnMatch) {
+            const hn = hnMatch[1] || hnMatch[2];
+            const [patientDetail] = await db.execute(`
+                SELECT
+                    p.*,
+                    YEAR(CURDATE()) - YEAR(p.date_of_birth) as age,
+                    (SELECT COUNT(*) FROM appointments WHERE patient_id = p.id) as total_visits,
+                    (SELECT COUNT(*) FROM pn_cases WHERE patient_id = p.id) as total_cases,
+                    (SELECT MAX(appointment_date) FROM appointments WHERE patient_id = p.id) as last_visit,
+                    (SELECT diagnosis FROM pn_cases WHERE patient_id = p.id ORDER BY created_at DESC LIMIT 1) as latest_diagnosis
+                FROM patients p
+                WHERE p.hn = ?
+                LIMIT 1
+            `, [hn]);
+
+            if (patientDetail.length > 0) {
+                context.specificPatient = patientDetail[0];
+
+                // Get this patient's PN cases
+                const [patientPNCases] = await db.execute(`
+                    SELECT pn.*,
+                           c.name as clinic_name
+                    FROM pn_cases pn
+                    LEFT JOIN clinics c ON pn.clinic_id = c.id
+                    WHERE pn.patient_id = ?
+                    ORDER BY pn.created_at DESC
+                    LIMIT 10
+                `, [patientDetail[0].id]);
+                context.specificPatient.pnCases = patientPNCases;
+
+                // Get this patient's SOAP notes
+                const [patientSoap] = await db.execute(`
+                    SELECT s.*, pn.pn_code, pn.diagnosis
+                    FROM soap_notes s
+                    LEFT JOIN pn_cases pn ON s.pn_case_id = pn.id
+                    WHERE pn.patient_id = ?
+                    ORDER BY s.created_at DESC
+                    LIMIT 10
+                `, [patientDetail[0].id]);
+                context.specificPatient.soapNotes = patientSoap;
+            }
+        }
+
+        // Check if query is about how to use the system
+        const isAboutUsage = /how to|how do|guide|help|create|add|register|use|feature/i.test(query);
+
+        if (isAboutUsage) {
+            context.features = {
+                patients: 'Register and manage patient records with HN numbers, medical history, conditions, medications',
+                appointments: 'Schedule appointments by date, time, clinic. Track status (scheduled, completed, cancelled)',
+                pnCases: 'Create PN (Physiotherapy Notes) cases with referral details, diagnosis, chief complaint',
+                soapNotes: 'Add SOAP notes (Subjective, Objective, Assessment, Plan) with pain levels and functional status',
+                bills: 'Generate bills and invoices for services rendered',
+                courses: 'Manage physiotherapy courses and sessions for patients',
+                statistics: 'View reports, analytics, and dashboard summaries',
+                broadcast: 'Send SMS/Email campaigns to patients for reminders and marketing'
+            };
+        }
+
+        return context;
 
     } catch (error) {
-        console.error('[ShinoAI] Stats Error:', error.message);
-        return stats; // Return empty structure rather than null
+        console.error('[ShinoAI] Context gathering error:', error.message);
+        return context; // Return partial context rather than null
     }
 }
 
 // ==========================================
-// 📝 System Prompt (Security & Role Enforced)
+// 📝 System Prompt with Comprehensive Patient Data
 // ==========================================
 
 function buildSystemPrompt(context, role) {
-    let prompt = `You are ShinoAI, a Clinic Management Assistant.
-    Current Time: ${context.timestamp}
-    
-    [SECURITY PROTOCOL]:
-    - DO NOT access or reveal User Passwords, Emails, Addresses, or Personal Contact Info.
-    - DO NOT discuss System Security Configuration.
-    - FOCUS ONLY on Clinic Operations (Appointments, Sales stats, Patient volume).
-    `;
+    let prompt = `You are ShinoAI, an intelligent assistant for a physiotherapy clinic management system called PhysioConext.
+You are helpful, professional, and knowledgeable about physiotherapy practices and clinic management.
 
-    if (context.data && (role === 'ADMIN' || role === 'OWNER')) {
-        const d = context.data;
-        
-        prompt += `
-        \n[OPERATIONAL DASHBOARD DATA]:
-        1. TODAY'S SCHEDULE (${moment().format('YYYY-MM-DD')}):
-           - Total Appointments: ${d.appointments.totalToday}
-           - Pending Requests: ${d.appointments.pending}
-           ${d.appointments.briefList.length > 0 ? 
-             '- Schedule:\n' + d.appointments.briefList.map(a => `     * ${a.time}: ${a.first_name} ${a.last_name} (${a.status})`).join('\n') : 
-             '- Schedule: No appointments found.'}
-        
-        2. BUSINESS PERFORMANCE (This Month):
-           - Income: ${d.finance.incomeMonth.toLocaleString()} THB
-           - Expenses: ${d.finance.expenseMonth.toLocaleString()} THB
-           - New Patients: ${d.patients.newThisMonth}
-           - Active Cases: ${d.cases.activeCount}
+Current User Role: ${role}
+Current Time: ${moment().format('YYYY-MM-DD HH:mm')}
 
-        [INSTRUCTIONS]:
-        - Answer questions about the clinic's status using the data above.
-        - Be professional, concise, and helpful for management.
-        - Answer in Thai (ภาษาไทย).
-        `;
-    } else {
-        prompt += `
-        \n[ROLE: GENERAL ASSISTANT]
-        You are assisting a general user. Answer general questions about clinic services only.
-        Do not reveal operational data.
-        `;
+`;
+
+    // Add user info
+    if (context.user && context.user.first_name) {
+        prompt += `Current User: ${context.user.first_name} ${context.user.last_name} (${context.user.role})\n\n`;
     }
+
+    // Add patients list
+    if (context.patients && context.patients.length > 0) {
+        prompt += `Patient Database (${context.patients.length} recent patients):\n`;
+        context.patients.slice(0, 10).forEach(p => {
+            prompt += `- HN: ${p.hn} | ${p.full_name} | Age: ${p.age || 'N/A'} | Gender: ${p.gender || 'N/A'}`;
+            if (p.medical_conditions) prompt += ` | Conditions: ${p.medical_conditions.substring(0, 50)}`;
+            if (p.last_visit) prompt += ` | Last Visit: ${p.last_visit}`;
+            prompt += `\n`;
+        });
+        prompt += '\n';
+    }
+
+    // Add specific patient details if queried
+    if (context.specificPatient) {
+        const p = context.specificPatient;
+        prompt += `DETAILED PATIENT INFO - HN: ${p.hn}\n`;
+        prompt += `Name: ${p.first_name} ${p.last_name}\n`;
+        prompt += `Age: ${p.age} | Gender: ${p.gender} | DOB: ${p.date_of_birth}\n`;
+        if (p.phone) prompt += `Phone: ${p.phone}\n`;
+        if (p.email) prompt += `Email: ${p.email}\n`;
+        if (p.medical_conditions) prompt += `Medical Conditions: ${p.medical_conditions}\n`;
+        if (p.allergies) prompt += `Allergies: ${p.allergies}\n`;
+        if (p.current_medications) prompt += `Current Medications: ${p.current_medications}\n`;
+        if (p.latest_diagnosis) prompt += `Latest Diagnosis: ${p.latest_diagnosis}\n`;
+        prompt += `Total Visits: ${p.total_visits} | Total Cases: ${p.total_cases}\n`;
+
+        if (p.pnCases && p.pnCases.length > 0) {
+            prompt += `\nPN Cases for this patient:\n`;
+            p.pnCases.forEach(pn => {
+                prompt += `  - ${pn.pn_code}: ${pn.diagnosis || 'No diagnosis'} (${pn.status})\n`;
+            });
+        }
+
+        if (p.soapNotes && p.soapNotes.length > 0) {
+            prompt += `\nRecent SOAP Notes:\n`;
+            p.soapNotes.slice(0, 3).forEach(soap => {
+                prompt += `  - ${soap.created_at}: ${soap.subjective?.substring(0, 80) || 'N/A'}...\n`;
+            });
+        }
+        prompt += '\n';
+    }
+
+    // Add today's appointments
+    if (context.appointments && context.appointments.length > 0) {
+        prompt += `Today's Appointments (${context.appointments.length}):\n`;
+        context.appointments.forEach(apt => {
+            prompt += `- ${apt.appointment_time}: ${apt.patient_name} (HN: ${apt.hn})`;
+            if (apt.medical_conditions) prompt += ` | Conditions: ${apt.medical_conditions.substring(0, 40)}`;
+            prompt += ` | ${apt.clinic_name || 'Main Clinic'} - ${apt.status}\n`;
+        });
+        prompt += '\n';
+    }
+
+    // Add PN cases with detailed patient info
+    if (context.pnCases && context.pnCases.length > 0) {
+        prompt += `Active PN Cases (${context.pnCases.length}):\n`;
+        context.pnCases.forEach(pn => {
+            prompt += `- ${pn.pn_code || 'PN-' + pn.id}: ${pn.patient_name} (HN: ${pn.hn})`;
+            if (pn.age) prompt += ` | Age: ${pn.age}`;
+            if (pn.diagnosis) prompt += ` | Diagnosis: ${pn.diagnosis}`;
+            prompt += ` | Status: ${pn.status}\n`;
+            if (pn.chief_complaint) prompt += `  Chief Complaint: ${pn.chief_complaint.substring(0, 80)}\n`;
+            if (pn.medical_conditions) prompt += `  Medical Conditions: ${pn.medical_conditions.substring(0, 60)}\n`;
+            if (pn.current_medications) prompt += `  Medications: ${pn.current_medications.substring(0, 60)}\n`;
+            if (pn.subjective) prompt += `  Latest SOAP: ${pn.subjective.substring(0, 100)}...\n`;
+            if (pn.pain_level) prompt += `  Pain Level: ${pn.pain_level}/10\n`;
+        });
+        prompt += '\n';
+    }
+
+    // Add recent SOAP notes
+    if (context.soapNotes && context.soapNotes.length > 0) {
+        prompt += `Recent SOAP Notes (Last 7 Days - ${context.soapNotes.length} entries):\n`;
+        context.soapNotes.slice(0, 5).forEach(soap => {
+            prompt += `- ${soap.patient_name} (HN: ${soap.hn}) | ${soap.pn_code}\n`;
+            prompt += `  S: ${soap.subjective?.substring(0, 60) || 'N/A'}...\n`;
+            prompt += `  A: ${soap.assessment?.substring(0, 60) || 'N/A'}...\n`;
+            if (soap.pain_level) prompt += `  Pain: ${soap.pain_level}/10\n`;
+        });
+        prompt += '\n';
+    }
+
+    // Add statistics
+    if (context.statistics && Object.keys(context.statistics).length > 0) {
+        prompt += `System Statistics:\n`;
+        if (context.statistics.total_patients) prompt += `- Total Patients: ${context.statistics.total_patients}\n`;
+        if (context.statistics.today_appointments) prompt += `- Today's Appointments: ${context.statistics.today_appointments}\n`;
+        if (context.statistics.upcoming_appointments) prompt += `- Upcoming Appointments: ${context.statistics.upcoming_appointments}\n`;
+        if (context.statistics.pending_cases) prompt += `- Pending PN Cases: ${context.statistics.pending_cases}\n`;
+        if (context.statistics.in_progress_cases) prompt += `- In-Progress Cases: ${context.statistics.in_progress_cases}\n`;
+        if (context.statistics.completed_today) prompt += `- Completed Today: ${context.statistics.completed_today}\n`;
+        if (context.statistics.unpaid_bills) prompt += `- Unpaid Bills: ${context.statistics.unpaid_bills}\n`;
+        if (context.statistics.soap_notes_today) prompt += `- SOAP Notes Today: ${context.statistics.soap_notes_today}\n`;
+        prompt += '\n';
+    }
+
+    // Add features guide
+    if (context.features) {
+        prompt += `System Features:\n`;
+        Object.entries(context.features).forEach(([key, value]) => {
+            prompt += `- ${key.charAt(0).toUpperCase() + key.slice(1)}: ${value}\n`;
+        });
+        prompt += '\n';
+    }
+
+    prompt += `IMPORTANT INSTRUCTIONS:
+- You have READ-ONLY access to all patient data for analysis and recommendations
+- You CANNOT modify, enter, or update any patient records
+- Provide specific, actionable recommendations based on the data
+- Reference patients by HN number when making recommendations
+- Be professional, empathetic, and HIPAA-compliant in responses
+- Keep responses concise but informative (2-4 paragraphs max)
+- When recommending priorities, explain WHY based on medical conditions, pain levels, or SOAP trends
+- Answer in a friendly, helpful tone that makes complex medical information accessible`;
 
     return prompt;
 }

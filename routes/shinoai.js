@@ -66,6 +66,78 @@ router.post('/chat', authenticateToken, async (req, res) => {
 });
 
 // ==========================================
+// 📊 Sample Data Loader (AI Learning from Real Data)
+// ==========================================
+
+async function getSampleData(db) {
+    const samples = {};
+
+    try {
+        // Sample patients (3-5 examples showing actual HN format and data structure)
+        const [samplePatients] = await db.execute(`
+            SELECT
+                hn,
+                CONCAT(first_name, ' ', last_name) as name,
+                YEAR(CURDATE()) - YEAR(date_of_birth) as age,
+                gender,
+                medical_conditions,
+                allergies,
+                current_medications
+            FROM patients
+            LIMIT 5
+        `);
+        samples.patients = samplePatients;
+
+        // Sample appointments
+        const [sampleAppointments] = await db.execute(`
+            SELECT
+                a.appointment_date,
+                a.appointment_time,
+                a.status,
+                p.hn
+            FROM appointments a
+            LEFT JOIN patients p ON a.patient_id = p.id
+            LIMIT 5
+        `);
+        samples.appointments = sampleAppointments;
+
+        // Sample PN cases
+        const [samplePNCases] = await db.execute(`
+            SELECT
+                pn.pn_code,
+                p.hn,
+                pn.diagnosis,
+                pn.chief_complaint,
+                pn.status
+            FROM pn_cases pn
+            LEFT JOIN patients p ON pn.patient_id = p.id
+            LIMIT 5
+        `);
+        samples.pnCases = samplePNCases;
+
+        // Sample bills
+        const [sampleBills] = await db.execute(`
+            SELECT
+                b.bill_code,
+                p.hn,
+                b.total_amount,
+                b.payment_status,
+                b.bill_date
+            FROM bills b
+            LEFT JOIN patients p ON b.patient_id = p.id
+            LIMIT 5
+        `);
+        samples.bills = sampleBills;
+
+        return samples;
+
+    } catch (error) {
+        console.error('[ShinoAI] Sample data error:', error.message);
+        return {};
+    }
+}
+
+// ==========================================
 // 📊 Database Schema Discovery
 // ==========================================
 
@@ -397,6 +469,9 @@ async function gatherContext(db, userId, query) {
         // 9. ALWAYS load complete database schema from INFORMATION_SCHEMA
         context.dbSchema = await getCompleteDBSchema(db);
 
+        // 10. Load sample data from key tables for AI learning
+        context.sampleData = await getSampleData(db);
+
         return context;
 
     } catch (error) {
@@ -544,6 +619,53 @@ Current Time: ${moment().format('YYYY-MM-DD HH:mm')}
             prompt += `\n`;
         });
         prompt += '\n';
+    }
+
+    // ========================================
+    // REAL DATABASE SAMPLE DATA (Learn from actual data)
+    // ========================================
+    if (context.sampleData) {
+        prompt += `========================================\n`;
+        prompt += `📊 REAL DATABASE SAMPLES (Learn Actual Data Format)\n`;
+        prompt += `========================================\n\n`;
+
+        if (context.sampleData.patients && context.sampleData.patients.length > 0) {
+            prompt += `Sample Patients (Actual HN Format):\n`;
+            context.sampleData.patients.forEach((p, idx) => {
+                prompt += `${idx + 1}. HN: ${p.hn} | ${p.name} | ${p.age}y ${p.gender || 'N/A'}\n`;
+                if (p.medical_conditions) prompt += `   Conditions: ${p.medical_conditions}\n`;
+                if (p.allergies) prompt += `   Allergies: ${p.allergies}\n`;
+                if (p.current_medications) prompt += `   Medications: ${p.current_medications}\n`;
+            });
+            prompt += `\nIMPORTANT: Use EXACT HN format from above (e.g., ${context.sampleData.patients[0]?.hn})\n`;
+            prompt += `When user asks about a patient, match HN exactly as shown in data.\n\n`;
+        }
+
+        if (context.sampleData.appointments && context.sampleData.appointments.length > 0) {
+            prompt += `Sample Appointments:\n`;
+            context.sampleData.appointments.forEach((a, idx) => {
+                prompt += `${idx + 1}. HN: ${a.hn} | Date: ${a.appointment_date} | Time: ${a.appointment_time} | Status: ${a.status}\n`;
+            });
+            prompt += '\n';
+        }
+
+        if (context.sampleData.pnCases && context.sampleData.pnCases.length > 0) {
+            prompt += `Sample PN Cases:\n`;
+            context.sampleData.pnCases.forEach((pn, idx) => {
+                prompt += `${idx + 1}. Code: ${pn.pn_code} | HN: ${pn.hn} | Diagnosis: ${pn.diagnosis || 'N/A'} | Status: ${pn.status}\n`;
+            });
+            prompt += '\n';
+        }
+
+        if (context.sampleData.bills && context.sampleData.bills.length > 0) {
+            prompt += `Sample Bills:\n`;
+            context.sampleData.bills.forEach((b, idx) => {
+                prompt += `${idx + 1}. Code: ${b.bill_code} | HN: ${b.hn} | Amount: ${b.total_amount} THB | Status: ${b.payment_status}\n`;
+            });
+            prompt += '\n';
+        }
+
+        prompt += `========================================\n\n`;
     }
 
     // ========================================
@@ -758,21 +880,55 @@ Current Time: ${moment().format('YYYY-MM-DD HH:mm')}
         prompt += `========================================\n\n`;
     }
 
-    prompt += `IMPORTANT INSTRUCTIONS:
-- You have READ-ONLY access to ALL patient data for analysis and recommendations
-- You CANNOT modify, enter, or update any patient records
-- You have COMPLETE knowledge of the database schema - all tables, columns, and relationships
-- Use the schema above to understand how to query related data
-- When answering questions, you can reference ANY table in the database
-- Understand foreign key relationships to join tables correctly
-- Provide specific, actionable recommendations based on the comprehensive data
-- Reference patients by HN number when making recommendations
-- When asked about specific HN (like HNPT250112), search in the patient database
-- Be professional, empathetic, and HIPAA-compliant in responses
-- Keep responses concise but informative (2-4 paragraphs max)
-- When recommending priorities, explain WHY based on medical conditions, pain levels, or SOAP trends
-- Answer in a friendly, helpful tone that makes complex medical information accessible
-- You fully understand the database structure - use this knowledge to give accurate, complete answers`;
+    prompt += `========================================\n`;
+    prompt += `⚠️ CRITICAL INSTRUCTIONS\n`;
+    prompt += `========================================\n\n`;
+
+    prompt += `DATA ACCESS:\n`;
+    prompt += `- You have READ-ONLY access to ALL patient data\n`;
+    prompt += `- You CANNOT modify, enter, or update any patient records\n`;
+    prompt += `- You have complete database schema and sample data above\n\n`;
+
+    prompt += `WHEN TO ASK FOR CLARIFICATION (MANDATORY):\n`;
+    prompt += `- If user mentions HN but you don't see it in the data → ASK: "คุณหมายถึง HN เลขไหนครับ/ค่ะ? ระบุเลข HN เต็มได้ไหม"\n`;
+    prompt += `- If multiple patients could match → ASK: "พบผู้ป่วยหลายคน กรุณาระบุ HN เต็ม เช่น HNPT250112"\n`;
+    prompt += `- If query is ambiguous or unclear → ASK for clarification instead of guessing\n`;
+    prompt += `- If data is missing or incomplete → SAY "ไม่มีข้อมูล" and ASK if user wants different information\n`;
+    prompt += `- NEVER make assumptions about which patient user means if HN is unclear\n\n`;
+
+    prompt += `RESPONSE STYLE:\n`;
+    prompt += `- NO greetings like "สวัสดี", "Hello", "ยินดีให้บริการ"\n`;
+    prompt += `- NO self-introduction or status updates\n`;
+    prompt += `- Start DIRECTLY with the answer or question\n`;
+    prompt += `- Be concise (2-4 paragraphs max)\n`;
+    prompt += `- Use bullet points for lists\n`;
+    prompt += `- End with actionable recommendations when appropriate\n\n`;
+
+    prompt += `DATA ACCURACY:\n`;
+    prompt += `- Use EXACT HN format from sample data (don't guess)\n`;
+    prompt += `- Reference actual data from context only\n`;
+    prompt += `- If data not available → Say "ไม่มีข้อมูล" and ask for clarification\n`;
+    prompt += `- Always cite source (e.g., "จากข้อมูล SOAP notes ล่าสุด")\n`;
+    prompt += `- Match HN exactly as shown in database (case-sensitive)\n\n`;
+
+    prompt += `SAFETY & PRIVACY:\n`;
+    prompt += `- Use HN to identify patients (not full names in summaries)\n`;
+    prompt += `- ALWAYS mention allergies when discussing patient (safety critical!)\n`;
+    prompt += `- Don't share phone/email unless specifically asked\n`;
+    prompt += `- When recommending priorities, explain WHY based on data\n\n`;
+
+    prompt += `LANGUAGE:\n`;
+    prompt += `- Detect user's language from question\n`;
+    prompt += `- Thai question → Thai answer\n`;
+    prompt += `- English question → English answer\n`;
+    prompt += `- Professional but friendly tone (use ครับ/ค่ะ)\n\n`;
+
+    prompt += `REMEMBER:\n`;
+    prompt += `- When unsure → ASK, don't guess\n`;
+    prompt += `- When data missing → Say so and ask for clarification\n`;
+    prompt += `- When HN unclear → Request exact HN number\n`;
+    prompt += `- NO greetings or introductions\n`;
+    prompt += `- Answer directly and concisely`;
 
     return prompt;
 }

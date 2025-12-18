@@ -9,7 +9,7 @@ const { authenticateToken, authorize } = require('../middleware/auth');
 router.get('/login', (req, res) => {
     res.render('login', {
         error: req.query.error,
-        appName: req.app.locals.appName || 'PhysioConext'
+        appName: res.locals.appName
     });
 });
 
@@ -20,7 +20,7 @@ router.get('/dashboard', authenticateToken, (req, res) => {
     res.render('dashboard', {
         user: req.user,
         activePage: 'dashboard',
-        appName: req.app.locals.appName || 'PhysioConext'
+        appName: res.locals.appName
     });
 });
 
@@ -31,7 +31,7 @@ router.get('/appointments', authenticateToken, authorize('ADMIN', 'PT'), (req, r
     res.render('appointments', {
         user: req.user,
         activePage: 'appointments',
-        appName: req.app.locals.appName || 'PhysioConext'
+        appName: res.locals.appName
     });
 });
 
@@ -42,7 +42,7 @@ router.get('/patients', authenticateToken, (req, res) => {
     res.render('patients', {
         user: req.user,
         activePage: 'patients',
-        appName: req.app.locals.appName || 'PhysioConext'
+        appName: res.locals.appName
     });
 });
 
@@ -53,7 +53,7 @@ router.get('/patient/register', authenticateToken, (req, res) => {
     res.render('patient-register', {
         user: req.user,
         activePage: 'register',
-        appName: req.app.locals.appName || 'PhysioConext'
+        appName: res.locals.appName
     });
 });
 
@@ -65,7 +65,7 @@ router.get('/patient/:id', authenticateToken, (req, res) => {
         user: req.user,
         patientId: req.params.id,
         activePage: 'patients',
-        appName: req.app.locals.appName || 'PhysioConext'
+        appName: res.locals.appName
     });
 });
 
@@ -77,7 +77,7 @@ router.get('/pn/:id', authenticateToken, (req, res) => {
         user: req.user,
         pnId: req.params.id,
         activePage: 'patients',
-        appName: req.app.locals.appName || 'PhysioConext'
+        appName: res.locals.appName
     });
 });
 
@@ -85,7 +85,7 @@ router.get('/pn-logs', authenticateToken, (req, res) => {
     res.render('pn-logs', {
         user: req.user,
         activePage: 'pn-logs',
-        appName: req.app.locals.appName || 'PhysioConext'
+        appName: res.locals.appName
     });
 });
 
@@ -96,7 +96,7 @@ router.get('/homecace', authenticateToken, (req, res) => {
     res.render('bodycheckdraw', {
         user: req.user,
         activePage: 'homecace',
-        appName: req.app.locals.appName || 'PhysioConext'
+        appName: res.locals.appName
     });
 });
 
@@ -104,7 +104,7 @@ router.get('/bodycheckdetails', authenticateToken, (req, res) => {
     res.render('bodycheckdetails', {
         user: req.user,
         activePage: 'homecace',
-        appName: req.app.locals.appName || 'PhysioConext'
+        appName: res.locals.appName
     });
 });
 
@@ -115,7 +115,7 @@ router.get('/chat', authenticateToken, authorize('ADMIN', 'PT'), (req, res) => {
     res.render('conextchat', {
         user: req.user,
         activePage: 'chat',
-        appName: req.app.locals.appName || 'PhysioConext'
+        appName: res.locals.appName
     });
 });
 
@@ -126,7 +126,7 @@ router.get('/courses', authenticateToken, (req, res) => {
     res.render('courses', {
         user: req.user,
         activePage: 'courses',
-        appName: req.app.locals.appName || 'PhysioConext'
+        appName: res.locals.appName
     });
 });
 
@@ -137,7 +137,7 @@ router.get('/diagnostic', authenticateToken, (req, res) => {
     res.render('diagnostic', {
         user: req.user,
         activePage: 'diagnostic',
-        appName: req.app.locals.appName || 'PhysioConext'
+        appName: res.locals.appName
     });
 });
 
@@ -148,7 +148,7 @@ router.get('/bills', authenticateToken, authorize('ADMIN'), (req, res) => {
     res.render('bills', {
         user: req.user,
         activePage: 'bills',
-        appName: req.app.locals.appName || 'PhysioConext'
+        appName: res.locals.appName
     });
 });
 
@@ -159,7 +159,7 @@ router.get('/statistics', authenticateToken, authorize('ADMIN', 'PT'), (req, res
     res.render('statistics', {
         user: req.user,
         activePage: 'statistics',
-        appName: req.app.locals.appName || 'PhysioConext'
+        appName: res.locals.appName
     });
 });
 
@@ -170,7 +170,7 @@ router.get('/loyalty', authenticateToken, (req, res) => {
     res.render('loyalty', {
         user: req.user,
         activePage: 'loyalty',
-        appName: req.app.locals.appName || 'PhysioConext'
+        appName: res.locals.appName
     });
 });
 
@@ -181,7 +181,7 @@ router.get('/expenses', authenticateToken, authorize('ADMIN'), (req, res) => {
     res.render('expenses', {
         user: req.user,
         activePage: 'expenses',
-        appName: req.app.locals.appName || 'PhysioConext'
+        appName: res.locals.appName
     });
 });
 
@@ -192,7 +192,7 @@ router.get('/profile', authenticateToken, (req, res) => {
     res.render('profile', {
         user: req.user,
         activePage: 'profile',
-        appName: req.app.locals.appName || 'PhysioConext'
+        appName: res.locals.appName
     });
 });
 
@@ -203,7 +203,7 @@ router.get('/admin/settings', authenticateToken, authorize('ADMIN'), (req, res) 
     res.render('admin-settings', {
         user: req.user,
         activePage: 'admin-settings',
-        appName: req.app.locals.appName || 'PhysioConext'
+        appName: res.locals.appName
     });
 });
 
@@ -211,7 +211,7 @@ router.get('/admin/users', authenticateToken, authorize('ADMIN'), (req, res) => 
     res.render('admin/users', {
         user: req.user,
         activePage: 'admin-users',
-        appName: req.app.locals.appName || 'PhysioConext'
+        appName: res.locals.appName
     });
 });
 
@@ -219,7 +219,7 @@ router.get('/admin/clinics', authenticateToken, authorize('ADMIN'), (req, res) =
     res.render('admin/clinics', {
         user: req.user,
         activePage: 'admin-clinics',
-        appName: req.app.locals.appName || 'PhysioConext'
+        appName: res.locals.appName
     });
 });
 
@@ -227,7 +227,7 @@ router.get('/admin/services', authenticateToken, authorize('ADMIN'), (req, res) 
     res.render('admin/services', {
         user: req.user,
         activePage: 'admin-services',
-        appName: req.app.locals.appName || 'PhysioConext'
+        appName: res.locals.appName
     });
 });
 
@@ -235,7 +235,7 @@ router.get('/admin/notification-settings', authenticateToken, authorize('ADMIN')
     res.render('admin-notification-settings', {
         user: req.user,
         activePage: 'notification-settings',
-        appName: req.app.locals.appName || 'PhysioConext'
+        appName: res.locals.appName
     });
 });
 
@@ -243,7 +243,7 @@ router.get('/admin/booking-settings', authenticateToken, authorize('ADMIN'), (re
     res.render('admin-booking-settings', {
         user: req.user,
         activePage: 'booking-settings',
-        appName: req.app.locals.appName || 'PhysioConext'
+        appName: res.locals.appName
     });
 });
 
@@ -251,7 +251,7 @@ router.get('/admin/theme-settings', authenticateToken, authorize('ADMIN'), (req,
     res.render('admin-theme-settings', {
         user: req.user,
         activePage: 'theme-settings',
-        appName: req.app.locals.appName || 'PhysioConext'
+        appName: res.locals.appName
     });
 });
 
@@ -259,7 +259,7 @@ router.get('/admin/google-calendar-settings', authenticateToken, authorize('ADMI
     res.render('admin-google-calendar-settings', {
         user: req.user,
         activePage: 'google-calendar-settings',
-        appName: req.app.locals.appName || 'PhysioConext'
+        appName: res.locals.appName
     });
 });
 
@@ -267,7 +267,7 @@ router.get('/admin/ai-settings', authenticateToken, authorize('ADMIN'), (req, re
     res.render('admin-ai-settings', {
         user: req.user,
         activePage: 'ai-settings',
-        appName: req.app.locals.appName || 'PhysioConext'
+        appName: res.locals.appName
     });
 });
 
@@ -275,7 +275,7 @@ router.get('/admin/line-webhook-ids', authenticateToken, authorize('ADMIN'), (re
     res.render('admin-line-webhook-ids', {
         user: req.user,
         activePage: 'line-webhook-ids',
-        appName: req.app.locals.appName || 'PhysioConext'
+        appName: res.locals.appName
     });
 });
 
@@ -283,7 +283,7 @@ router.get('/document-settings', authenticateToken, authorize('ADMIN'), (req, re
     res.render('document-settings', {
         user: req.user,
         activePage: 'document-settings',
-        appName: req.app.locals.appName || 'PhysioConext'
+        appName: res.locals.appName
     });
 });
 
@@ -294,7 +294,7 @@ router.get('/broadcast', authenticateToken, authorize('ADMIN', 'PT'), (req, res)
     res.render('admin/broadcast', {
         user: req.user,
         activePage: 'broadcast',
-        appName: req.app.locals.appName || 'PhysioConext'
+        appName: res.locals.appName
     });
 });
 
@@ -303,13 +303,13 @@ router.get('/broadcast', authenticateToken, authorize('ADMIN', 'PT'), (req, res)
 // ========================================
 router.get('/public-booking', (req, res) => {
     res.render('public-booking', {
-        appName: req.app.locals.appName || 'PhysioConext'
+        appName: res.locals.appName
     });
 });
 
 router.get('/public-home', (req, res) => {
     res.render('public-home', {
-        appName: req.app.locals.appName || 'PhysioConext'
+        appName: res.locals.appName
     });
 });
 

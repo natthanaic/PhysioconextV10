@@ -75,13 +75,14 @@ async function gatherContext(db, userId, query) {
     const context = {
         user: {},
         patients: [],
-        todayCases: [],
         appointments: [],
         pnCases: [],
         soapNotes: [],
         statistics: {},
         recentActivity: [],
-        features: null
+        bills: [],
+        courses: [],
+        dbSchema: null
     };
 
     try {
@@ -94,133 +95,130 @@ async function gatherContext(db, userId, query) {
             context.user = userInfo[0];
         }
 
-        // Check if query is about patients generally
-        const isAboutPatients = /patient|patients|who|list|show me|all/i.test(query);
+        // ============================================
+        // ALWAYS LOAD ALL DATA (No conditional loading)
+        // Database queries are FREE - only AI response costs credits
+        // ============================================
 
-        if (isAboutPatients) {
-            // Get recent active patients with their key information
-            const [patients] = await db.execute(`
-                SELECT
-                    p.id,
-                    p.hn,
-                    CONCAT(p.first_name, ' ', p.last_name) as full_name,
-                    p.first_name,
-                    p.last_name,
-                    p.date_of_birth,
-                    YEAR(CURDATE()) - YEAR(p.date_of_birth) as age,
-                    p.gender,
-                    p.phone,
-                    p.email,
-                    p.address,
-                    p.emergency_contact_name,
-                    p.emergency_contact_phone,
-                    p.medical_conditions,
-                    p.allergies,
-                    p.current_medications,
-                    p.notes,
-                    p.created_at,
-                    (SELECT COUNT(*) FROM appointments WHERE patient_id = p.id) as total_appointments,
-                    (SELECT COUNT(*) FROM pn_cases WHERE patient_id = p.id) as total_pn_cases,
-                    (SELECT MAX(appointment_date) FROM appointments WHERE patient_id = p.id) as last_visit
-                FROM patients p
-                ORDER BY p.created_at DESC
-                LIMIT 50
-            `);
-            context.patients = patients;
-        }
+        // 1. ALWAYS load recent patients with full medical info
+        const [patients] = await db.execute(`
+            SELECT
+                p.id,
+                p.hn,
+                CONCAT(p.first_name, ' ', p.last_name) as full_name,
+                p.first_name,
+                p.last_name,
+                p.date_of_birth,
+                YEAR(CURDATE()) - YEAR(p.date_of_birth) as age,
+                p.gender,
+                p.phone,
+                p.email,
+                p.address,
+                p.medical_conditions,
+                p.allergies,
+                p.current_medications,
+                p.notes,
+                p.created_at,
+                (SELECT COUNT(*) FROM appointments WHERE patient_id = p.id) as total_appointments,
+                (SELECT COUNT(*) FROM pn_cases WHERE patient_id = p.id) as total_pn_cases,
+                (SELECT MAX(appointment_date) FROM appointments WHERE patient_id = p.id) as last_visit
+            FROM patients p
+            ORDER BY p.created_at DESC
+            LIMIT 100
+        `);
+        context.patients = patients;
 
-        // Check if query is about today's cases/appointments
-        const isAboutToday = /today|today's|current|now|schedule/i.test(query);
+        // 2. ALWAYS load today's appointments
+        const [appointments] = await db.execute(`
+            SELECT a.*,
+                   CONCAT(p.first_name, ' ', p.last_name) as patient_name,
+                   p.hn,
+                   p.phone as patient_phone,
+                   p.medical_conditions,
+                   c.name as clinic_name
+            FROM appointments a
+            LEFT JOIN patients p ON a.patient_id = p.id
+            LEFT JOIN clinics c ON a.clinic_id = c.id
+            WHERE DATE(a.appointment_date) = ?
+            ORDER BY a.appointment_time
+            LIMIT 50
+        `, [today]);
+        context.appointments = appointments;
 
-        if (isAboutToday) {
-            // Get today's appointments with patient details
-            const [appointments] = await db.execute(`
-                SELECT a.*,
-                       CONCAT(p.first_name, ' ', p.last_name) as patient_name,
-                       p.hn,
-                       p.phone as patient_phone,
-                       p.medical_conditions,
-                       c.name as clinic_name
-                FROM appointments a
-                LEFT JOIN patients p ON a.patient_id = p.id
-                LEFT JOIN clinics c ON a.clinic_id = c.id
-                WHERE DATE(a.appointment_date) = ?
-                ORDER BY a.appointment_time
-                LIMIT 30
-            `, [today]);
-            context.appointments = appointments;
+        // 3. ALWAYS load active PN cases with SOAP notes
+        const [pnCases] = await db.execute(`
+            SELECT pn.id, pn.pn_code,
+                   CONCAT(p.first_name, ' ', p.last_name) as patient_name,
+                   p.hn,
+                   p.medical_conditions,
+                   p.current_medications,
+                   p.allergies,
+                   YEAR(CURDATE()) - YEAR(p.date_of_birth) as age,
+                   p.gender,
+                   pn.status,
+                   pn.diagnosis,
+                   pn.chief_complaint,
+                   pn.treatment_plan,
+                   pn.created_at,
+                   s.subjective,
+                   s.objective,
+                   s.assessment,
+                   s.plan,
+                   s.created_at as soap_date,
+                   s.pain_level,
+                   s.functional_status
+            FROM pn_cases pn
+            LEFT JOIN patients p ON pn.patient_id = p.id
+            LEFT JOIN soap_notes s ON pn.id = s.pn_case_id
+            WHERE pn.status IN ('PENDING', 'IN_PROGRESS', 'COMPLETED')
+            ORDER BY pn.created_at DESC, s.created_at DESC
+            LIMIT 30
+        `);
+        context.pnCases = pnCases;
 
-            // Get active PN cases with patient details
-            const [pnCases] = await db.execute(`
-                SELECT pn.*,
-                       CONCAT(p.first_name, ' ', p.last_name) as patient_name,
-                       p.hn,
-                       p.medical_conditions,
-                       p.current_medications,
-                       c.name as clinic_name
-                FROM pn_cases pn
-                LEFT JOIN patients p ON pn.patient_id = p.id
-                LEFT JOIN clinics c ON pn.clinic_id = c.id
-                WHERE pn.status IN ('PENDING', 'IN_PROGRESS')
-                ORDER BY pn.created_at DESC
-                LIMIT 20
-            `);
-            context.pnCases = pnCases;
-        }
+        // 4. ALWAYS load recent SOAP notes for trend analysis
+        const [recentSoap] = await db.execute(`
+            SELECT s.*,
+                   CONCAT(p.first_name, ' ', p.last_name) as patient_name,
+                   p.hn,
+                   pn.pn_code,
+                   pn.diagnosis
+            FROM soap_notes s
+            LEFT JOIN pn_cases pn ON s.pn_case_id = pn.id
+            LEFT JOIN patients p ON pn.patient_id = p.id
+            WHERE s.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAYS)
+            ORDER BY s.created_at DESC
+            LIMIT 30
+        `);
+        context.soapNotes = recentSoap;
 
-        // Check if query is about priorities/recommendations/SOAP
-        const isAboutPriorities = /priority|urgent|recommend|important|soap|progress|treatment/i.test(query);
+        // 5. ALWAYS load recent bills/invoices
+        const [bills] = await db.execute(`
+            SELECT b.*,
+                   CONCAT(p.first_name, ' ', p.last_name) as patient_name,
+                   p.hn
+            FROM bills b
+            LEFT JOIN patients p ON b.patient_id = p.id
+            WHERE b.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAYS)
+            ORDER BY b.created_at DESC
+            LIMIT 50
+        `);
+        context.bills = bills;
 
-        if (isAboutPriorities) {
-            // Get PN cases with comprehensive SOAP notes and patient data
-            const [pnWithSoap] = await db.execute(`
-                SELECT pn.id, pn.pn_code,
-                       CONCAT(p.first_name, ' ', p.last_name) as patient_name,
-                       p.hn,
-                       p.medical_conditions,
-                       p.current_medications,
-                       p.allergies,
-                       YEAR(CURDATE()) - YEAR(p.date_of_birth) as age,
-                       p.gender,
-                       pn.status,
-                       pn.diagnosis,
-                       pn.chief_complaint,
-                       pn.treatment_plan,
-                       pn.created_at,
-                       s.subjective,
-                       s.objective,
-                       s.assessment,
-                       s.plan,
-                       s.created_at as soap_date,
-                       s.pain_level,
-                       s.functional_status
-                FROM pn_cases pn
-                LEFT JOIN patients p ON pn.patient_id = p.id
-                LEFT JOIN soap_notes s ON pn.id = s.pn_case_id
-                WHERE pn.status IN ('PENDING', 'IN_PROGRESS')
-                ORDER BY pn.created_at DESC, s.created_at DESC
-                LIMIT 15
-            `);
-            context.pnCases = pnWithSoap;
+        // 6. ALWAYS load active courses
+        const [courses] = await db.execute(`
+            SELECT c.*,
+                   CONCAT(p.first_name, ' ', p.last_name) as patient_name,
+                   p.hn
+            FROM courses c
+            LEFT JOIN patients p ON c.patient_id = p.id
+            WHERE c.status = 'ACTIVE' OR c.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAYS)
+            ORDER BY c.created_at DESC
+            LIMIT 30
+        `);
+        context.courses = courses;
 
-            // Get recent SOAP notes for trend analysis
-            const [recentSoap] = await db.execute(`
-                SELECT s.*,
-                       CONCAT(p.first_name, ' ', p.last_name) as patient_name,
-                       p.hn,
-                       pn.pn_code,
-                       pn.diagnosis
-                FROM soap_notes s
-                LEFT JOIN pn_cases pn ON s.pn_case_id = pn.id
-                LEFT JOIN patients p ON pn.patient_id = p.id
-                WHERE s.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAYS)
-                ORDER BY s.created_at DESC
-                LIMIT 20
-            `);
-            context.soapNotes = recentSoap;
-        }
-
-        // Get overall statistics
+        // 7. ALWAYS load overall statistics
         const [stats] = await db.execute(`
             SELECT
                 (SELECT COUNT(*) FROM patients) as total_patients,
@@ -230,14 +228,17 @@ async function gatherContext(db, userId, query) {
                 (SELECT COUNT(*) FROM pn_cases WHERE status = 'IN_PROGRESS') as in_progress_cases,
                 (SELECT COUNT(*) FROM pn_cases WHERE status = 'COMPLETED' AND DATE(updated_at) = ?) as completed_today,
                 (SELECT COUNT(*) FROM bills WHERE payment_status = 'UNPAID') as unpaid_bills,
-                (SELECT COUNT(*) FROM soap_notes WHERE DATE(created_at) = ?) as soap_notes_today
-        `, [today, today, today]);
+                (SELECT COUNT(*) FROM bills WHERE payment_status = 'PAID' AND DATE(payment_date) = ?) as paid_today,
+                (SELECT SUM(total_amount) FROM bills WHERE payment_status = 'PAID' AND MONTH(payment_date) = MONTH(CURDATE())) as revenue_this_month,
+                (SELECT COUNT(*) FROM soap_notes WHERE DATE(created_at) = ?) as soap_notes_today,
+                (SELECT COUNT(*) FROM courses WHERE status = 'ACTIVE') as active_courses
+        `, [today, today, today, today]);
         context.statistics = stats[0] || {};
 
-        // Check if asking about specific patient by HN
-        const hnMatch = query.match(/HN[:\s]*(\d+)|patient\s+(\d+)/i);
+        // 8. Check if asking about specific patient by HN (supports HNPT250112 format)
+        const hnMatch = query.match(/HN[\w\s:]*?([A-Z0-9]+)/i) || query.match(/patient\s+([A-Z0-9]+)/i);
         if (hnMatch) {
-            const hn = hnMatch[1] || hnMatch[2];
+            const hn = hnMatch[1];
             const [patientDetail] = await db.execute(`
                 SELECT
                     p.*,
@@ -247,9 +248,9 @@ async function gatherContext(db, userId, query) {
                     (SELECT MAX(appointment_date) FROM appointments WHERE patient_id = p.id) as last_visit,
                     (SELECT diagnosis FROM pn_cases WHERE patient_id = p.id ORDER BY created_at DESC LIMIT 1) as latest_diagnosis
                 FROM patients p
-                WHERE p.hn = ?
+                WHERE p.hn LIKE ?
                 LIMIT 1
-            `, [hn]);
+            `, [`%${hn}%`]);
 
             if (patientDetail.length > 0) {
                 context.specificPatient = patientDetail[0];
@@ -262,7 +263,7 @@ async function gatherContext(db, userId, query) {
                     LEFT JOIN clinics c ON pn.clinic_id = c.id
                     WHERE pn.patient_id = ?
                     ORDER BY pn.created_at DESC
-                    LIMIT 10
+                    LIMIT 20
                 `, [patientDetail[0].id]);
                 context.specificPatient.pnCases = patientPNCases;
 
@@ -273,27 +274,39 @@ async function gatherContext(db, userId, query) {
                     LEFT JOIN pn_cases pn ON s.pn_case_id = pn.id
                     WHERE pn.patient_id = ?
                     ORDER BY s.created_at DESC
-                    LIMIT 10
+                    LIMIT 20
                 `, [patientDetail[0].id]);
                 context.specificPatient.soapNotes = patientSoap;
+
+                // Get this patient's bills
+                const [patientBills] = await db.execute(`
+                    SELECT * FROM bills WHERE patient_id = ? ORDER BY created_at DESC LIMIT 10
+                `, [patientDetail[0].id]);
+                context.specificPatient.bills = patientBills;
+
+                // Get this patient's appointments
+                const [patientAppts] = await db.execute(`
+                    SELECT * FROM appointments WHERE patient_id = ? ORDER BY appointment_date DESC LIMIT 10
+                `, [patientDetail[0].id]);
+                context.specificPatient.appointments = patientAppts;
             }
         }
 
-        // Check if query is about how to use the system
-        const isAboutUsage = /how to|how do|guide|help|create|add|register|use|feature/i.test(query);
-
-        if (isAboutUsage) {
-            context.features = {
-                patients: 'Register and manage patient records with HN numbers, medical history, conditions, medications',
-                appointments: 'Schedule appointments by date, time, clinic. Track status (scheduled, completed, cancelled)',
-                pnCases: 'Create PN (Physiotherapy Notes) cases with referral details, diagnosis, chief complaint',
-                soapNotes: 'Add SOAP notes (Subjective, Objective, Assessment, Plan) with pain levels and functional status',
-                bills: 'Generate bills and invoices for services rendered',
-                courses: 'Manage physiotherapy courses and sessions for patients',
-                statistics: 'View reports, analytics, and dashboard summaries',
-                broadcast: 'Send SMS/Email campaigns to patients for reminders and marketing'
-            };
-        }
+        // 9. ALWAYS provide database schema info
+        context.dbSchema = {
+            tables: {
+                patients: 'Patient records with HN, demographics, medical history, conditions, allergies, medications',
+                appointments: 'Scheduled appointments with dates, times, status (SCHEDULED, COMPLETED, CANCELLED)',
+                pn_cases: 'Physiotherapy Notes cases with diagnosis, chief complaint, treatment plan, status',
+                soap_notes: 'SOAP notes (Subjective, Objective, Assessment, Plan) with pain levels and functional status',
+                bills: 'Bills and invoices with payment status (PAID, UNPAID), amounts, payment methods',
+                courses: 'Treatment courses for patients with sessions and status',
+                clinics: 'Clinic locations and information',
+                users: 'Staff users with roles (ADMIN, THERAPIST, etc.)'
+            },
+            hnFormat: 'HN format is like HNPT250112 (contains letters and numbers)',
+            dateFormat: 'Dates stored as YYYY-MM-DD'
+        };
 
         return context;
 
@@ -413,28 +426,62 @@ Current Time: ${moment().format('YYYY-MM-DD HH:mm')}
         if (context.statistics.in_progress_cases) prompt += `- In-Progress Cases: ${context.statistics.in_progress_cases}\n`;
         if (context.statistics.completed_today) prompt += `- Completed Today: ${context.statistics.completed_today}\n`;
         if (context.statistics.unpaid_bills) prompt += `- Unpaid Bills: ${context.statistics.unpaid_bills}\n`;
+        if (context.statistics.paid_today) prompt += `- Bills Paid Today: ${context.statistics.paid_today}\n`;
+        if (context.statistics.revenue_this_month) prompt += `- Revenue This Month: ${context.statistics.revenue_this_month} THB\n`;
         if (context.statistics.soap_notes_today) prompt += `- SOAP Notes Today: ${context.statistics.soap_notes_today}\n`;
+        if (context.statistics.active_courses) prompt += `- Active Courses: ${context.statistics.active_courses}\n`;
         prompt += '\n';
     }
 
-    // Add features guide
-    if (context.features) {
-        prompt += `System Features:\n`;
-        Object.entries(context.features).forEach(([key, value]) => {
-            prompt += `- ${key.charAt(0).toUpperCase() + key.slice(1)}: ${value}\n`;
+    // Add recent bills
+    if (context.bills && context.bills.length > 0) {
+        prompt += `Recent Bills (Last 30 Days - ${context.bills.length} bills):\n`;
+        context.bills.slice(0, 10).forEach(bill => {
+            prompt += `- ${bill.bill_code || 'BILL-' + bill.id}: ${bill.patient_name || 'Walk-in'} (HN: ${bill.hn || 'N/A'})`;
+            prompt += ` | Amount: ${bill.total_amount} THB | Status: ${bill.payment_status}`;
+            if (bill.payment_date) prompt += ` | Paid: ${bill.payment_date}`;
+            prompt += `\n`;
         });
         prompt += '\n';
     }
 
+    // Add active courses
+    if (context.courses && context.courses.length > 0) {
+        prompt += `Active Treatment Courses (${context.courses.length} courses):\n`;
+        context.courses.slice(0, 10).forEach(course => {
+            prompt += `- ${course.patient_name} (HN: ${course.hn})`;
+            prompt += ` | Status: ${course.status}`;
+            if (course.total_sessions) prompt += ` | Sessions: ${course.completed_sessions || 0}/${course.total_sessions}`;
+            prompt += `\n`;
+        });
+        prompt += '\n';
+    }
+
+    // Add database schema information
+    if (context.dbSchema) {
+        prompt += `DATABASE SCHEMA:\n`;
+        prompt += `Available Tables:\n`;
+        Object.entries(context.dbSchema.tables).forEach(([table, desc]) => {
+            prompt += `- ${table}: ${desc}\n`;
+        });
+        prompt += `\nData Formats:\n`;
+        prompt += `- HN Format: ${context.dbSchema.hnFormat}\n`;
+        prompt += `- Date Format: ${context.dbSchema.dateFormat}\n`;
+        prompt += '\n';
+    }
+
     prompt += `IMPORTANT INSTRUCTIONS:
-- You have READ-ONLY access to all patient data for analysis and recommendations
+- You have READ-ONLY access to ALL patient data for analysis and recommendations
 - You CANNOT modify, enter, or update any patient records
-- Provide specific, actionable recommendations based on the data
+- ALWAYS have complete database context - no need to ask for missing data
+- Provide specific, actionable recommendations based on the comprehensive data
 - Reference patients by HN number when making recommendations
+- When asked about specific HN (like HNPT250112), look for it in the patient database
 - Be professional, empathetic, and HIPAA-compliant in responses
 - Keep responses concise but informative (2-4 paragraphs max)
 - When recommending priorities, explain WHY based on medical conditions, pain levels, or SOAP trends
-- Answer in a friendly, helpful tone that makes complex medical information accessible`;
+- Answer in a friendly, helpful tone that makes complex medical information accessible
+- You understand the complete database structure - use this knowledge to answer any question`;
 
     return prompt;
 }

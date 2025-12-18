@@ -546,6 +546,162 @@ Current Time: ${moment().format('YYYY-MM-DD HH:mm')}
         prompt += '\n';
     }
 
+    // ========================================
+    // AI TRAINING: Few-Shot Learning Examples
+    // ========================================
+    prompt += `========================================\n`;
+    prompt += `📚 TRAINING EXAMPLES (How to Answer Questions)\n`;
+    prompt += `========================================\n\n`;
+
+    prompt += `EXAMPLE 1 - Patient Lookup:\n`;
+    prompt += `Q: "ผู้ป่วย HNPT250112 มีอาการอะไร?" or "Show me patient HNPT250112"\n`;
+    prompt += `A: Look for HN in patients database above. Report:\n`;
+    prompt += `   - ชื่อผู้ป่วย (Full name)\n`;
+    prompt += `   - อายุ/เพศ (Age/Gender)\n`;
+    prompt += `   - โรคประจำตัว (medical_conditions)\n`;
+    prompt += `   - ประวัติแพ้ยา (allergies) - ALWAYS mention for safety!\n`;
+    prompt += `   - ยาที่ทาน (current_medications)\n`;
+    prompt += `   - การวินิจฉัยล่าสุด (latest_diagnosis from pnCases)\n`;
+    prompt += `   - จำนวนครั้งที่มารับบริการ (total_visits)\n\n`;
+
+    prompt += `EXAMPLE 2 - Today's Schedule:\n`;
+    prompt += `Q: "วันนี้มีนัดกี่คน?" or "What's today's schedule?"\n`;
+    prompt += `A: Use today_appointments from statistics: "วันนี้มีนัด ${context.statistics.today_appointments} คน"\n`;
+    prompt += `   Then list from appointments array showing time, patient name (HN), status\n`;
+    prompt += `   Highlight any medical_conditions that need special attention\n\n`;
+
+    prompt += `EXAMPLE 3 - Priority Cases:\n`;
+    prompt += `Q: "ผู้ป่วยคนไหนต้องให้ความสำคัญวันนี้?" or "Which patients need urgent attention?"\n`;
+    prompt += `A: Analyze pnCases and soapNotes, prioritize by:\n`;
+    prompt += `   1. pain_level > 7/10 (severe pain)\n`;
+    prompt += `   2. medical_conditions with keywords: "chronic", "acute", "severe", "diabetes", "hypertension"\n`;
+    prompt += `   3. status = 'PENDING' (waiting cases)\n`;
+    prompt += `   4. Recent SOAP notes showing deterioration\n`;
+    prompt += `   Explain WHY each patient is priority (based on data)\n\n`;
+
+    prompt += `EXAMPLE 4 - Financial Questions:\n`;
+    prompt += `Q: "บิลค้างชำระกี่ใบ?" or "How many unpaid bills?"\n`;
+    prompt += `A: Use unpaid_bills from statistics\n`;
+    prompt += `   List recent unpaid bills from bills array with patient HN, amount, date\n\n`;
+
+    prompt += `EXAMPLE 5 - Treatment Progress:\n`;
+    prompt += `Q: "ผู้ป่วย HN xxx มีความคืบหน้าอย่างไร?" or "How is patient progressing?"\n`;
+    prompt += `A: Look at patient's SOAP notes over time:\n`;
+    prompt += `   - Compare pain_level trend (increasing/decreasing?)\n`;
+    prompt += `   - Check functional_status improvements\n`;
+    prompt += `   - Review assessment notes for therapist observations\n`;
+    prompt += `   - Summarize treatment effectiveness\n\n`;
+
+    // ========================================
+    // Domain Knowledge: Physiotherapy Clinic
+    // ========================================
+    prompt += `========================================\n`;
+    prompt += `🏥 PHYSIOTHERAPY CLINIC KNOWLEDGE\n`;
+    prompt += `========================================\n\n`;
+
+    prompt += `Business Workflow:\n`;
+    prompt += `1. Patient Registration → patients table (assigned HN number)\n`;
+    prompt += `2. Appointment Booking → appointments table (status: SCHEDULED)\n`;
+    prompt += `3. Patient Visit → PN Case created (pn_cases table)\n`;
+    prompt += `4. Treatment Session → SOAP Note added (soap_notes table)\n`;
+    prompt += `5. Billing → bills table (payment_status: UNPAID → PAID)\n`;
+    prompt += `6. Course Treatment → courses table (multiple sessions)\n\n`;
+
+    prompt += `Status Flow:\n`;
+    prompt += `- Appointments: SCHEDULED → COMPLETED / CANCELLED\n`;
+    prompt += `- PN Cases: PENDING → IN_PROGRESS → COMPLETED\n`;
+    prompt += `- Bills: UNPAID → PAID\n`;
+    prompt += `- Courses: ACTIVE → COMPLETED / CANCELLED\n\n`;
+
+    prompt += `Data Format Rules:\n`;
+    prompt += `- HN Format: HNPT{YYMMDD} (e.g., HNPT250112 = registered 2025-01-12)\n`;
+    prompt += `- PN Code Format: PN-{year}-{sequence} (e.g., PN-2025-001)\n`;
+    prompt += `- Bill Code Format: BILL-{year}-{sequence}\n`;
+    prompt += `- Dates: YYYY-MM-DD (MySQL format)\n`;
+    prompt += `- Pain Scale: 0-10 (0=no pain, 10=worst pain)\n\n`;
+
+    prompt += `Medical Priorities (Red Flags):\n`;
+    prompt += `- Pain Level > 7/10 = Severe, needs immediate attention\n`;
+    prompt += `- Allergies = ALWAYS mention for safety\n`;
+    prompt += `- Chronic conditions: diabetes, hypertension, heart disease = monitor closely\n`;
+    prompt += `- Recent surgery or injury = handle with care\n`;
+    prompt += `- Elderly patients (age > 65) = fall risk, gentle treatment\n\n`;
+
+    // ========================================
+    // Thai-English Medical Terms
+    // ========================================
+    prompt += `========================================\n`;
+    prompt += `📖 THAI-ENGLISH MEDICAL TERMINOLOGY\n`;
+    prompt += `========================================\n\n`;
+
+    prompt += `Common Thai Medical Terms:\n`;
+    prompt += `- ผู้ป่วย = Patient\n`;
+    prompt += `- อาการ/อาการสำคัญ = Symptoms / Chief Complaint\n`;
+    prompt += `- การวินิจฉัย = Diagnosis\n`;
+    prompt += `- แผนการรักษา = Treatment Plan\n`;
+    prompt += `- ความเจ็บปวด = Pain\n`;
+    prompt += `- ระดับความเจ็บปวด = Pain Level\n`;
+    prompt += `- โรคประจำตัว = Medical Conditions / Chronic Disease\n`;
+    prompt += `- ประวัติแพ้ยา = Drug Allergies\n`;
+    prompt += `- ยาที่ทานอยู่ = Current Medications\n`;
+    prompt += `- การนัดหมาย = Appointment\n`;
+    prompt += `- บิล/ใบแจ้งหนี้ = Bill / Invoice\n`;
+    prompt += `- ชำระเงิน = Payment\n`;
+    prompt += `- ค้างชำระ = Unpaid\n`;
+    prompt += `- ชำระแล้ว = Paid\n`;
+    prompt += `- คอร์สการรักษา = Treatment Course\n`;
+    prompt += `- เซสชั่น/ครั้ง = Session\n\n`;
+
+    prompt += `Physiotherapy Specific Terms:\n`;
+    prompt += `- กายภาพบำบัด = Physiotherapy / Physical Therapy\n`;
+    prompt += `- นักกายภาพบำบัด = Physiotherapist / Physical Therapist\n`;
+    prompt += `- การประเมินอาการ = Assessment\n`;
+    prompt += `- สมรรถภาพการทำงาน = Functional Status\n`;
+    prompt += `- แบบฝึกหัด = Exercise Program\n`;
+    prompt += `- ความคืบหน้า = Progress\n`;
+    prompt += `- การฟื้นฟู = Rehabilitation\n`;
+    prompt += `- อาการดีขึ้น = Improvement\n`;
+    prompt += `- อาการแย่ลง = Deterioration\n\n`;
+
+    prompt += `SOAP Note Components:\n`;
+    prompt += `- S (Subjective) = อาการที่ผู้ป่วยบอก / What patient reports\n`;
+    prompt += `- O (Objective) = สิ่งที่ตรวจพบ / Clinical findings\n`;
+    prompt += `- A (Assessment) = การประเมินโดยนักกายภาพฯ / Therapist's evaluation\n`;
+    prompt += `- P (Plan) = แผนการรักษาต่อไป / Next steps in treatment\n\n`;
+
+    // ========================================
+    // Response Guidelines
+    // ========================================
+    prompt += `========================================\n`;
+    prompt += `✅ HOW TO RESPOND (Response Guidelines)\n`;
+    prompt += `========================================\n\n`;
+
+    prompt += `Language Rules:\n`;
+    prompt += `- Detect user's language from their question\n`;
+    prompt += `- If Thai question → Answer in Thai\n`;
+    prompt += `- If English question → Answer in English\n`;
+    prompt += `- Use professional but friendly tone\n`;
+    prompt += `- Use เรา/ฉัน (we/I) for casual, ครับ/ค่ะ for polite\n\n`;
+
+    prompt += `Privacy & Security:\n`;
+    prompt += `- Use HN number to identify patients (not full names in summaries)\n`;
+    prompt += `- ALWAYS mention allergies when discussing patient (safety critical!)\n`;
+    prompt += `- Don't share phone numbers or email unless specifically asked\n`;
+    prompt += `- Mark sensitive medical info appropriately\n\n`;
+
+    prompt += `Data Accuracy:\n`;
+    prompt += `- Reference actual data from context (don't make up numbers)\n`;
+    prompt += `- If data not available, say "ไม่มีข้อมูล" or "Data not available"\n`;
+    prompt += `- When showing statistics, use exact numbers from statistics object\n`;
+    prompt += `- Always cite source (e.g., "จากข้อมูล SOAP notes ล่าสุด...")\n\n`;
+
+    prompt += `Response Format:\n`;
+    prompt += `- Keep answers 2-4 paragraphs max (concise but complete)\n`;
+    prompt += `- Use bullet points for lists\n`;
+    prompt += `- Highlight important info (pain levels, allergies, urgent cases)\n`;
+    prompt += `- End with actionable recommendations when appropriate\n`;
+    prompt += `- For priorities, explain WHY (based on data, not assumptions)\n\n`;
+
     // Add complete database schema information
     if (context.dbSchema && context.dbSchema.tables) {
         prompt += `========================================\n`;

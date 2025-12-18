@@ -1,7 +1,7 @@
 // middleware/theme.js - Theme Settings Middleware
 /**
- * Middleware to load theme settings (app name and logo) for all views
- * Sets res.locals.appName and res.locals.appLogoUrl
+ * Middleware to load theme settings (app name, logo, and colors) for all views
+ * Sets res.locals with theme configuration
  */
 const loadThemeSettings = async (req, res, next) => {
     // Skip for API routes and static files - only needed for HTML views
@@ -20,22 +20,54 @@ const loadThemeSettings = async (req, res, next) => {
             // If no database connection, use defaults
             res.locals.appName = 'PhysioConext';
             res.locals.appLogoUrl = '/uploads/physioconext.svg';
+            res.locals.themeColors = {
+                headerColorStart: '#0284c7',
+                headerColorEnd: '#14b8a6',
+                sidebarColorStart: '#667eea',
+                sidebarColorEnd: '#764ba2'
+            };
             return next();
         }
 
-        // Get app name
-        const [appNameRows] = await db.execute(
-            `SELECT setting_value FROM system_settings WHERE setting_key = 'app_name' LIMIT 1`
+        // Get all theme settings in one query
+        const [settings] = await db.execute(
+            `SELECT setting_key, setting_value FROM system_settings
+             WHERE setting_key IN ('app_name', 'app_logo_url', 'header_color_start', 'header_color_end', 'sidebar_color_start', 'sidebar_color_end')`
         );
 
-        // Get logo URL
-        const [logoRows] = await db.execute(
-            `SELECT setting_value FROM system_settings WHERE setting_key = 'app_logo_url' LIMIT 1`
-        );
+        // Initialize with defaults
+        res.locals.appName = 'PhysioConext';
+        res.locals.appLogoUrl = '/uploads/physioconext.svg';
+        res.locals.themeColors = {
+            headerColorStart: '#0284c7',
+            headerColorEnd: '#14b8a6',
+            sidebarColorStart: '#667eea',
+            sidebarColorEnd: '#764ba2'
+        };
 
-        // Set in res.locals so all views can access
-        res.locals.appName = appNameRows.length > 0 ? appNameRows[0].setting_value : 'PhysioConext';
-        res.locals.appLogoUrl = logoRows.length > 0 ? logoRows[0].setting_value : '/uploads/physioconext.svg';
+        // Apply database values
+        settings.forEach(row => {
+            switch (row.setting_key) {
+                case 'app_name':
+                    res.locals.appName = row.setting_value;
+                    break;
+                case 'app_logo_url':
+                    res.locals.appLogoUrl = row.setting_value;
+                    break;
+                case 'header_color_start':
+                    res.locals.themeColors.headerColorStart = row.setting_value;
+                    break;
+                case 'header_color_end':
+                    res.locals.themeColors.headerColorEnd = row.setting_value;
+                    break;
+                case 'sidebar_color_start':
+                    res.locals.themeColors.sidebarColorStart = row.setting_value;
+                    break;
+                case 'sidebar_color_end':
+                    res.locals.themeColors.sidebarColorEnd = row.setting_value;
+                    break;
+            }
+        });
 
         next();
     } catch (error) {
@@ -44,6 +76,12 @@ const loadThemeSettings = async (req, res, next) => {
         // Use defaults on error and continue
         res.locals.appName = 'PhysioConext';
         res.locals.appLogoUrl = '/uploads/physioconext.svg';
+        res.locals.themeColors = {
+            headerColorStart: '#0284c7',
+            headerColorEnd: '#14b8a6',
+            sidebarColorStart: '#667eea',
+            sidebarColorEnd: '#764ba2'
+        };
         next();
     }
 };

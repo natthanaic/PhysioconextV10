@@ -3,6 +3,16 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
+<!-- Dynamic Theme Colors -->
+<% if (typeof themeColors !== 'undefined' && themeColors) { %>
+<style>
+    :root {
+        --theme-header-gradient: linear-gradient(135deg, <%= themeColors.headerColorStart %> 0%, <%= themeColors.headerColorEnd %> 100%);
+        --theme-sidebar-gradient: linear-gradient(180deg, <%= themeColors.sidebarColorStart %> 0%, <%= themeColors.sidebarColorEnd %> 100%);
+    }
+</style>
+<% } %>
+
 <!-- Top Navigation Bar -->
 <nav class="top-navbar">
     <div class="container-fluid">

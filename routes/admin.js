@@ -1880,7 +1880,7 @@ router.post('/booking/settings', async (req, res) => {
 // ========================================
 
 // Get theme settings
-router.get('/theme-settings', async (req, res) => {
+router.get('/theme-settings', authenticateToken, async (req, res) => {
     try {
         const db = req.app.locals.db;
 
@@ -1931,7 +1931,7 @@ router.get('/theme-settings', async (req, res) => {
 });
 
 // Save theme settings
-router.post('/theme-settings', uploadLogo.single('logo'), async (req, res) => {
+router.post('/theme-settings', authenticateToken, uploadLogo.single('logo'), async (req, res) => {
     try {
         const db = req.app.locals.db;
         const {

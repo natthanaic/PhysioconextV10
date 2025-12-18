@@ -1887,39 +1887,99 @@ router.get('/theme-settings', authenticateToken, async (req, res) => {
         // Get all theme settings
         const [settings] = await db.execute(
             `SELECT setting_key, setting_value FROM system_settings
-             WHERE setting_key IN ('app_name', 'app_logo_url', 'header_color_start', 'header_color_end', 'sidebar_color_start', 'sidebar_color_end')`
+             WHERE setting_key LIKE 'theme_%' OR setting_key IN ('app_name', 'app_logo_url')`
         );
 
-        // Build response object
+        // Build response object with defaults
         const themeSettings = {
+            // Basic branding
             appName: 'PhysioConext',
             logoUrl: null,
+            faviconUrl: null,
+            browserTitle: 'PhysioConext',
+
+            // Header & Sidebar gradients
             headerColorStart: '#0284c7',
             headerColorEnd: '#14b8a6',
             sidebarColorStart: '#667eea',
-            sidebarColorEnd: '#764ba2'
+            sidebarColorEnd: '#764ba2',
+
+            // Primary & Accent colors
+            primaryColor: '#0284c7',
+            accentColor: '#14b8a6',
+            successColor: '#10b981',
+            warningColor: '#f59e0b',
+            errorColor: '#ef4444',
+
+            // Card & Panel colors
+            cardBgColor: '#ffffff',
+            cardBorderColor: '#e5e7eb',
+            panelHeaderBg: '#f9fafb',
+
+            // Login page
+            loginBgImage: null,
+            loginLogo: null,
+            loginWelcomeText: 'Welcome to PhysioConext',
+
+            // Typography
+            fontHeadings: 'Plus Jakarta Sans',
+            fontBody: 'Plus Jakarta Sans',
+            fontSizeScale: 'medium',
+
+            // Layout
+            borderRadius: '8',
+            sidebarWidth: '240',
+            sidebarCollapsed: false,
+            sidebarPosition: 'left',
+
+            // Dark mode
+            darkModeEnabled: false
         };
 
+        // Apply database values
         settings.forEach(row => {
-            switch (row.setting_key) {
-                case 'app_name':
-                    themeSettings.appName = row.setting_value;
-                    break;
-                case 'app_logo_url':
-                    themeSettings.logoUrl = row.setting_value;
-                    break;
-                case 'header_color_start':
-                    themeSettings.headerColorStart = row.setting_value;
-                    break;
-                case 'header_color_end':
-                    themeSettings.headerColorEnd = row.setting_value;
-                    break;
-                case 'sidebar_color_start':
-                    themeSettings.sidebarColorStart = row.setting_value;
-                    break;
-                case 'sidebar_color_end':
-                    themeSettings.sidebarColorEnd = row.setting_value;
-                    break;
+            const key = row.setting_key;
+            const value = row.setting_value;
+
+            // Map database keys to camelCase response keys
+            const keyMap = {
+                'app_name': 'appName',
+                'app_logo_url': 'logoUrl',
+                'theme_favicon_url': 'faviconUrl',
+                'theme_browser_title': 'browserTitle',
+                'header_color_start': 'headerColorStart',
+                'header_color_end': 'headerColorEnd',
+                'sidebar_color_start': 'sidebarColorStart',
+                'sidebar_color_end': 'sidebarColorEnd',
+                'theme_primary_color': 'primaryColor',
+                'theme_accent_color': 'accentColor',
+                'theme_success_color': 'successColor',
+                'theme_warning_color': 'warningColor',
+                'theme_error_color': 'errorColor',
+                'theme_card_bg_color': 'cardBgColor',
+                'theme_card_border_color': 'cardBorderColor',
+                'theme_panel_header_bg': 'panelHeaderBg',
+                'theme_login_bg_image': 'loginBgImage',
+                'theme_login_logo': 'loginLogo',
+                'theme_login_welcome_text': 'loginWelcomeText',
+                'theme_font_headings': 'fontHeadings',
+                'theme_font_body': 'fontBody',
+                'theme_font_size_scale': 'fontSizeScale',
+                'theme_border_radius': 'borderRadius',
+                'theme_sidebar_width': 'sidebarWidth',
+                'theme_sidebar_collapsed': 'sidebarCollapsed',
+                'theme_sidebar_position': 'sidebarPosition',
+                'theme_dark_mode_enabled': 'darkModeEnabled'
+            };
+
+            const responseKey = keyMap[key];
+            if (responseKey) {
+                // Convert string booleans to actual booleans
+                if (responseKey === 'sidebarCollapsed' || responseKey === 'darkModeEnabled') {
+                    themeSettings[responseKey] = value === 'true' || value === '1';
+                } else {
+                    themeSettings[responseKey] = value;
+                }
             }
         });
 
@@ -1934,83 +1994,79 @@ router.get('/theme-settings', authenticateToken, async (req, res) => {
 router.post('/theme-settings', authenticateToken, uploadLogo.single('logo'), async (req, res) => {
     try {
         const db = req.app.locals.db;
-        const {
-            appName,
-            headerColorStart,
-            headerColorEnd,
-            sidebarColorStart,
-            sidebarColorEnd
-        } = req.body;
         const userId = req.user.id;
 
-        console.log('[THEME] Saving theme settings:', { appName, headerColorStart, headerColorEnd, sidebarColorStart, sidebarColorEnd });
+        console.log('[THEME] Saving theme settings:', Object.keys(req.body));
 
-        if (!appName || appName.trim() === '') {
+        // Helper function to save a setting
+        const saveSetting = async (key, value) => {
+            if (value !== undefined && value !== null && value !== '') {
+                await db.execute(
+                    `INSERT INTO system_settings (setting_key, setting_value, updated_by)
+                     VALUES (?, ?, ?)
+                     ON DUPLICATE KEY UPDATE setting_value = ?, updated_by = ?, updated_at = CURRENT_TIMESTAMP`,
+                    [key, value, userId, value, userId]
+                );
+            }
+        };
+
+        // Validate required fields
+        if (!req.body.appName || req.body.appName.trim() === '') {
             return res.status(400).json({ error: 'Application name is required' });
         }
 
-        // Save app name
-        await db.execute(
-            `INSERT INTO system_settings (setting_key, setting_value, updated_by)
-             VALUES ('app_name', ?, ?)
-             ON DUPLICATE KEY UPDATE setting_value = ?, updated_by = ?, updated_at = CURRENT_TIMESTAMP`,
-            [appName.trim(), userId, appName.trim(), userId]
-        );
+        // Save all settings
+        await saveSetting('app_name', req.body.appName?.trim());
+        await saveSetting('theme_browser_title', req.body.browserTitle?.trim());
 
-        // Save header colors
-        if (headerColorStart) {
-            await db.execute(
-                `INSERT INTO system_settings (setting_key, setting_value, updated_by)
-                 VALUES ('header_color_start', ?, ?)
-                 ON DUPLICATE KEY UPDATE setting_value = ?, updated_by = ?, updated_at = CURRENT_TIMESTAMP`,
-                [headerColorStart, userId, headerColorStart, userId]
-            );
-        }
+        // Header & Sidebar
+        await saveSetting('header_color_start', req.body.headerColorStart);
+        await saveSetting('header_color_end', req.body.headerColorEnd);
+        await saveSetting('sidebar_color_start', req.body.sidebarColorStart);
+        await saveSetting('sidebar_color_end', req.body.sidebarColorEnd);
 
-        if (headerColorEnd) {
-            await db.execute(
-                `INSERT INTO system_settings (setting_key, setting_value, updated_by)
-                 VALUES ('header_color_end', ?, ?)
-                 ON DUPLICATE KEY UPDATE setting_value = ?, updated_by = ?, updated_at = CURRENT_TIMESTAMP`,
-                [headerColorEnd, userId, headerColorEnd, userId]
-            );
-        }
+        // Primary & Accent colors
+        await saveSetting('theme_primary_color', req.body.primaryColor);
+        await saveSetting('theme_accent_color', req.body.accentColor);
+        await saveSetting('theme_success_color', req.body.successColor);
+        await saveSetting('theme_warning_color', req.body.warningColor);
+        await saveSetting('theme_error_color', req.body.errorColor);
 
-        // Save sidebar colors
-        if (sidebarColorStart) {
-            await db.execute(
-                `INSERT INTO system_settings (setting_key, setting_value, updated_by)
-                 VALUES ('sidebar_color_start', ?, ?)
-                 ON DUPLICATE KEY UPDATE setting_value = ?, updated_by = ?, updated_at = CURRENT_TIMESTAMP`,
-                [sidebarColorStart, userId, sidebarColorStart, userId]
-            );
-        }
+        // Card & Panel colors
+        await saveSetting('theme_card_bg_color', req.body.cardBgColor);
+        await saveSetting('theme_card_border_color', req.body.cardBorderColor);
+        await saveSetting('theme_panel_header_bg', req.body.panelHeaderBg);
 
-        if (sidebarColorEnd) {
-            await db.execute(
-                `INSERT INTO system_settings (setting_key, setting_value, updated_by)
-                 VALUES ('sidebar_color_end', ?, ?)
-                 ON DUPLICATE KEY UPDATE setting_value = ?, updated_by = ?, updated_at = CURRENT_TIMESTAMP`,
-                [sidebarColorEnd, userId, sidebarColorEnd, userId]
-            );
-        }
+        // Login page
+        await saveSetting('theme_login_bg_image', req.body.loginBgImage);
+        await saveSetting('theme_login_logo', req.body.loginLogo);
+        await saveSetting('theme_login_welcome_text', req.body.loginWelcomeText);
+
+        // Typography
+        await saveSetting('theme_font_headings', req.body.fontHeadings);
+        await saveSetting('theme_font_body', req.body.fontBody);
+        await saveSetting('theme_font_size_scale', req.body.fontSizeScale);
+
+        // Layout
+        await saveSetting('theme_border_radius', req.body.borderRadius);
+        await saveSetting('theme_sidebar_width', req.body.sidebarWidth);
+        await saveSetting('theme_sidebar_collapsed', req.body.sidebarCollapsed);
+        await saveSetting('theme_sidebar_position', req.body.sidebarPosition);
+
+        // Dark mode
+        await saveSetting('theme_dark_mode_enabled', req.body.darkModeEnabled);
 
         // Save logo URL if file was uploaded
         if (req.file) {
             const logoUrl = `/public/images/logos/${req.file.filename}`;
-            await db.execute(
-                `INSERT INTO system_settings (setting_key, setting_value, updated_by)
-                 VALUES ('app_logo_url', ?, ?)
-                 ON DUPLICATE KEY UPDATE setting_value = ?, updated_by = ?, updated_at = CURRENT_TIMESTAMP`,
-                [logoUrl, userId, logoUrl, userId]
-            );
+            await saveSetting('app_logo_url', logoUrl);
         }
 
         // Audit log
         await auditLog(db, userId, 'update', 'theme_settings', 0, null, {
-            appName,
+            appName: req.body.appName,
             logoUpdated: !!req.file,
-            colorsUpdated: !!(headerColorStart || headerColorEnd || sidebarColorStart || sidebarColorEnd)
+            fieldsUpdated: Object.keys(req.body).length
         }, req);
 
         console.log('[THEME] Theme settings saved successfully');
@@ -2018,7 +2074,7 @@ router.post('/theme-settings', authenticateToken, uploadLogo.single('logo'), asy
         res.json({
             success: true,
             message: 'Theme settings saved successfully',
-            appName: appName.trim()
+            appName: req.body.appName.trim()
         });
     } catch (error) {
         console.error('[THEME] Error saving theme settings:', error);

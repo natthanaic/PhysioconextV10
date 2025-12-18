@@ -1031,7 +1031,8 @@ router.post('/notification/sms/test', authenticateToken, authorize('ADMIN'), asy
             querystring.stringify({
                 msisdn: smsConfig.recipients,
                 message: message,
-                sender: smsConfig.sender || 'RehabPlus'
+                sender: smsConfig.sender || 'RehabPlus',
+                force: smsConfig.smsType || 'standard'
             }),
             {
                 headers: {
@@ -1121,6 +1122,89 @@ router.post('/notification/sms/test', authenticateToken, authorize('ADMIN'), asy
             });
         }
         console.error('==========================================');
+    }
+});
+
+// Check SMS credit balance
+router.get('/notification/sms/credit', authenticateToken, authorize('ADMIN'), async (req, res) => {
+    try {
+        const db = req.app.locals.db;
+
+        console.log('💳 Checking SMS credit balance...');
+
+        // Get SMS settings
+        const [settings] = await db.execute(`
+            SELECT setting_value FROM notification_settings WHERE setting_type = 'sms' LIMIT 1
+        `);
+
+        if (settings.length === 0) {
+            console.log('❌ No SMS settings found');
+            return res.status(404).json({ error: 'SMS settings not configured' });
+        }
+
+        const smsConfig = JSON.parse(settings[0].setting_value);
+
+        // Use type from query parameter if provided, otherwise use saved setting
+        const smsType = req.query.type || smsConfig.smsType || 'standard';
+
+        console.log('📋 SMS Config loaded:', {
+            hasApiKey: !!smsConfig.apiKey,
+            hasApiSecret: !!smsConfig.apiSecret,
+            savedSmsType: smsConfig.smsType,
+            requestedType: req.query.type,
+            usingType: smsType
+        });
+
+        if (!smsConfig.apiKey || !smsConfig.apiSecret) {
+            console.log('❌ Missing API credentials');
+            return res.status(400).json({ error: 'API credentials not configured' });
+        }
+
+        // Check credit via Thai Bulk SMS API
+        const axios = require('axios');
+        const authString = Buffer.from(`${smsConfig.apiKey}:${smsConfig.apiSecret}`).toString('base64');
+
+        console.log('🔄 Calling Thai Bulk SMS credit API with type:', smsType);
+
+        const response = await axios.get(
+            `https://api-v2.thaibulksms.com/credit?force=${smsType}`,
+            {
+                headers: {
+                    'accept': 'application/json',
+                    'Authorization': `Basic ${authString}`
+                }
+            }
+        );
+
+        console.log('✅ Credit API response:', response.data);
+
+        // Parse the nested credit structure
+        const remainingCredit = response.data.remaining_credit || {};
+        const credit = remainingCredit[smsType] || 0;
+
+        console.log(`📊 Credit balance for ${smsType}:`, credit);
+        console.log(`📊 All credits:`, remainingCredit);
+
+        res.json({
+            success: true,
+            credit: credit,
+            smsType: smsType,
+            allCredits: remainingCredit
+        });
+    } catch (error) {
+        console.error('❌ Check SMS credit error:', error.message);
+        if (error.response) {
+            console.error('API Error Response:', {
+                status: error.response.status,
+                data: error.response.data
+            });
+            res.status(400).json({
+                error: 'Failed to check SMS credit',
+                details: error.response.data
+            });
+        } else {
+            res.status(500).json({ error: 'Failed to check SMS credit: ' + error.message });
+        }
     }
 });
 
@@ -1796,24 +1880,110 @@ router.post('/booking/settings', async (req, res) => {
 // ========================================
 
 // Get theme settings
-router.get('/theme-settings', async (req, res) => {
+router.get('/theme-settings', authenticateToken, async (req, res) => {
     try {
         const db = req.app.locals.db;
 
-        // Get app name
-        const [appNameRows] = await db.execute(
-            `SELECT setting_value FROM system_settings WHERE setting_key = 'app_name' LIMIT 1`
+        // Get all theme settings
+        const [settings] = await db.execute(
+            `SELECT setting_key, setting_value FROM system_settings
+             WHERE setting_key LIKE 'theme_%' OR setting_key IN ('app_name', 'app_logo_url')`
         );
 
-        // Get logo URL
-        const [logoRows] = await db.execute(
-            `SELECT setting_value FROM system_settings WHERE setting_key = 'app_logo_url' LIMIT 1`
-        );
+        // Build response object with defaults
+        const themeSettings = {
+            // Basic branding
+            appName: 'PhysioConext',
+            logoUrl: null,
+            faviconUrl: null,
+            browserTitle: 'PhysioConext',
 
-        res.json({
-            appName: appNameRows.length > 0 ? appNameRows[0].setting_value : 'PhysioConext',
-            logoUrl: logoRows.length > 0 ? logoRows[0].setting_value : null
+            // Header & Sidebar gradients
+            headerColorStart: '#0284c7',
+            headerColorEnd: '#14b8a6',
+            sidebarColorStart: '#667eea',
+            sidebarColorEnd: '#764ba2',
+
+            // Primary & Accent colors
+            primaryColor: '#0284c7',
+            accentColor: '#14b8a6',
+            successColor: '#10b981',
+            warningColor: '#f59e0b',
+            errorColor: '#ef4444',
+
+            // Card & Panel colors
+            cardBgColor: '#ffffff',
+            cardBorderColor: '#e5e7eb',
+            panelHeaderBg: '#f9fafb',
+
+            // Login page
+            loginBgImage: null,
+            loginLogo: null,
+            loginWelcomeText: 'Welcome to PhysioConext',
+
+            // Typography
+            fontHeadings: 'Plus Jakarta Sans',
+            fontBody: 'Plus Jakarta Sans',
+            fontSizeScale: 'medium',
+
+            // Layout
+            borderRadius: '8',
+            sidebarWidth: '240',
+            sidebarCollapsed: false,
+            sidebarPosition: 'left',
+
+            // Dark mode
+            darkModeEnabled: false
+        };
+
+        // Apply database values
+        settings.forEach(row => {
+            const key = row.setting_key;
+            const value = row.setting_value;
+
+            // Map database keys to camelCase response keys
+            const keyMap = {
+                'app_name': 'appName',
+                'app_logo_url': 'logoUrl',
+                'theme_favicon_url': 'faviconUrl',
+                'theme_browser_title': 'browserTitle',
+                'header_color_start': 'headerColorStart',
+                'header_color_end': 'headerColorEnd',
+                'sidebar_color_start': 'sidebarColorStart',
+                'sidebar_color_end': 'sidebarColorEnd',
+                'theme_primary_color': 'primaryColor',
+                'theme_accent_color': 'accentColor',
+                'theme_success_color': 'successColor',
+                'theme_warning_color': 'warningColor',
+                'theme_error_color': 'errorColor',
+                'theme_card_bg_color': 'cardBgColor',
+                'theme_card_border_color': 'cardBorderColor',
+                'theme_panel_header_bg': 'panelHeaderBg',
+                'theme_login_bg_image': 'loginBgImage',
+                'theme_login_logo': 'loginLogo',
+                'theme_login_welcome_text': 'loginWelcomeText',
+                'theme_font_headings': 'fontHeadings',
+                'theme_font_body': 'fontBody',
+                'theme_font_size_scale': 'fontSizeScale',
+                'theme_border_radius': 'borderRadius',
+                'theme_sidebar_width': 'sidebarWidth',
+                'theme_sidebar_collapsed': 'sidebarCollapsed',
+                'theme_sidebar_position': 'sidebarPosition',
+                'theme_dark_mode_enabled': 'darkModeEnabled'
+            };
+
+            const responseKey = keyMap[key];
+            if (responseKey) {
+                // Convert string booleans to actual booleans
+                if (responseKey === 'sidebarCollapsed' || responseKey === 'darkModeEnabled') {
+                    themeSettings[responseKey] = value === 'true' || value === '1';
+                } else {
+                    themeSettings[responseKey] = value;
+                }
+            }
         });
+
+        res.json(themeSettings);
     } catch (error) {
         console.error('Error fetching theme settings:', error);
         res.status(500).json({ error: 'Failed to fetch theme settings' });
@@ -1821,46 +1991,95 @@ router.get('/theme-settings', async (req, res) => {
 });
 
 // Save theme settings
-router.post('/theme-settings', uploadLogo.single('logo'), async (req, res) => {
+router.post('/theme-settings', authenticateToken, uploadLogo.single('logo'), async (req, res) => {
     try {
         const db = req.app.locals.db;
-        const { appName } = req.body;
         const userId = req.user.id;
 
-        if (!appName || appName.trim() === '') {
+        console.log('[THEME] Saving theme settings:', Object.keys(req.body));
+
+        // Helper function to save a setting
+        const saveSetting = async (key, value) => {
+            if (value !== undefined && value !== null && value !== '') {
+                await db.execute(
+                    `INSERT INTO system_settings (setting_key, setting_value, updated_by)
+                     VALUES (?, ?, ?)
+                     ON DUPLICATE KEY UPDATE setting_value = ?, updated_by = ?, updated_at = CURRENT_TIMESTAMP`,
+                    [key, value, userId, value, userId]
+                );
+            }
+        };
+
+        // Validate required fields
+        if (!req.body.appName || req.body.appName.trim() === '') {
             return res.status(400).json({ error: 'Application name is required' });
         }
 
-        // Save app name
-        await db.execute(
-            `INSERT INTO system_settings (setting_key, setting_value, updated_by)
-             VALUES ('app_name', ?, ?)
-             ON DUPLICATE KEY UPDATE setting_value = ?, updated_by = ?, updated_at = CURRENT_TIMESTAMP`,
-            [appName.trim(), userId, appName.trim(), userId]
-        );
+        // Save all settings
+        await saveSetting('app_name', req.body.appName?.trim());
+        await saveSetting('theme_browser_title', req.body.browserTitle?.trim());
+
+        // Header & Sidebar
+        await saveSetting('header_color_start', req.body.headerColorStart);
+        await saveSetting('header_color_end', req.body.headerColorEnd);
+        await saveSetting('sidebar_color_start', req.body.sidebarColorStart);
+        await saveSetting('sidebar_color_end', req.body.sidebarColorEnd);
+
+        // Primary & Accent colors
+        await saveSetting('theme_primary_color', req.body.primaryColor);
+        await saveSetting('theme_accent_color', req.body.accentColor);
+        await saveSetting('theme_success_color', req.body.successColor);
+        await saveSetting('theme_warning_color', req.body.warningColor);
+        await saveSetting('theme_error_color', req.body.errorColor);
+
+        // Card & Panel colors
+        await saveSetting('theme_card_bg_color', req.body.cardBgColor);
+        await saveSetting('theme_card_border_color', req.body.cardBorderColor);
+        await saveSetting('theme_panel_header_bg', req.body.panelHeaderBg);
+
+        // Login page
+        await saveSetting('theme_login_bg_image', req.body.loginBgImage);
+        await saveSetting('theme_login_logo', req.body.loginLogo);
+        await saveSetting('theme_login_welcome_text', req.body.loginWelcomeText);
+
+        // Typography
+        await saveSetting('theme_font_headings', req.body.fontHeadings);
+        await saveSetting('theme_font_body', req.body.fontBody);
+        await saveSetting('theme_font_size_scale', req.body.fontSizeScale);
+
+        // Layout
+        await saveSetting('theme_border_radius', req.body.borderRadius);
+        await saveSetting('theme_sidebar_width', req.body.sidebarWidth);
+        await saveSetting('theme_sidebar_collapsed', req.body.sidebarCollapsed);
+        await saveSetting('theme_sidebar_position', req.body.sidebarPosition);
+
+        // Dark mode
+        await saveSetting('theme_dark_mode_enabled', req.body.darkModeEnabled);
 
         // Save logo URL if file was uploaded
         if (req.file) {
             const logoUrl = `/public/images/logos/${req.file.filename}`;
-            await db.execute(
-                `INSERT INTO system_settings (setting_key, setting_value, updated_by)
-                 VALUES ('app_logo_url', ?, ?)
-                 ON DUPLICATE KEY UPDATE setting_value = ?, updated_by = ?, updated_at = CURRENT_TIMESTAMP`,
-                [logoUrl, userId, logoUrl, userId]
-            );
+            await saveSetting('app_logo_url', logoUrl);
         }
 
         // Audit log
-        await auditLog(db, userId, 'update', 'theme_settings', 0, null, { appName, logoUpdated: !!req.file }, req);
+        await auditLog(db, userId, 'update', 'theme_settings', 0, null, {
+            appName: req.body.appName,
+            logoUpdated: !!req.file,
+            fieldsUpdated: Object.keys(req.body).length
+        }, req);
+
+        console.log('[THEME] Theme settings saved successfully');
 
         res.json({
             success: true,
             message: 'Theme settings saved successfully',
-            appName: appName.trim()
+            appName: req.body.appName.trim()
         });
     } catch (error) {
-        console.error('Error saving theme settings:', error);
-        res.status(500).json({ error: 'Failed to save theme settings' });
+        console.error('[THEME] Error saving theme settings:', error);
+        console.error('[THEME] Error details:', error.message);
+        res.status(500).json({ error: 'Failed to save theme settings', details: error.message });
     }
 });
 
@@ -1997,6 +2216,941 @@ router.post('/ai-settings/test', authenticateToken, authorize('ADMIN'), async (r
         }
 
         res.status(500).json({ error: errorMessage });
+    }
+});
+
+// ========================================
+// BILLS MANAGEMENT
+// ========================================
+
+// Get all bills
+router.get('/bills', authenticateToken, async (req, res) => {
+    try {
+        const db = req.app.locals.db;
+        const { startDate, endDate, status, patientId, clinicId } = req.query;
+
+        let query = `
+            SELECT
+                b.*,
+                CONCAT(COALESCE(p.first_name, ''), ' ', COALESCE(p.last_name, '')) as patient_name,
+                p.phone as patient_phone,
+                p.email as patient_email,
+                p.hn as patient_hn,
+                c.name as clinic_name,
+                CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as created_by_name
+            FROM bills b
+            LEFT JOIN patients p ON b.patient_id = p.id
+            LEFT JOIN clinics c ON b.clinic_id = c.id
+            LEFT JOIN users u ON b.created_by = u.id
+            WHERE 1=1
+        `;
+        const params = [];
+
+        if (startDate && endDate) {
+            query += ` AND b.bill_date BETWEEN ? AND ?`;
+            params.push(startDate, endDate);
+        }
+
+        if (status) {
+            query += ` AND b.payment_status = ?`;
+            params.push(status);
+        }
+
+        if (patientId) {
+            query += ` AND b.patient_id = ?`;
+            params.push(patientId);
+        }
+
+        if (clinicId) {
+            query += ` AND b.clinic_id = ?`;
+            params.push(clinicId);
+        }
+
+        query += ` ORDER BY b.bill_date DESC, b.created_at DESC`;
+
+        const [bills] = await db.execute(query, params);
+        res.json(bills);
+    } catch (error) {
+        console.error('Get bills error:', error);
+        res.status(500).json({ error: 'Failed to retrieve bills' });
+    }
+});
+
+// Get billing services
+router.get('/bills/services', authenticateToken, async (req, res) => {
+    try {
+        const db = req.app.locals.db;
+        console.log('[SERVICES] Fetching services from database');
+
+        const [services] = await db.execute('SELECT * FROM services ORDER BY service_name');
+
+        console.log('[SERVICES] Found', services.length, 'services');
+        if (services.length > 0) {
+            console.log('[SERVICES] Sample:', JSON.stringify(services[0]).substring(0, 200));
+        }
+
+        res.json(services);
+    } catch (error) {
+        console.error('[SERVICES] Error:', error);
+        console.error('[SERVICES] Error details:', error.message);
+        return res.json([]); // Return empty array instead of error
+    }
+});
+
+// Get single bill
+router.get('/bills/:id', authenticateToken, async (req, res) => {
+    try {
+        const db = req.app.locals.db;
+        const { id } = req.params;
+
+        const [bills] = await db.execute(`
+            SELECT
+                b.*,
+                CONCAT(COALESCE(p.first_name, ''), ' ', COALESCE(p.last_name, '')) as patient_name,
+                p.phone as patient_phone,
+                p.email as patient_email,
+                p.hn as patient_hn,
+                c.name as clinic_name
+            FROM bills b
+            LEFT JOIN patients p ON b.patient_id = p.id
+            LEFT JOIN clinics c ON b.clinic_id = c.id
+            WHERE b.id = ?
+        `, [id]);
+
+        if (bills.length === 0) {
+            return res.status(404).json({ error: 'Bill not found' });
+        }
+
+        // Get bill items
+        const [items] = await db.execute(`
+            SELECT bi.*, s.service_name, s.service_code
+            FROM bill_items bi
+            LEFT JOIN services s ON bi.service_id = s.id
+            WHERE bi.bill_id = ?
+        `, [id]);
+
+        res.json({
+            ...bills[0],
+            items: items
+        });
+    } catch (error) {
+        console.error('Get bill error:', error);
+        res.status(500).json({ error: 'Failed to retrieve bill' });
+    }
+});
+
+// Create new bill
+router.post('/bills', authenticateToken, async (req, res) => {
+    const connection = await req.app.locals.db.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        console.log('[BILLS] Creating bill with data:', JSON.stringify(req.body).substring(0, 500));
+
+        const {
+            patient_id,
+            clinic_id,
+            pn_case_id,
+            appointment_id,
+            bill_date,
+            items,
+            discount,
+            tax,
+            walk_in_name,
+            walk_in_phone,
+            payment_method,
+            bill_notes,
+            payment_notes
+        } = req.body;
+
+        // Generate bill_code: BILL-{year}-{sequence}
+        const currentYear = new Date().getFullYear();
+        const [lastBill] = await connection.execute(`
+            SELECT bill_code FROM bills
+            WHERE bill_code LIKE ?
+            ORDER BY bill_code DESC
+            LIMIT 1
+        `, [`BILL-${currentYear}-%`]);
+
+        let sequence = 1;
+        if (lastBill.length > 0) {
+            const lastCode = lastBill[0].bill_code;
+            const lastSequence = parseInt(lastCode.split('-')[2]);
+            sequence = lastSequence + 1;
+        }
+        const bill_code = `BILL-${currentYear}-${String(sequence).padStart(3, '0')}`;
+        console.log('[BILLS] Generated bill_code:', bill_code);
+
+        // Calculate totals from items
+        let subtotal = 0;
+        if (items && items.length > 0) {
+            subtotal = items.reduce((sum, item) => sum + (parseFloat(item.total_price) || 0), 0);
+        }
+        const total_amount = subtotal - (parseFloat(discount) || 0) + (parseFloat(tax) || 0);
+
+        // Insert bill
+        console.log('[BILLS] Inserting bill into database...');
+        const [result] = await connection.execute(`
+            INSERT INTO bills (
+                bill_code, patient_id, walk_in_name, walk_in_phone, clinic_id, bill_date,
+                subtotal, discount, tax, total_amount,
+                payment_status, payment_method, payment_notes, bill_notes,
+                appointment_id, pn_case_id, course_id, is_course_cutting, created_by
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [
+            bill_code,
+            patient_id || null,
+            walk_in_name || null,
+            walk_in_phone || null,
+            clinic_id || null,
+            bill_date,
+            subtotal,
+            discount || 0,
+            tax || 0,
+            total_amount,
+            'UNPAID',
+            payment_method || null,
+            payment_notes || null,
+            bill_notes || null,
+            appointment_id || null,
+            pn_case_id || null,
+            null, // course_id - not used in standard bill creation
+            0,    // is_course_cutting - false for standard bills
+            req.user.id
+        ]);
+
+        const billId = result.insertId;
+        console.log('[BILLS] Bill created with ID:', billId);
+
+        // Insert bill items
+        if (items && items.length > 0) {
+            console.log('[BILLS] Inserting', items.length, 'bill items...');
+            for (const item of items) {
+                await connection.execute(`
+                    INSERT INTO bill_items (
+                        bill_id, service_id, service_name, quantity, unit_price, total_price, notes
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                `, [
+                    billId,
+                    item.service_id || null,
+                    item.service_name || null,
+                    item.quantity,
+                    item.unit_price,
+                    item.total_price,
+                    item.notes || null
+                ]);
+            }
+            console.log('[BILLS] All bill items inserted successfully');
+        }
+
+        await connection.commit();
+        console.log('[BILLS] Transaction committed successfully');
+
+        res.status(201).json({
+            success: true,
+            message: 'Bill created successfully',
+            id: billId,
+            bill_code: bill_code
+        });
+    } catch (error) {
+        await connection.rollback();
+        console.error('[BILLS] Create bill error:', error);
+        console.error('[BILLS] Error message:', error.message);
+        console.error('[BILLS] Error code:', error.code);
+        console.error('[BILLS] SQL:', error.sql);
+        res.status(500).json({
+            error: 'Failed to create bill',
+            details: error.message
+        });
+    } finally {
+        connection.release();
+    }
+});
+
+// Update bill
+router.put('/bills/:id', authenticateToken, async (req, res) => {
+    const connection = await req.app.locals.db.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        const { id } = req.params;
+        const {
+            patient_id,
+            clinic_id,
+            pn_case_id,
+            bill_date,
+            due_date,
+            items,
+            subtotal,
+            discount,
+            tax,
+            total_amount,
+            payment_status,
+            payment_method,
+            payment_date,
+            notes
+        } = req.body;
+
+        // Update bill
+        await connection.execute(`
+            UPDATE bills SET
+                patient_id = ?,
+                clinic_id = ?,
+                pn_case_id = ?,
+                bill_date = ?,
+                due_date = ?,
+                subtotal = ?,
+                discount = ?,
+                tax = ?,
+                total_amount = ?,
+                payment_status = ?,
+                payment_method = ?,
+                payment_date = ?,
+                notes = ?
+            WHERE id = ?
+        `, [
+            patient_id, clinic_id, pn_case_id, bill_date, due_date,
+            subtotal, discount, tax, total_amount,
+            payment_status, payment_method, payment_date, notes, id
+        ]);
+
+        // Delete existing items and insert new ones
+        if (items !== undefined) {
+            await connection.execute('DELETE FROM bill_items WHERE bill_id = ?', [id]);
+
+            if (items.length > 0) {
+                for (const item of items) {
+                    await connection.execute(`
+                        INSERT INTO bill_items (
+                            bill_id, service_id, service_name, quantity, unit_price, total_price, notes
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                    `, [
+                        id,
+                        item.service_id,
+                        item.service_name,
+                        item.quantity,
+                        item.unit_price,
+                        item.total_price,
+                        item.notes
+                    ]);
+                }
+            }
+        }
+
+        await connection.commit();
+
+        res.json({ success: true, message: 'Bill updated successfully' });
+    } catch (error) {
+        await connection.rollback();
+        console.error('Update bill error:', error);
+        res.status(500).json({ error: 'Failed to update bill' });
+    } finally {
+        connection.release();
+    }
+});
+
+// Update bill payment status
+// Update bill payment status (accepts both PUT and PATCH)
+router.patch('/bills/:id/payment-status', authenticateToken, async (req, res) => {
+    try {
+        const db = req.app.locals.db;
+        const { id } = req.params;
+        const { payment_status, payment_method, payment_date } = req.body;
+
+        console.log('[BILLS] Updating payment status for bill ID:', id);
+        console.log('[BILLS] New status:', payment_status, 'Method:', payment_method, 'Date:', payment_date);
+
+        // Set payment_date to now if marking as PAID and no date provided
+        const finalPaymentDate = payment_status === 'PAID' && !payment_date
+            ? new Date().toISOString().split('T')[0]
+            : payment_date;
+
+        await db.execute(`
+            UPDATE bills SET
+                payment_status = ?,
+                payment_method = ?,
+                payment_date = ?
+            WHERE id = ?
+        `, [payment_status, payment_method || null, finalPaymentDate || null, id]);
+
+        console.log('[BILLS] Payment status updated successfully');
+        res.json({ success: true, message: 'Payment status updated successfully' });
+    } catch (error) {
+        console.error('[BILLS] Update payment status error:', error);
+        console.error('[BILLS] Error details:', error.message);
+        res.status(500).json({ error: 'Failed to update payment status', details: error.message });
+    }
+});
+
+// Also support PUT for backwards compatibility
+router.put('/bills/:id/payment-status', authenticateToken, async (req, res) => {
+    try {
+        const db = req.app.locals.db;
+        const { id } = req.params;
+        const { payment_status, payment_method, payment_date } = req.body;
+
+        console.log('[BILLS] Updating payment status for bill ID:', id);
+        console.log('[BILLS] New status:', payment_status, 'Method:', payment_method, 'Date:', payment_date);
+
+        // Set payment_date to now if marking as PAID and no date provided
+        const finalPaymentDate = payment_status === 'PAID' && !payment_date
+            ? new Date().toISOString().split('T')[0]
+            : payment_date;
+
+        await db.execute(`
+            UPDATE bills SET
+                payment_status = ?,
+                payment_method = ?,
+                payment_date = ?
+            WHERE id = ?
+        `, [payment_status, payment_method || null, finalPaymentDate || null, id]);
+
+        console.log('[BILLS] Payment status updated successfully');
+        res.json({ success: true, message: 'Payment status updated successfully' });
+    } catch (error) {
+        console.error('[BILLS] Update payment status error:', error);
+        console.error('[BILLS] Error details:', error.message);
+        res.status(500).json({ error: 'Failed to update payment status', details: error.message });
+    }
+});
+
+// Delete bill
+router.delete('/bills/:id', authenticateToken, authorize('ADMIN'), async (req, res) => {
+    const connection = await req.app.locals.db.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        const { id } = req.params;
+
+        // Delete bill items first
+        await connection.execute('DELETE FROM bill_items WHERE bill_id = ?', [id]);
+
+        // Delete bill
+        await connection.execute('DELETE FROM bills WHERE id = ?', [id]);
+
+        await connection.commit();
+
+        res.json({ success: true, message: 'Bill deleted successfully' });
+    } catch (error) {
+        await connection.rollback();
+        console.error('Delete bill error:', error);
+        res.status(500).json({ error: 'Failed to delete bill' });
+    } finally {
+        connection.release();
+    }
+});
+
+// ========================================
+// INVOICES MANAGEMENT
+// ========================================
+
+// Get all invoices
+router.get('/invoices', authenticateToken, async (req, res) => {
+    try {
+        const db = req.app.locals.db;
+
+        // Check if invoices table exists
+        const [tables] = await db.execute(`
+            SELECT TABLE_NAME
+            FROM information_schema.TABLES
+            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'invoices'
+        `);
+
+        if (tables.length === 0) {
+            console.log('Invoices table does not exist, returning empty array');
+            return res.json([]);
+        }
+
+        const { startDate, endDate, status, customer, clinicId } = req.query;
+
+        let query = `
+            SELECT
+                i.*,
+                c.name as clinic_name,
+                CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as created_by_name
+            FROM invoices i
+            LEFT JOIN clinics c ON i.clinic_id = c.id
+            LEFT JOIN users u ON i.created_by = u.id
+            WHERE 1=1
+        `;
+        const params = [];
+
+        if (startDate && endDate) {
+            query += ` AND i.invoice_date BETWEEN ? AND ?`;
+            params.push(startDate, endDate);
+        }
+
+        if (status) {
+            query += ` AND i.payment_status = ?`;
+            params.push(status);
+        }
+
+        if (customer) {
+            query += ` AND (i.customer_name LIKE ? OR i.customer_email LIKE ? OR i.customer_phone LIKE ?)`;
+            const searchTerm = `%${customer}%`;
+            params.push(searchTerm, searchTerm, searchTerm);
+        }
+
+        if (clinicId) {
+            query += ` AND i.clinic_id = ?`;
+            params.push(clinicId);
+        }
+
+        query += ` ORDER BY i.invoice_date DESC, i.created_at DESC`;
+
+        const [invoices] = await db.execute(query, params);
+        res.json(invoices);
+    } catch (error) {
+        console.error('Get invoices error:', error);
+        console.error('Error details:', error.message);
+        return res.json([]); // Return empty array instead of error
+    }
+});
+
+// Get invoices summary
+router.get('/invoices/summary', authenticateToken, async (req, res) => {
+    try {
+        const db = req.app.locals.db;
+
+        // Check if invoices table exists
+        const [tables] = await db.execute(`
+            SELECT TABLE_NAME
+            FROM information_schema.TABLES
+            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'invoices'
+        `);
+
+        if (tables.length === 0) {
+            console.log('Invoices table does not exist, returning zero summary');
+            return res.json({
+                total_count: 0,
+                paid_count: 0,
+                pending_count: 0,
+                overdue_count: 0,
+                total_amount: 0,
+                paid_amount: 0,
+                pending_amount: 0,
+                overdue_amount: 0
+            });
+        }
+
+        const [summary] = await db.execute(`
+            SELECT
+                COUNT(*) as total_count,
+                COALESCE(SUM(CASE WHEN payment_status = 'PAID' THEN 1 ELSE 0 END), 0) as paid_count,
+                COALESCE(SUM(CASE WHEN payment_status = 'PENDING' THEN 1 ELSE 0 END), 0) as pending_count,
+                COALESCE(SUM(CASE WHEN payment_status = 'OVERDUE' THEN 1 ELSE 0 END), 0) as overdue_count,
+                COALESCE(SUM(total_amount), 0) as total_amount,
+                COALESCE(SUM(CASE WHEN payment_status = 'PAID' THEN total_amount ELSE 0 END), 0) as paid_amount,
+                COALESCE(SUM(CASE WHEN payment_status = 'PENDING' THEN total_amount ELSE 0 END), 0) as pending_amount,
+                COALESCE(SUM(CASE WHEN payment_status = 'OVERDUE' THEN total_amount ELSE 0 END), 0) as overdue_amount
+            FROM invoices
+        `);
+
+        res.json(summary[0]);
+    } catch (error) {
+        console.error('Get invoices summary error:', error);
+        console.error('Error details:', error.message);
+        return res.json({
+            total_count: 0,
+            paid_count: 0,
+            pending_count: 0,
+            overdue_count: 0,
+            total_amount: 0,
+            paid_amount: 0,
+            pending_amount: 0,
+            overdue_amount: 0
+        }); // Return zero summary instead of error
+    }
+});
+
+// Get single invoice
+router.get('/invoices/:id', authenticateToken, async (req, res) => {
+    try {
+        const db = req.app.locals.db;
+        const { id } = req.params;
+
+        const [invoices] = await db.execute(`
+            SELECT
+                i.*,
+                c.name as clinic_name
+            FROM invoices i
+            LEFT JOIN clinics c ON i.clinic_id = c.id
+            WHERE i.id = ?
+        `, [id]);
+
+        if (invoices.length === 0) {
+            return res.status(404).json({ error: 'Invoice not found' });
+        }
+
+        // Get invoice items
+        const [items] = await db.execute(`
+            SELECT * FROM invoice_items WHERE invoice_id = ?
+        `, [id]);
+
+        res.json({
+            ...invoices[0],
+            items: items
+        });
+    } catch (error) {
+        console.error('Get invoice error:', error);
+        res.status(500).json({ error: 'Failed to retrieve invoice' });
+    }
+});
+
+// Create new invoice
+router.post('/invoices', authenticateToken, async (req, res) => {
+    const connection = await req.app.locals.db.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        const {
+            invoice_number,
+            customer_name,
+            customer_email,
+            customer_phone,
+            customer_address,
+            clinic_id,
+            invoice_date,
+            due_date,
+            items,
+            subtotal,
+            discount_amount,
+            tax_amount,
+            total_amount,
+            payment_status,
+            payment_method,
+            notes
+        } = req.body;
+
+        // Insert invoice
+        const [result] = await connection.execute(`
+            INSERT INTO invoices (
+                invoice_number, customer_name, customer_email, customer_phone, customer_address,
+                clinic_id, invoice_date, due_date,
+                subtotal, discount_amount, tax_amount, total_amount,
+                payment_status, payment_method, notes, created_by
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [
+            invoice_number, customer_name, customer_email, customer_phone, customer_address,
+            clinic_id, invoice_date, due_date,
+            subtotal, discount_amount || 0, tax_amount || 0, total_amount,
+            payment_status || 'PENDING', payment_method, notes, req.user.id
+        ]);
+
+        const invoiceId = result.insertId;
+
+        // Insert invoice items
+        if (items && items.length > 0) {
+            for (const item of items) {
+                await connection.execute(`
+                    INSERT INTO invoice_items (
+                        invoice_id, service_id, item_name, description, quantity, unit_price, total_price
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                `, [
+                    invoiceId,
+                    item.service_id || null,
+                    item.item_name || item.service_name || '',
+                    item.description || '',
+                    item.quantity,
+                    item.unit_price,
+                    item.total_price
+                ]);
+            }
+        }
+
+        await connection.commit();
+
+        res.status(201).json({
+            success: true,
+            message: 'Invoice created successfully',
+            id: invoiceId
+        });
+    } catch (error) {
+        await connection.rollback();
+        console.error('Create invoice error:', error);
+        res.status(500).json({ error: 'Failed to create invoice' });
+    } finally {
+        connection.release();
+    }
+});
+
+// Update invoice
+router.put('/invoices/:id', authenticateToken, async (req, res) => {
+    const connection = await req.app.locals.db.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        const { id } = req.params;
+        const {
+            invoice_number,
+            customer_name,
+            customer_email,
+            customer_phone,
+            customer_address,
+            clinic_id,
+            invoice_date,
+            due_date,
+            items,
+            subtotal,
+            discount_amount,
+            tax_amount,
+            total_amount,
+            payment_status,
+            payment_method,
+            payment_date,
+            notes
+        } = req.body;
+
+        // Update invoice
+        await connection.execute(`
+            UPDATE invoices SET
+                invoice_number = ?,
+                customer_name = ?,
+                customer_email = ?,
+                customer_phone = ?,
+                customer_address = ?,
+                clinic_id = ?,
+                invoice_date = ?,
+                due_date = ?,
+                subtotal = ?,
+                discount_amount = ?,
+                tax_amount = ?,
+                total_amount = ?,
+                payment_status = ?,
+                payment_method = ?,
+                payment_date = ?,
+                notes = ?
+            WHERE id = ?
+        `, [
+            invoice_number, customer_name, customer_email, customer_phone, customer_address,
+            clinic_id, invoice_date, due_date,
+            subtotal, discount_amount || 0, tax_amount || 0, total_amount,
+            payment_status, payment_method, payment_date, notes, id
+        ]);
+
+        // Delete existing items and insert new ones
+        if (items !== undefined) {
+            await connection.execute('DELETE FROM invoice_items WHERE invoice_id = ?', [id]);
+
+            if (items.length > 0) {
+                for (const item of items) {
+                    await connection.execute(`
+                        INSERT INTO invoice_items (
+                            invoice_id, service_id, item_name, description, quantity, unit_price, total_price
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                    `, [
+                        id,
+                        item.service_id || null,
+                        item.item_name || item.service_name || '',
+                        item.description || '',
+                        item.quantity,
+                        item.unit_price,
+                        item.total_price
+                    ]);
+                }
+            }
+        }
+
+        await connection.commit();
+
+        res.json({ success: true, message: 'Invoice updated successfully' });
+    } catch (error) {
+        await connection.rollback();
+        console.error('Update invoice error:', error);
+        res.status(500).json({ error: 'Failed to update invoice' });
+    } finally {
+        connection.release();
+    }
+});
+
+// Update invoice payment status
+router.put('/invoices/:id/payment-status', authenticateToken, async (req, res) => {
+    try {
+        const db = req.app.locals.db;
+        const { id } = req.params;
+        const { payment_status, payment_method, payment_date } = req.body;
+
+        await db.execute(`
+            UPDATE invoices SET
+                payment_status = ?,
+                payment_method = ?,
+                payment_date = ?
+            WHERE id = ?
+        `, [payment_status, payment_method, payment_date, id]);
+
+        res.json({ success: true, message: 'Payment status updated successfully' });
+    } catch (error) {
+        console.error('Update payment status error:', error);
+        res.status(500).json({ error: 'Failed to update payment status' });
+    }
+});
+
+// Delete invoice
+router.delete('/invoices/:id', authenticateToken, authorize('ADMIN'), async (req, res) => {
+    const connection = await req.app.locals.db.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        const { id } = req.params;
+
+        // Delete invoice items first
+        await connection.execute('DELETE FROM invoice_items WHERE invoice_id = ?', [id]);
+
+        // Delete invoice
+        await connection.execute('DELETE FROM invoices WHERE id = ?', [id]);
+
+        await connection.commit();
+
+        res.json({ success: true, message: 'Invoice deleted successfully' });
+    } catch (error) {
+        await connection.rollback();
+        console.error('Delete invoice error:', error);
+        res.status(500).json({ error: 'Failed to delete invoice' });
+    } finally {
+        connection.release();
+    }
+});
+
+// ========================================
+// Statistics Endpoints
+// ========================================
+
+// Get bills summary statistics
+router.get('/statistics/bills/summary', authenticateToken, async (req, res) => {
+    try {
+        const db = req.app.locals.db;
+        const { date_from, date_to } = req.query;
+
+        let dateFilter = '';
+        const params = [];
+
+        if (date_from && date_to) {
+            dateFilter = 'WHERE bill_date BETWEEN ? AND ?';
+            params.push(date_from, date_to);
+        }
+
+        const [summary] = await db.execute(`
+            SELECT
+                COUNT(*) as total_bills,
+                COALESCE(SUM(total_amount), 0) as total_revenue,
+                COALESCE(SUM(CASE WHEN payment_status = 'PAID' THEN total_amount ELSE 0 END), 0) as collected_revenue,
+                COALESCE(SUM(CASE WHEN payment_status != 'PAID' THEN total_amount ELSE 0 END), 0) as outstanding_revenue
+            FROM bills
+            ${dateFilter}
+        `, params);
+
+        res.json(summary[0]);
+    } catch (error) {
+        console.error('[STATISTICS] Bills summary error:', error);
+        res.status(500).json({ error: 'Failed to load bills summary' });
+    }
+});
+
+// Get bills statistics by clinic
+router.get('/statistics/bills/by-clinic', authenticateToken, async (req, res) => {
+    try {
+        const db = req.app.locals.db;
+
+        const [clinicStats] = await db.execute(`
+            SELECT
+                c.name as clinic_name,
+                COUNT(b.id) as total_bills,
+                COALESCE(SUM(b.total_amount), 0) as total_revenue,
+                COALESCE(SUM(CASE WHEN b.payment_status = 'PAID' THEN b.total_amount ELSE 0 END), 0) as collected_revenue
+            FROM clinics c
+            LEFT JOIN bills b ON c.id = b.clinic_id
+            GROUP BY c.id, c.name
+            ORDER BY total_revenue DESC
+        `);
+
+        res.json(clinicStats);
+    } catch (error) {
+        console.error('[STATISTICS] Bills by clinic error:', error);
+        res.status(500).json({ error: 'Failed to load clinic statistics' });
+    }
+});
+
+// Get detailed bills for statistics table
+router.get('/statistics/bills/detailed', authenticateToken, async (req, res) => {
+    try {
+        const db = req.app.locals.db;
+        const { date_from, date_to, limit = 50 } = req.query;
+
+        let dateFilter = '';
+        const params = [];
+
+        if (date_from && date_to) {
+            dateFilter = 'WHERE b.bill_date BETWEEN ? AND ?';
+            params.push(date_from, date_to);
+        }
+
+        params.push(parseInt(limit));
+
+        const [bills] = await db.execute(`
+            SELECT
+                b.id,
+                b.bill_code,
+                b.bill_date,
+                b.total_amount,
+                b.payment_status,
+                CONCAT(COALESCE(p.first_name, ''), ' ', COALESCE(p.last_name, '')) as patient_name,
+                p.hn,
+                c.name as clinic_name,
+                GROUP_CONCAT(DISTINCT s.service_name SEPARATOR ', ') as services
+            FROM bills b
+            LEFT JOIN patients p ON b.patient_id = p.id
+            LEFT JOIN clinics c ON b.clinic_id = c.id
+            LEFT JOIN bill_items bi ON b.id = bi.bill_id
+            LEFT JOIN services s ON bi.service_id = s.id
+            ${dateFilter}
+            GROUP BY b.id
+            ORDER BY b.bill_date DESC
+            LIMIT ?
+        `, params);
+
+        res.json(bills);
+    } catch (error) {
+        console.error('[STATISTICS] Detailed bills error:', error);
+        res.status(500).json({ error: 'Failed to load detailed bills' });
+    }
+});
+
+// Get service ranking by usage and revenue
+router.get('/statistics/services/ranking', authenticateToken, async (req, res) => {
+    try {
+        const db = req.app.locals.db;
+        const { date_from, date_to, limit = 10 } = req.query;
+
+        let dateFilter = '';
+        const params = [];
+
+        if (date_from && date_to) {
+            dateFilter = 'AND b.bill_date BETWEEN ? AND ?';
+            params.push(date_from, date_to);
+        }
+
+        params.push(parseInt(limit));
+
+        const [ranking] = await db.execute(`
+            SELECT
+                s.id,
+                s.service_name,
+                COUNT(DISTINCT bi.bill_id) as usage_count,
+                SUM(bi.quantity) as total_quantity,
+                SUM(bi.total_price) as total_revenue
+            FROM services s
+            INNER JOIN bill_items bi ON s.id = bi.service_id
+            INNER JOIN bills b ON bi.bill_id = b.id
+            WHERE 1=1 ${dateFilter}
+            GROUP BY s.id, s.service_name
+            ORDER BY total_revenue DESC
+            LIMIT ?
+        `, params);
+
+        res.json(ranking);
+    } catch (error) {
+        console.error('[STATISTICS] Service ranking error:', error);
+        res.status(500).json({ error: 'Failed to load service ranking' });
     }
 });
 

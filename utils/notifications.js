@@ -178,7 +178,8 @@ const sendSMSNotification = async (db, eventType, message) => {
             querystring.stringify({
                 msisdn: smsConfig.recipients,
                 message: message,
-                sender: smsConfig.sender || 'RehabPlus'
+                sender: smsConfig.sender || 'RehabPlus',
+                force: smsConfig.smsType || 'standard'
             }),
             {
                 headers: {
@@ -189,8 +190,8 @@ const sendSMSNotification = async (db, eventType, message) => {
             }
         );
 
-        // Check response
-        if (response.status === 200 && response.data) {
+        // Check response - accept any 2xx status code as success
+        if (response.status >= 200 && response.status < 300) {
             console.log(`✅ SMS notification sent successfully for event: ${eventType}`);
             console.log('SMS Response:', {
                 remainingCredit: response.data.remaining_credit,
@@ -232,6 +233,14 @@ const sendPatientSMS = async (db, phoneNumber, message) => {
 
         const smsConfig = JSON.parse(settings[0].setting_value);
 
+        console.log('📱 [Broadcast SMS Config]:', {
+            enabled: smsConfig.enabled,
+            smsType: smsConfig.smsType,
+            sender: smsConfig.sender,
+            hasApiKey: !!smsConfig.apiKey,
+            hasApiSecret: !!smsConfig.apiSecret
+        });
+
         // Check if SMS is enabled (strict integer comparison)
         if (smsConfig.enabled !== 1) {
             console.log('Patient SMS: Service is disabled');
@@ -266,7 +275,8 @@ const sendPatientSMS = async (db, phoneNumber, message) => {
             querystring.stringify({
                 msisdn: cleanPhone,
                 message: message,
-                sender: smsConfig.sender || 'RehabPlus'
+                sender: smsConfig.sender || 'RehabPlus',
+                force: smsConfig.smsType || 'standard'
             }),
             {
                 headers: {
@@ -277,23 +287,28 @@ const sendPatientSMS = async (db, phoneNumber, message) => {
             }
         );
 
-        // Check response
-        if (response.status === 200 && response.data) {
+        // Check response - accept any 2xx status code as success
+        if (response.status >= 200 && response.status < 300) {
             console.log(`✅ Patient SMS sent successfully to ${cleanPhone}`);
-            console.log('SMS Response:', {
-                remainingCredit: response.data.remaining_credit,
-                sentTo: response.data.phone_number_list,
-                failed: response.data.bad_phone_number_list
-            });
+            if (response.data) {
+                console.log('SMS Response:', {
+                    remainingCredit: response.data.remaining_credit,
+                    sentTo: response.data.phone_number_list,
+                    failed: response.data.bad_phone_number_list
+                });
+            }
             return true;
         } else {
             console.error(`Patient SMS failed: Status ${response.status}`);
             return false;
         }
     } catch (error) {
-        console.error('Patient SMS error:', error.message);
+        console.error(`❌ Patient SMS error for ${phoneNumber}:`, error.message);
         if (error.response) {
-            console.error('Thai Bulk SMS API error:', error.response.data);
+            console.error('Thai Bulk SMS API error:', {
+                status: error.response.status,
+                data: error.response.data
+            });
         }
         return false;
     }

@@ -1,0 +1,532 @@
+<!-- ShinoAI Right Sidebar -->
+<div id="shinoaiSidebar" class="shinoai-sidebar collapsed">
+    <!-- Sidebar Header -->
+    <div class="shinoai-header">
+        <div class="d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-2">
+                <div class="shinoai-avatar">
+                    <i class="bi bi-robot"></i>
+                </div>
+                <div>
+                    <h6 class="mb-0 shinoai-title">ShinoAI</h6>
+                    <small class="text-muted">Your AI Assistant</small>
+                </div>
+            </div>
+            <button class="btn-close-shinoai" onclick="toggleShinoAI()">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Chat Messages Container -->
+    <div class="shinoai-messages" id="shinoaiMessages">
+        <!-- Welcome Message -->
+        <div class="shinoai-message assistant">
+            <div class="message-avatar">
+                <i class="bi bi-robot"></i>
+            </div>
+            <div class="message-content">
+                <div class="message-bubble">
+                    <p class="mb-0">👋 Hello! I'm <strong>ShinoAI</strong>, your intelligent assistant.</p>
+                    <p class="mb-0 mt-2">I can help you with:</p>
+                    <ul class="mb-0 mt-2">
+                        <li>📋 Today's cases and appointments</li>
+                        <li>🎯 PN case recommendations</li>
+                        <li>📊 Sales and revenue summary</li>
+                        <li>❓ General questions about the system</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat Input Area -->
+    <div class="shinoai-footer">
+        <div class="shinoai-input-wrapper">
+            <textarea id="shinoaiInput" class="form-control shinoai-input" placeholder="Ask ShinoAI anything..." rows="1"></textarea>
+            <button id="sendShinoAIBtn" class="btn btn-primary btn-send-shinoai" onclick="sendShinoAIMessage()">
+                <i class="bi bi-send-fill"></i>
+            </button>
+        </div>
+        <div class="shinoai-footer-info">
+            <small>AI can make mistakes. Consider checking important information.</small>
+        </div>
+    </div>
+</div>
+
+<!-- Floating Toggle Button -->
+<button class="btn-shinoai-trigger" onclick="toggleShinoAI()" id="shinoaiTriggerBtn">
+    <i class="bi bi-robot"></i>
+</button>
+
+<style>
+/* ShinoAI Sidebar Styles */
+.shinoai-sidebar {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 380px;
+    height: 100vh;
+    background: #ffffff;
+    box-shadow: -5px 0 30px rgba(0,0,0,0.1);
+    z-index: 1060; /* Higher than sticky headers */
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateX(100%); /* Default hidden */
+}
+
+.shinoai-sidebar.open { /* Use .open class for better toggle logic */
+    transform: translateX(0);
+}
+
+/* Header */
+.shinoai-header {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #edf2f7;
+    background: #ffffff;
+}
+
+.shinoai-avatar {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.25rem;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+}
+
+.shinoai-title {
+    font-weight: 700;
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.btn-close-shinoai {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.btn-close-shinoai:hover {
+    background: #f1f5f9;
+    color: #64748b;
+}
+
+/* Messages Area */
+.shinoai-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.25rem;
+    background: #f8fafc;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.shinoai-message {
+    display: flex;
+    gap: 0.75rem;
+    max-width: 90%;
+    animation: fadeIn 0.3s ease-out;
+}
+
+.shinoai-message.user {
+    align-self: flex-end;
+    flex-direction: row-reverse;
+}
+
+.shinoai-message.assistant {
+    align-self: flex-start;
+}
+
+.message-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.875rem;
+    flex-shrink: 0;
+}
+
+.assistant .message-avatar {
+    background: white;
+    border: 1px solid #e2e8f0;
+    color: #6366f1;
+}
+
+.user .message-avatar {
+    background: #6366f1;
+    color: white;
+}
+
+.message-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.message-bubble {
+    padding: 0.75rem 1rem;
+    border-radius: 1rem;
+    font-size: 0.9375rem;
+    line-height: 1.5;
+    position: relative;
+    word-wrap: break-word;
+}
+
+.assistant .message-bubble {
+    background: white;
+    border: 1px solid #e2e8f0;
+    color: #1e293b;
+    border-top-left-radius: 0.25rem;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.user .message-bubble {
+    background: #6366f1;
+    color: white;
+    border-top-right-radius: 0.25rem;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+}
+
+/* Footer Input */
+.shinoai-footer {
+    padding: 1rem 1.25rem;
+    background: white;
+    border-top: 1px solid #edf2f7;
+}
+
+.shinoai-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 1rem;
+    padding: 0.5rem;
+    transition: all 0.2s;
+}
+
+.shinoai-input-wrapper:focus-within {
+    border-color: #6366f1;
+    background: white;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.shinoai-input {
+    border: none;
+    background: transparent;
+    padding: 0.5rem 0.75rem;
+    resize: none;
+    max-height: 100px;
+    min-height: 44px;
+}
+
+.shinoai-input:focus {
+    box-shadow: none;
+    background: transparent;
+}
+
+.btn-send-shinoai {
+    width: 36px;
+    height: 36px;
+    border-radius: 0.75rem;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s;
+}
+
+.shinoai-footer-info {
+    text-align: center;
+    margin-top: 0.5rem;
+    color: #94a3b8;
+    font-size: 0.7rem;
+}
+
+/* Floating Trigger Button */
+.btn-shinoai-trigger {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    color: white;
+    border: none;
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+    font-size: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 1050; /* Lower than sidebar but higher than content */
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-shinoai-trigger:hover {
+    transform: translateY(-5px) scale(1.05);
+    box-shadow: 0 8px 25px rgba(99, 102, 241, 0.5);
+}
+
+/* Typing Indicator */
+.typing-indicator {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 0;
+}
+
+.typing-indicator span {
+    width: 6px;
+    height: 6px;
+    background: #cbd5e1;
+    border-radius: 50%;
+    animation: typing 1.4s infinite ease-in-out both;
+}
+
+.typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+.typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+
+@keyframes typing {
+    0%, 80%, 100% { transform: scale(0); }
+    40% { transform: scale(1); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Markdown Styles inside bubbles */
+.assistant .message-bubble ul {
+    padding-left: 1.2rem;
+    margin-bottom: 0;
+}
+
+.assistant .message-bubble li {
+    margin-bottom: 0.25rem;
+}
+
+.assistant .message-bubble strong {
+    font-weight: 600;
+    color: #4f46e5;
+}
+</style>
+
+<script>
+// Toggle Sidebar
+function toggleShinoAI() {
+    const sidebar = document.getElementById('shinoaiSidebar');
+    // Check if we use 'collapsed' (old way) or 'open' (new way)
+    // The CSS above supports .open, but let's support both to be safe
+    if (sidebar.classList.contains('collapsed')) {
+        sidebar.classList.remove('collapsed');
+        sidebar.classList.add('open');
+    } else if (sidebar.classList.contains('open')) {
+        sidebar.classList.remove('open');
+        sidebar.classList.add('collapsed');
+    } else {
+        // Initial state assume collapsed, so open it
+        sidebar.classList.add('open');
+    }
+}
+
+// Auto-resize textarea
+const shinoaiInput = document.getElementById('shinoaiInput');
+if(shinoaiInput) {
+    shinoaiInput.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = (this.scrollHeight) + 'px';
+        if(this.value === '') this.style.height = 'auto';
+    });
+
+    // Handle Enter key
+    shinoaiInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendShinoAIMessage();
+        }
+    });
+}
+
+async function sendShinoAIMessage() {
+    const input = document.getElementById('shinoaiInput');
+    const message = input.value.trim();
+    
+    if (!message) return;
+
+    // Clear input
+    input.value = '';
+    input.style.height = 'auto';
+
+    // Add User Message
+    addMessageToChat(message, 'user');
+
+    // Add Loading Indicator
+    const loadingId = addTypingIndicator();
+
+    try {
+        const response = await fetch('/api/shinoai/chat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ message: message })
+        });
+
+        const data = await response.json();
+
+        // Remove Loading
+        removeTypingIndicator(loadingId);
+
+        if (data.success) {
+            // FIX: Use data.reply instead of data.message/text
+            // The API returns { success: true, reply: "...", timestamp: "..." }
+            addMessageToChat(data.reply, 'assistant');
+        } else {
+            addMessageToChat('❌ Sorry, I encountered an error: ' + (data.error || 'Unknown error'), 'assistant');
+        }
+
+    } catch (error) {
+        console.error('ShinoAI Error:', error);
+        removeTypingIndicator(loadingId);
+        addMessageToChat('❌ Sorry, connection failed. Please try again.', 'assistant');
+    }
+}
+
+function addMessageToChat(text, sender) {
+    const messagesContainer = document.getElementById('shinoaiMessages');
+    
+    // Safety check for undefined text
+    if (!text) {
+        console.error('Attempted to add empty message');
+        return;
+    }
+
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `shinoai-message ${sender}`;
+    
+    const avatarIcon = sender === 'assistant' ? 'bi-robot' : 'bi-person';
+    
+    // Format text (Basic Markdown support)
+    const formattedText = sender === 'assistant' ? formatMessage(text) : text;
+
+    messageDiv.innerHTML = `
+        <div class="message-avatar">
+            <i class="bi ${avatarIcon}"></i>
+        </div>
+        <div class="message-content">
+            <div class="message-bubble">
+                ${formattedText}
+            </div>
+            ${sender === 'assistant' ? 
+                `<div class="d-flex justify-content-end gap-2 mt-1">
+                    <button class="btn btn-link p-0 text-muted" style="font-size: 0.7rem;" onclick="copyToClipboard(this)">
+                        <i class="bi bi-clipboard"></i>
+                    </button>
+                 </div>` : ''}
+        </div>
+    `;
+
+    messagesContainer.appendChild(messageDiv);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+function formatMessage(text) {
+    if (!text) return ''; // Prevent crash if text is undefined
+
+    let formatted = text;
+
+    // Convert newlines to <br>
+    formatted = formatted.replace(/\n/g, '<br>');
+
+    // Convert **bold**
+    formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+    // Convert *italic*
+    formatted = formatted.replace(/\*(.*?)\*/g, '<em>$1</em>');
+
+    // Convert lists
+    formatted = formatted.replace(/^- (.+)$/gm, '<li>$1</li>');
+    if (formatted.includes('<li>')) {
+        // Wrap adjacent li's in ul (simple regex approach)
+        // This is a basic formatter, for complex markdown use a library like marked.js
+        if (!formatted.includes('<ul>')) {
+             formatted = formatted.replace(/((?:<li>.*<\/li>\s*)+)/g, '<ul>$1</ul>');
+        }
+    }
+
+    return `<div class="mb-0">${formatted}</div>`;
+}
+
+// Add typing indicator
+function addTypingIndicator() {
+    const messagesContainer = document.getElementById('shinoaiMessages');
+
+    const typingDiv = document.createElement('div');
+    typingDiv.className = 'shinoai-message assistant';
+    typingDiv.id = 'typing-indicator-' + Date.now();
+
+    typingDiv.innerHTML = `
+        <div class="message-avatar">
+            <i class="bi bi-robot"></i>
+        </div>
+        <div class="message-content">
+            <div class="message-bubble">
+                <div class="typing-indicator">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+        </div>
+    `;
+
+    messagesContainer.appendChild(typingDiv);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+    return typingDiv.id;
+}
+
+// Remove typing indicator
+function removeTypingIndicator(id) {
+    const indicator = document.getElementById(id);
+    if (indicator) {
+        indicator.remove();
+    }
+}
+
+function copyToClipboard(btn) {
+    // Find the message bubble content relative to the button
+    const bubble = btn.closest('.message-content').querySelector('.message-bubble');
+    const text = bubble.innerText; // Get plain text
+    
+    navigator.clipboard.writeText(text).then(() => {
+        const originalIcon = btn.innerHTML;
+        btn.innerHTML = '<i class="bi bi-check2 text-success"></i>';
+        setTimeout(() => {
+            btn.innerHTML = originalIcon;
+        }, 2000);
+    });
+}
+</script>

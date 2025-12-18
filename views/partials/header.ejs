@@ -3,6 +3,144 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
+<!-- Dynamic Theme Customization -->
+<% if (typeof browserTitle !== 'undefined' && browserTitle) { %>
+<title><%= browserTitle %></title>
+<% } %>
+
+<% if (typeof faviconUrl !== 'undefined' && faviconUrl) { %>
+<link rel="icon" href="<%= faviconUrl %>" type="image/x-icon">
+<% } %>
+
+<% if (typeof themeColors !== 'undefined' && themeColors) { %>
+<style>
+    :root {
+        /* Gradients */
+        --theme-header-gradient: linear-gradient(135deg, <%= themeColors.headerColorStart %> 0%, <%= themeColors.headerColorEnd %> 100%);
+        --theme-sidebar-gradient: linear-gradient(180deg, <%= themeColors.sidebarColorStart %> 0%, <%= themeColors.sidebarColorEnd %> 100%);
+
+        /* Semantic Colors */
+        --theme-primary: <%= themeColors.primaryColor %>;
+        --theme-accent: <%= themeColors.accentColor %>;
+        --theme-success: <%= themeColors.successColor %>;
+        --theme-warning: <%= themeColors.warningColor %>;
+        --theme-error: <%= themeColors.errorColor %>;
+
+        /* Card & Panel */
+        --theme-card-bg: <%= themeColors.cardBgColor %>;
+        --theme-card-border: <%= themeColors.cardBorderColor %>;
+        --theme-panel-header: <%= themeColors.panelHeaderBg %>;
+    }
+
+    /* Apply primary color to buttons */
+    .btn-primary {
+        background-color: var(--theme-primary) !important;
+        border-color: var(--theme-primary) !important;
+    }
+    .btn-primary:hover {
+        background-color: color-mix(in srgb, var(--theme-primary) 85%, black) !important;
+        border-color: color-mix(in srgb, var(--theme-primary) 85%, black) !important;
+    }
+
+    /* Apply accent color to links */
+    a:not(.btn):not(.nav-link) {
+        color: var(--theme-accent);
+    }
+    a:not(.btn):not(.nav-link):hover {
+        color: color-mix(in srgb, var(--theme-accent) 85%, black);
+    }
+
+    /* Apply success/warning/error colors */
+    .alert-success, .badge.bg-success { background-color: var(--theme-success) !important; }
+    .alert-warning, .badge.bg-warning { background-color: var(--theme-warning) !important; }
+    .alert-danger, .badge.bg-danger { background-color: var(--theme-error) !important; }
+    .text-success { color: var(--theme-success) !important; }
+    .text-warning { color: var(--theme-warning) !important; }
+    .text-danger { color: var(--theme-error) !important; }
+
+    /* Apply card colors */
+    .card, .settings-card {
+        background-color: var(--theme-card-bg);
+        border-color: var(--theme-card-border);
+    }
+    .card-header {
+        background-color: var(--theme-panel-header);
+    }
+</style>
+<% } %>
+
+<% if (typeof themeTypography !== 'undefined' && themeTypography) { %>
+<link href="https://fonts.googleapis.com/css2?family=<%= themeTypography.fontHeadings.replace(/ /g, '+') %>:wght@300;400;500;600;700;800&family=<%= themeTypography.fontBody.replace(/ /g, '+') %>:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --theme-font-headings: '<%= themeTypography.fontHeadings %>', sans-serif;
+        --theme-font-body: '<%= themeTypography.fontBody %>', sans-serif;
+    }
+
+    h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
+        font-family: var(--theme-font-headings) !important;
+    }
+
+    body, p, span, div, input, select, textarea, button {
+        font-family: var(--theme-font-body) !important;
+    }
+
+    <% if (themeTypography.fontSizeScale === 'small') { %>
+    html { font-size: 14px; }
+    <% } else if (themeTypography.fontSizeScale === 'large') { %>
+    html { font-size: 18px; }
+    <% } else { %>
+    html { font-size: 16px; }
+    <% } %>
+</style>
+<% } %>
+
+<% if (typeof themeLayout !== 'undefined' && themeLayout) { %>
+<style>
+    :root {
+        --theme-border-radius: <%= themeLayout.borderRadius %>px;
+        --theme-sidebar-width: <%= themeLayout.sidebarWidth %>px;
+    }
+
+    .btn, .form-control, .form-select, .card, .modal-content, .alert {
+        border-radius: var(--theme-border-radius) !important;
+    }
+
+    .sidebar {
+        width: var(--theme-sidebar-width);
+        <% if (themeLayout.sidebarPosition === 'right') { %>
+        left: auto;
+        right: 0;
+        <% } %>
+    }
+
+    .main-content {
+        <% if (themeLayout.sidebarPosition === 'right') { %>
+        margin-right: var(--theme-sidebar-width);
+        margin-left: 0;
+        <% } else { %>
+        margin-left: var(--theme-sidebar-width);
+        <% } %>
+    }
+</style>
+<% } %>
+
+<% if (typeof themeDarkMode !== 'undefined' && themeDarkMode) { %>
+<style>
+    body {
+        background-color: #1a1a1a !important;
+        color: #e5e5e5 !important;
+    }
+    .card, .settings-card {
+        background-color: #2a2a2a !important;
+        color: #e5e5e5 !important;
+    }
+    .sidebar {
+        background: linear-gradient(180deg, #1e1e1e 0%, #2a2a2a 100%) !important;
+    }
+</style>
+<% } %>
+
 <!-- Top Navigation Bar -->
 <nav class="top-navbar">
     <div class="container-fluid">
@@ -105,7 +243,7 @@
     }
 
     .top-navbar {
-        background: var(--physio-gradient);
+        background: var(--theme-header-gradient, var(--physio-gradient));
         box-shadow: 0 4px 12px rgba(2, 132, 199, 0.15);
         padding: 0.75rem 0;
         position: sticky;
@@ -231,7 +369,7 @@
     }
 
     .dropdown-panel-header {
-        background: var(--physio-gradient);
+        background: var(--theme-header-gradient, var(--physio-gradient));
         color: white;
         padding: 1.25rem;
         display: flex;
@@ -555,3 +693,6 @@
     // Load profile picture on page load
     document.addEventListener('DOMContentLoaded', loadHeaderProfilePicture);
 </script>
+
+<!-- Include ShinoAI Assistant Sidebar -->
+<%- include('shinoai-sidebar') %>

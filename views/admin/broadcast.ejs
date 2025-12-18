@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Broadcast Marketing - <%= appName || 'PhysioConext' %></title>
+    <link rel="icon" href="/public/images/Fav.png" type="image/x-icon">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Quill Rich Text Editor -->
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <style>
+        body {
+            background: #f5f7fb;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 2px 0 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.85);
+            padding: 0.75rem 1rem;
+            margin: 0.25rem 1rem;
+            border-radius: 0.5rem;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            background: rgba(255, 255, 255, 0.25);
+            color: #fff;
+        }
+
+        main {
+            min-height: 100vh;
+            padding-bottom: 4rem;
+        }
+
+        .page-header {
+            background: white;
+            border-radius: 1.5rem;
+            padding: 2rem;
+            box-shadow: 0 10px 40px rgba(82, 95, 225, 0.12);
+            margin-bottom: 2rem;
+        }
+
+        .page-header h1 {
+            font-weight: 700;
+            color: #2d2f44;
+        }
+
+        .stats-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+            transition: transform 0.2s;
+        }
+
+        .stats-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .stats-card .icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .broadcast-card {
+            background: white;
+            border-radius: 1.25rem;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+            margin-bottom: 1.5rem;
+        }
+
+        .broadcast-card .card-header {
+            background: transparent;
+            border-bottom: 1px solid rgba(102, 126, 234, 0.15);
+            padding: 1.5rem;
+            border-radius: 1.25rem 1.25rem 0 0;
+        }
+
+        .broadcast-card .card-header h4 {
+            margin: 0;
+            font-weight: 700;
+            color: #2d2f44;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: #2d2f44;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-control,
+        .form-select {
+            border: 1px solid rgba(102, 126, 234, 0.2);
+            border-radius: 0.75rem;
+            padding: 0.65rem 1rem;
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.15);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            font-weight: 600;
+            padding: 0.6rem 1.6rem;
+            border-radius: 0.75rem;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.35);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #48c774 0%, #3aa863 100%);
+            border: none;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #f14668 0%, #d63031 100%);
+            border: none;
+        }
+
+        .table-container {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+        }
+
+        .table thead th {
+            background: rgba(102, 126, 234, 0.08);
+            color: #2d2f44;
+            font-weight: 600;
+            border: none;
+        }
+
+        .badge {
+            padding: 0.5rem 0.85rem;
+            border-radius: 999px;
+            font-weight: 600;
+        }
+
+        #editor-container {
+            height: 300px;
+            background: white;
+            border-radius: 0.5rem;
+        }
+
+        .ql-toolbar {
+            border-radius: 0.5rem 0.5rem 0 0;
+            border: 1px solid rgba(102, 126, 234, 0.2);
+        }
+
+        .ql-container {
+            border-radius: 0 0 0.5rem 0.5rem;
+            border: 1px solid rgba(102, 126, 234, 0.2);
+            border-top: none;
+        }
+
+        .modal-content {
+            border-radius: 1rem;
+            border: none;
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 1rem 1rem 0 0;
+        }
+
+        .status-badge {
+            padding: 0.4rem 0.8rem;
+            border-radius: 999px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .status-draft {
+            background: rgba(108, 117, 125, 0.15);
+            color: #6c757d;
+        }
+
+        .status-scheduled {
+            background: rgba(255, 193, 7, 0.15);
+            color: #ffc107;
+        }
+
+        .status-sending {
+            background: rgba(13, 110, 253, 0.15);
+            color: #0d6efd;
+        }
+
+        .status-sent {
+            background: rgba(25, 135, 84, 0.15);
+            color: #198754;
+        }
+
+        .status-failed {
+            background: rgba(220, 53, 69, 0.15);
+            color: #dc3545;
+        }
+
+        .recipient-badge {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 0.4rem 0.6rem;
+            border-radius: 0.5rem;
+            margin: 0.2rem;
+            font-size: 0.875rem;
+        }
+
+        .recipient-badge .remove-btn {
+            cursor: pointer;
+            margin-left: 0.5rem;
+            font-weight: bold;
+        }
+
+        .recipient-badge .remove-btn:hover {
+            color: #ff6b6b;
+        }
+
+        .search-result-item {
+            padding: 0.75rem;
+            border-bottom: 1px solid #e9ecef;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .search-result-item:hover {
+            background: #f8f9fa;
+        }
+
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+
+        .template-var-dropdown {
+            position: absolute;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 1000;
+            max-height: 300px;
+            overflow-y: auto;
+            min-width: 250px;
+        }
+
+        .template-var-item {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            border-bottom: 1px solid #f1f3f5;
+        }
+
+        .template-var-item:hover {
+            background: #f8f9fa;
+        }
+
+        .template-var-item:last-child {
+            border-bottom: none;
+        }
+
+        .template-var-item .var-name {
+            font-family: monospace;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .template-var-item .var-desc {
+            color: #6c757d;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <%- include('../partials/sidebar', { user, activePage: 'broadcast' }) %>
+
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+                <!-- Page Header -->
+                <div class="page-header">
+                    <h1 class="h3 mb-2">
+                        <i class="bi bi-broadcast me-2 text-primary"></i>Broadcast Marketing
+                    </h1>
+                    <p class="mb-0">Send mass SMS and email campaigns to your customers</p>
+                </div>
+
+                <!-- Statistics Cards -->
+                <div class="row mb-4" id="statsContainer">
+                    <div class="col-md-3 mb-3">
+                        <div class="stats-card">
+                            <div class="d-flex align-items-center">
+                                <div class="icon" style="background: rgba(102, 126, 234, 0.15); color: #667eea;">
+                                    <i class="bi bi-send-fill"></i>
+                                </div>
+                                <div class="ms-3">
+                                    <div class="text-muted small">Total Campaigns</div>
+                                    <h4 class="mb-0" id="statTotalCampaigns">0</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="stats-card">
+                            <div class="d-flex align-items-center">
+                                <div class="icon" style="background: rgba(72, 199, 116, 0.15); color: #48c774;">
+                                    <i class="bi bi-check-circle-fill"></i>
+                                </div>
+                                <div class="ms-3">
+                                    <div class="text-muted small">Sent</div>
+                                    <h4 class="mb-0" id="statSentCampaigns">0</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="stats-card">
+                            <div class="d-flex align-items-center">
+                                <div class="icon" style="background: rgba(255, 193, 7, 0.15); color: #ffc107;">
+                                    <i class="bi bi-clock-fill"></i>
+                                </div>
+                                <div class="ms-3">
+                                    <div class="text-muted small">Scheduled</div>
+                                    <h4 class="mb-0" id="statScheduledCampaigns">0</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="stats-card">
+                            <div class="d-flex align-items-center">
+                                <div class="icon" style="background: rgba(241, 70, 104, 0.15); color: #f14668;">
+                                    <i class="bi bi-people-fill"></i>
+                                </div>
+                                <div class="ms-3">
+                                    <div class="text-muted small">Total Recipients</div>
+                                    <h4 class="mb-0" id="statTotalRecipients">0</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="mb-4">
+                    <button class="btn btn-primary" onclick="showCreateModal()">
+                        <i class="bi bi-plus-circle me-2"></i>Create New Campaign
+                    </button>
+                    <button class="btn btn-success" onclick="loadCampaigns()">
+                        <i class="bi bi-arrow-clockwise me-2"></i>Refresh
+                    </button>
+                </div>
+
+                <!-- Campaigns Table -->
+                <div class="table-container">
+                    <h5 class="mb-3"><i class="bi bi-list-ul me-2"></i>Campaigns</h5>
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="campaignsTable">
+                            <thead>
+                                <tr>
+                                    <th>Campaign Name</th>
+                                    <th>Type</th>
+                                    <th>Status</th>
+                                    <th>Recipients</th>
+                                    <th>Sent/Failed</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="campaignsTableBody">
+                                <tr>
+                                    <td colspan="7" class="text-center py-4">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Create/Edit Campaign Modal -->
+    <div class="modal fade" id="campaignModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalTitle">
+                        <i class="bi bi-megaphone me-2"></i>Create New Campaign
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="campaignForm">
+                        <input type="hidden" id="campaignId" name="campaignId">
+
+                        <div class="row">
+                            <!-- Campaign Name -->
+                            <div class="col-md-6 mb-3">
+                                <label for="campaignName" class="form-label">Campaign Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="campaignName" required>
+                            </div>
+
+                            <!-- Campaign Type -->
+                            <div class="col-md-6 mb-3">
+                                <label for="campaignType" class="form-label">Campaign Type <span class="text-danger">*</span></label>
+                                <select class="form-select" id="campaignType" required onchange="handleCampaignTypeChange()">
+                                    <option value="">Select Type</option>
+                                    <option value="sms">SMS Only</option>
+                                    <option value="email">Email Only</option>
+                                    <option value="both">Both SMS & Email</option>
+                                </select>
+                            </div>
+
+                            <!-- Email Subject (shown only for email campaigns) -->
+                            <div class="col-md-12 mb-3" id="emailSubjectGroup" style="display: none;">
+                                <label for="emailSubject" class="form-label">Email Subject <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="emailSubject">
+                            </div>
+
+                            <!-- Target Audience -->
+                            <div class="col-md-6 mb-3">
+                                <label for="targetAudience" class="form-label">Target Audience <span class="text-danger">*</span></label>
+                                <select class="form-select" id="targetAudience" required onchange="handleTargetAudienceChange()">
+                                    <option value="all_patients">All Patients</option>
+                                    <option value="custom">Select Individual Recipients</option>
+                                </select>
+                            </div>
+
+                            <!-- Custom Recipients Selection (shown for custom target) -->
+                            <div class="col-md-12 mb-3" id="customRecipientsGroup" style="display: none;">
+                                <label class="form-label">Search and Select Recipients</label>
+
+                                <!-- Patient Search -->
+                                <div class="input-group mb-2">
+                                    <input type="text" class="form-control" id="patientSearch"
+                                           placeholder="Search by name, email, or phone number...">
+                                    <button class="btn btn-outline-secondary" type="button" onclick="searchPatients()">
+                                        <i class="bi bi-search"></i> Search
+                                    </button>
+                                </div>
+
+                                <!-- Search Results -->
+                                <div id="searchResults" class="border rounded p-2 mb-2" style="max-height: 200px; overflow-y: auto; display: none;">
+                                    <!-- Results will be populated here -->
+                                </div>
+
+                                <!-- Selected Recipients -->
+                                <div class="border rounded p-3 bg-light" style="min-height: 100px;">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <strong>Selected Recipients (<span id="selectedCount">0</span>)</strong>
+                                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="clearSelectedRecipients()">
+                                            <i class="bi bi-trash"></i> Clear All
+                                        </button>
+                                    </div>
+                                    <div id="selectedRecipients">
+                                        <small class="text-muted">No recipients selected</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Schedule Type -->
+                            <div class="col-md-6 mb-3">
+                                <label for="scheduleType" class="form-label">Schedule <span class="text-danger">*</span></label>
+                                <select class="form-select" id="scheduleType" required onchange="handleScheduleTypeChange()">
+                                    <option value="immediate">Send Immediately</option>
+                                    <option value="scheduled">Schedule for Later</option>
+                                </select>
+                            </div>
+
+                            <!-- Scheduled Time (shown only for scheduled campaigns) -->
+                            <div class="col-md-12 mb-3" id="scheduledTimeGroup" style="display: none;">
+                                <label for="scheduledTime" class="form-label">Scheduled Date & Time <span class="text-danger">*</span></label>
+                                <input type="datetime-local" class="form-control" id="scheduledTime">
+                            </div>
+
+                            <!-- Message Text (for SMS) -->
+                            <div class="col-md-12 mb-3">
+                                <label for="messageText" class="form-label">Message Text <span class="text-danger">*</span></label>
+                                <div style="position: relative;">
+                                    <textarea class="form-control" id="messageText" rows="5" required placeholder="Enter your message here. Type { to insert template variables like {patientName}, {email}, {phone}..."></textarea>
+                                    <div id="templateVarDropdown" class="template-var-dropdown" style="display: none;"></div>
+                                </div>
+                                <div class="form-text">
+                                    <div class="mb-1">
+                                        Character count: <span id="charCount">0</span> |
+                                        This text will be used for SMS. For emails, you can add HTML formatting below.
+                                    </div>
+                                    <div class="alert alert-info py-2 px-3 mb-0 mt-2">
+                                        <strong><i class="bi bi-info-circle me-1"></i>Template Variables:</strong>
+                                        Type <code>{</code> to see available variables. Examples: <code>{patientName}</code>, <code>{email}</code>, <code>{phone}</code>, <code>{clinicName}</code>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- HTML Editor (shown only for email campaigns) -->
+                            <div class="col-md-12 mb-3" id="htmlEditorGroup" style="display: none;">
+                                <label class="form-label">Email HTML Content (Optional)</label>
+                                <div id="editor-container"></div>
+                                <div class="form-text mt-2">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    Use the rich text editor to format your email with images, links, and styles.
+                                    If left empty, the message text above will be used.
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveCampaign()">
+                        <i class="bi bi-save me-2"></i>Save Campaign
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+    <script src="/public/js/admin-broadcast.js"></script>
+</body>
+</html>

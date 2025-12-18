@@ -216,6 +216,24 @@
                                 </small>
                             </div>
 
+                            <!-- Browser Title -->
+                            <div class="mb-4">
+                                <label for="browserTitle" class="form-label">
+                                    <i class="bi bi-window me-2"></i>Browser Tab Title
+                                </label>
+                                <input
+                                    type="text"
+                                    class="form-control"
+                                    id="browserTitle"
+                                    name="browserTitle"
+                                    placeholder="e.g., PhysioConext - Clinic Management"
+                                    maxlength="100"
+                                >
+                                <small class="text-muted">
+                                    This appears in the browser tab title
+                                </small>
+                            </div>
+
                             <!-- Color Customization -->
                             <h5 class="mt-4 mb-3 border-bottom pb-2"><i class="bi bi-droplet-fill me-2"></i>Color Customization</h5>
                             <div class="row mb-4">
@@ -248,6 +266,128 @@
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+
+                            <!-- Primary & Accent Colors -->
+                            <div class="row mb-4">
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Primary Color (Buttons)</label>
+                                    <input type="color" class="form-control form-control-color" id="primaryColor" name="primaryColor" value="#0284c7">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Accent Color (Links)</label>
+                                    <input type="color" class="form-control form-control-color" id="accentColor" name="accentColor" value="#14b8a6">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Success Color</label>
+                                    <input type="color" class="form-control form-control-color" id="successColor" name="successColor" value="#10b981">
+                                </div>
+                            </div>
+
+                            <div class="row mb-4">
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Warning Color</label>
+                                    <input type="color" class="form-control form-control-color" id="warningColor" name="warningColor" value="#f59e0b">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Error Color</label>
+                                    <input type="color" class="form-control form-control-color" id="errorColor" name="errorColor" value="#ef4444">
+                                </div>
+                            </div>
+
+                            <!-- Card & Panel Colors -->
+                            <h6 class="mt-3 mb-3"><i class="bi bi-card-heading me-2"></i>Card & Panel Colors</h6>
+                            <div class="row mb-4">
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Card Background</label>
+                                    <input type="color" class="form-control form-control-color" id="cardBgColor" name="cardBgColor" value="#ffffff">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Card Border</label>
+                                    <input type="color" class="form-control form-control-color" id="cardBorderColor" name="cardBorderColor" value="#e5e7eb">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Panel Header</label>
+                                    <input type="color" class="form-control form-control-color" id="panelHeaderBg" name="panelHeaderBg" value="#f9fafb">
+                                </div>
+                            </div>
+
+                            <!-- Typography -->
+                            <h5 class="mt-5 mb-3 border-bottom pb-2"><i class="bi bi-fonts me-2"></i>Typography</h5>
+                            <div class="row mb-4">
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Heading Font</label>
+                                    <select class="form-select" id="fontHeadings" name="fontHeadings">
+                                        <option value="Plus Jakarta Sans">Plus Jakarta Sans (Default)</option>
+                                        <option value="Prompt">Prompt (Thai)</option>
+                                        <option value="Inter">Inter</option>
+                                        <option value="Roboto">Roboto</option>
+                                        <option value="Poppins">Poppins</option>
+                                        <option value="Open Sans">Open Sans</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Body Font</label>
+                                    <select class="form-select" id="fontBody" name="fontBody">
+                                        <option value="Plus Jakarta Sans">Plus Jakarta Sans (Default)</option>
+                                        <option value="Prompt">Prompt (Thai)</option>
+                                        <option value="Inter">Inter</option>
+                                        <option value="Roboto">Roboto</option>
+                                        <option value="Poppins">Poppins</option>
+                                        <option value="Open Sans">Open Sans</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Font Size</label>
+                                    <select class="form-select" id="fontSizeScale" name="fontSizeScale">
+                                        <option value="small">Small</option>
+                                        <option value="medium" selected>Medium (Default)</option>
+                                        <option value="large">Large</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Layout & Style -->
+                            <h5 class="mt-5 mb-3 border-bottom pb-2"><i class="bi bi-layout-split me-2"></i>Layout & Style</h5>
+                            <div class="row mb-4">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Border Radius (Corner Roundness)</label>
+                                    <div class="d-flex align-items-center gap-3">
+                                        <input type="range" class="form-range flex-grow-1" id="borderRadius" name="borderRadius" min="0" max="20" value="8" oninput="document.getElementById('borderRadiusValue').textContent = this.value + 'px'">
+                                        <span id="borderRadiusValue" class="badge bg-secondary">8px</span>
+                                    </div>
+                                    <small class="text-muted">Affects buttons, cards, and modals</small>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Sidebar Width (pixels)</label>
+                                    <input type="number" class="form-control" id="sidebarWidth" name="sidebarWidth" min="180" max="320" value="240">
+                                </div>
+                            </div>
+
+                            <div class="row mb-4">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Sidebar Position</label>
+                                    <select class="form-select" id="sidebarPosition" name="sidebarPosition">
+                                        <option value="left" selected>Left (Default)</option>
+                                        <option value="right">Right</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <div class="form-check form-switch mt-4">
+                                        <input class="form-check-input" type="checkbox" id="darkModeEnabled" name="darkModeEnabled">
+                                        <label class="form-check-label" for="darkModeEnabled">
+                                            <i class="bi bi-moon-stars me-2"></i>Enable Dark Mode
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Login Page Customization -->
+                            <h5 class="mt-5 mb-3 border-bottom pb-2"><i class="bi bi-door-open me-2"></i>Login Page Customization</h5>
+                            <div class="mb-3">
+                                <label class="form-label">Welcome Message</label>
+                                <input type="text" class="form-control" id="loginWelcomeText" name="loginWelcomeText" placeholder="e.g., Welcome to PhysioConext" maxlength="200">
+                                <small class="text-muted">Message displayed on the login page</small>
                             </div>
 
                             <!-- Logo Upload -->
@@ -311,8 +451,6 @@
         </div>
     </main>
 
-    <%- include('partials/footer') %>
-
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
@@ -340,17 +478,51 @@
                 if (response.ok) {
                     const data = await response.json();
 
-                    // Set app name
+                    // Basic branding
                     if (data.appName) {
                         document.getElementById('appName').value = data.appName;
                         document.getElementById('previewAppName').textContent = data.appName;
                     }
+                    if (data.browserTitle) document.getElementById('browserTitle').value = data.browserTitle;
 
-                    // Set Colors
+                    // Header & Sidebar gradients
                     if (data.headerColorStart) document.getElementById('headerColorStart').value = data.headerColorStart;
                     if (data.headerColorEnd) document.getElementById('headerColorEnd').value = data.headerColorEnd;
                     if (data.sidebarColorStart) document.getElementById('sidebarColorStart').value = data.sidebarColorStart;
                     if (data.sidebarColorEnd) document.getElementById('sidebarColorEnd').value = data.sidebarColorEnd;
+
+                    // Primary & Accent colors
+                    if (data.primaryColor) document.getElementById('primaryColor').value = data.primaryColor;
+                    if (data.accentColor) document.getElementById('accentColor').value = data.accentColor;
+                    if (data.successColor) document.getElementById('successColor').value = data.successColor;
+                    if (data.warningColor) document.getElementById('warningColor').value = data.warningColor;
+                    if (data.errorColor) document.getElementById('errorColor').value = data.errorColor;
+
+                    // Card & Panel colors
+                    if (data.cardBgColor) document.getElementById('cardBgColor').value = data.cardBgColor;
+                    if (data.cardBorderColor) document.getElementById('cardBorderColor').value = data.cardBorderColor;
+                    if (data.panelHeaderBg) document.getElementById('panelHeaderBg').value = data.panelHeaderBg;
+
+                    // Typography
+                    if (data.fontHeadings) document.getElementById('fontHeadings').value = data.fontHeadings;
+                    if (data.fontBody) document.getElementById('fontBody').value = data.fontBody;
+                    if (data.fontSizeScale) document.getElementById('fontSizeScale').value = data.fontSizeScale;
+
+                    // Layout
+                    if (data.borderRadius) {
+                        document.getElementById('borderRadius').value = data.borderRadius;
+                        document.getElementById('borderRadiusValue').textContent = data.borderRadius + 'px';
+                    }
+                    if (data.sidebarWidth) document.getElementById('sidebarWidth').value = data.sidebarWidth;
+                    if (data.sidebarPosition) document.getElementById('sidebarPosition').value = data.sidebarPosition;
+
+                    // Dark mode
+                    if (data.darkModeEnabled !== undefined) {
+                        document.getElementById('darkModeEnabled').checked = data.darkModeEnabled;
+                    }
+
+                    // Login page
+                    if (data.loginWelcomeText) document.getElementById('loginWelcomeText').value = data.loginWelcomeText;
 
                     // Show current logo
                     if (data.logoUrl) {
@@ -410,18 +582,52 @@
 
             try {
                 const formData = new FormData();
+
+                // Basic branding
                 formData.append('appName', document.getElementById('appName').value);
-                
-                // Append Colors
+                formData.append('browserTitle', document.getElementById('browserTitle').value);
+
+                // Header & Sidebar gradients
                 formData.append('headerColorStart', document.getElementById('headerColorStart').value);
                 formData.append('headerColorEnd', document.getElementById('headerColorEnd').value);
                 formData.append('sidebarColorStart', document.getElementById('sidebarColorStart').value);
                 formData.append('sidebarColorEnd', document.getElementById('sidebarColorEnd').value);
 
+                // Primary & Accent colors
+                formData.append('primaryColor', document.getElementById('primaryColor').value);
+                formData.append('accentColor', document.getElementById('accentColor').value);
+                formData.append('successColor', document.getElementById('successColor').value);
+                formData.append('warningColor', document.getElementById('warningColor').value);
+                formData.append('errorColor', document.getElementById('errorColor').value);
+
+                // Card & Panel colors
+                formData.append('cardBgColor', document.getElementById('cardBgColor').value);
+                formData.append('cardBorderColor', document.getElementById('cardBorderColor').value);
+                formData.append('panelHeaderBg', document.getElementById('panelHeaderBg').value);
+
+                // Typography
+                formData.append('fontHeadings', document.getElementById('fontHeadings').value);
+                formData.append('fontBody', document.getElementById('fontBody').value);
+                formData.append('fontSizeScale', document.getElementById('fontSizeScale').value);
+
+                // Layout
+                formData.append('borderRadius', document.getElementById('borderRadius').value);
+                formData.append('sidebarWidth', document.getElementById('sidebarWidth').value);
+                formData.append('sidebarPosition', document.getElementById('sidebarPosition').value);
+
+                // Dark mode
+                formData.append('darkModeEnabled', document.getElementById('darkModeEnabled').checked);
+
+                // Login page
+                formData.append('loginWelcomeText', document.getElementById('loginWelcomeText').value);
+
+                // Logo upload
                 const logoInput = document.getElementById('logoInput');
                 if (logoInput.files.length > 0) {
                     formData.append('logo', logoInput.files[0]);
-                }                const response = await fetch('/api/admin/theme-settings', {
+                }
+
+                const response = await fetch('/api/admin/theme-settings', {
                     method: 'POST',
                     headers: {},
                     body: formData

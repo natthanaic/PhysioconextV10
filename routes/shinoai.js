@@ -464,6 +464,13 @@ async function gatherContext(db, userId, query) {
                     SELECT * FROM appointments WHERE patient_id = ? ORDER BY appointment_date DESC LIMIT 10
                 `, [patientDetail[0].id]);
                 context.specificPatient.appointments = patientAppts;
+            } else {
+                // Patient not found - tell AI explicitly
+                context.notFoundPatient = {
+                    hn: hn,
+                    searched: true,
+                    message: `ไม่พบผู้ป่วย HN ${hn} ในระบบ`
+                };
             }
             }
         }
@@ -700,6 +707,26 @@ A:
 
         prompt += `⚠️ USE ONLY THIS DATA ABOVE TO ANSWER QUESTIONS ABOUT HN ${p.hn}\n`;
         prompt += `IF USER ASKS ANYTHING NOT IN THIS DATA → SAY "ไม่มีข้อมูลส่วนนี้"\n`;
+        prompt += `========================================\n\n`;
+    }
+
+    // Add NOT FOUND patient information
+    if (context.notFoundPatient) {
+        const nf = context.notFoundPatient;
+        prompt += `========================================\n`;
+        prompt += `❌ PATIENT NOT FOUND IN DATABASE\n`;
+        prompt += `========================================\n`;
+        prompt += `USER ASKED ABOUT: HN ${nf.hn}\n`;
+        prompt += `DATABASE QUERY RESULT: NOT FOUND\n\n`;
+        prompt += `⚠️ CRITICAL: ระบบได้ทำการค้นหา HN ${nf.hn} ในฐานข้อมูลแล้ว\n`;
+        prompt += `ผลการค้นหา: ไม่พบผู้ป่วยรายนี้ในระบบ\n\n`;
+        prompt += `📋 CORRECT RESPONSE:\n`;
+        prompt += `"ไม่พบข้อมูลผู้ป่วย HN ${nf.hn} ในระบบครับ/ค่ะ กรุณาตรวจสอบเลข HN อีกครั้ง"\n\n`;
+        prompt += `⛔ DO NOT:\n`;
+        prompt += `- สร้างข้อมูลผู้ป่วยขึ้นมาเอง\n`;
+        prompt += `- บอกว่ามีผู้ป่วยรายนี้\n`;
+        prompt += `- ใช้ข้อมูลจากผู้ป่วยรายอื่น\n`;
+        prompt += `- แนะนำข้อมูลจากความรู้ทั่วไป\n`;
         prompt += `========================================\n\n`;
     }
 

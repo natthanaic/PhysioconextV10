@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thai ID Card Reader - <%= clinicName || 'Lantavafix' %></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .card-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .id-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+
+        .card-header-custom {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .card-title {
+            color: #667eea;
+            font-size: 28px;
+            font-weight: bold;
+            margin: 0;
+        }
+
+        .data-row {
+            display: flex;
+            padding: 15px;
+            border-bottom: 1px solid #e0e0e0;
+            align-items: center;
+        }
+
+        .data-row:last-child {
+            border-bottom: none;
+        }
+
+        .data-label {
+            font-weight: 600;
+            color: #555;
+            width: 200px;
+            flex-shrink: 0;
+        }
+
+        .data-value {
+            color: #333;
+            font-size: 18px;
+            flex-grow: 1;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-waiting {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn-custom {
+            flex: 1;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary-custom {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary-custom:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary-custom {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary-custom:hover {
+            background: #5a6268;
+        }
+
+        .waiting-card {
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .icon-check {
+            font-size: 60px;
+            color: #28a745;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="card-container">
+        <% if (cardData && cardData.cid) { %>
+            <!-- Card Data Display -->
+            <div class="id-card">
+                <div class="card-header-custom">
+                    <div class="icon-check">✓</div>
+                    <h1 class="card-title">ข้อมูลบัตรประจำตัวประชาชน</h1>
+                    <span class="status-badge status-success">อ่านข้อมูลสำเร็จ</span>
+                </div>
+
+                <div class="data-row">
+                    <div class="data-label">เลขบัตรประชาชน:</div>
+                    <div class="data-value"><strong><%= cardData.cid || '-' %></strong></div>
+                </div>
+
+                <div class="data-row">
+                    <div class="data-label">ชื่อ-นามสกุล:</div>
+                    <div class="data-value"><strong><%= cardData.name || cardData.fullname || '-' %></strong></div>
+                </div>
+
+                <% if (cardData.firstname || cardData.lastname) { %>
+                <div class="data-row">
+                    <div class="data-label">ชื่อ:</div>
+                    <div class="data-value"><%= cardData.firstname || '-' %></div>
+                </div>
+                <div class="data-row">
+                    <div class="data-label">นามสกุล:</div>
+                    <div class="data-value"><%= cardData.lastname || '-' %></div>
+                </div>
+                <% } %>
+
+                <% if (cardData.dob || cardData.birthdate) { %>
+                <div class="data-row">
+                    <div class="data-label">วัน/เดือน/ปีเกิด:</div>
+                    <div class="data-value"><%= cardData.dob || cardData.birthdate || '-' %></div>
+                </div>
+                <% } %>
+
+                <% if (cardData.address) { %>
+                <div class="data-row">
+                    <div class="data-label">ที่อยู่:</div>
+                    <div class="data-value"><%= cardData.address || '-' %></div>
+                </div>
+                <% } %>
+
+                <% if (cardData.issueDate) { %>
+                <div class="data-row">
+                    <div class="data-label">วันออกบัตร:</div>
+                    <div class="data-value"><%= cardData.issueDate || '-' %></div>
+                </div>
+                <% } %>
+
+                <% if (cardData.expireDate) { %>
+                <div class="data-row">
+                    <div class="data-label">วันบัตรหมดอายุ:</div>
+                    <div class="data-value"><%= cardData.expireDate || '-' %></div>
+                </div>
+                <% } %>
+
+                <div class="action-buttons">
+                    <button class="btn-custom btn-primary-custom" onclick="createPatient()">
+                        สร้างผู้ป่วยใหม่
+                    </button>
+                    <button class="btn-custom btn-secondary-custom" onclick="readAgain()">
+                        อ่านบัตรใหม่
+                    </button>
+                </div>
+            </div>
+        <% } else { %>
+            <!-- Waiting for Card -->
+            <div class="waiting-card">
+                <div class="spinner"></div>
+                <h2 style="color: #667eea; margin: 20px 0;">กรุณาเสียบบัตรประชาชน</h2>
+                <p style="color: #666;">ระบบกำลังรอการอ่านข้อมูลจากเครื่องอ่านบัตร...</p>
+                <div style="margin-top: 30px;">
+                    <span class="status-badge status-waiting">รอการเชื่อมต่อ</span>
+                </div>
+            </div>
+        <% } %>
+    </div>
+
+    <script>
+        function createPatient() {
+            const cardData = <%- JSON.stringify(cardData || {}) %>;
+
+            // Redirect to create patient page with pre-filled data
+            const params = new URLSearchParams({
+                cid: cardData.cid || '',
+                name: cardData.name || cardData.fullname || '',
+                firstname: cardData.firstname || '',
+                lastname: cardData.lastname || '',
+                dob: cardData.dob || cardData.birthdate || '',
+                address: cardData.address || ''
+            });
+
+            window.location.href = `/patients/create?${params.toString()}`;
+        }
+
+        function readAgain() {
+            window.location.reload();
+        }
+
+        // Auto-refresh if no card data (waiting mode)
+        <% if (!cardData || !cardData.cid) { %>
+        setTimeout(() => {
+            window.location.reload();
+        }, 3000); // Refresh every 3 seconds
+        <% } %>
+    </script>
+</body>
+</html>

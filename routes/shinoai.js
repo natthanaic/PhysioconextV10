@@ -465,6 +465,7 @@ async function gatherContext(db, userId, query) {
                 `, [patientDetail[0].id]);
                 context.specificPatient.appointments = patientAppts;
             }
+            }
         }
 
         // 9. ALWAYS load complete database schema from INFORMATION_SCHEMA

@@ -85,6 +85,7 @@ const viewsRoutes = require('./routes/views');
 const chatRoutes = require('./routes/chat');
 const testRoutes = require('./routes/test');
 const shinoaiRoutes = require('./routes/shinoai');
+const shinoaiRagRoutes = require('./routes/shinoai-rag');
 
 // Optional broadcast routes
 let broadcastRoutes;
@@ -117,9 +118,13 @@ app.use('/api/expenses', expensesRoutes);
 // Admin and PT broadcast marketing for SMS and Email campaigns
 if (broadcastRoutes) app.use('/api/broadcast', broadcastRoutes);
 
-// --- SHINOAI ASSISTANT ROUTE ---
+// --- SHINOAI ASSISTANT ROUTES ---
 // AI-powered assistant for clinic management and recommendations
 app.use('/api/shinoai', shinoaiRoutes);
+
+// --- SHINOAI RAG (Function Calling) ROUTE ---
+// RAG version with Gemini 2.0 Function Calling - More scalable and token-efficient
+app.use('/api/shinoai-rag', shinoaiRagRoutes);
 
 app.use('/api/pn', pnCasesRoutes);
 app.use('/api', pnCasesRoutes);

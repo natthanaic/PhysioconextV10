@@ -297,8 +297,8 @@ async function gatherContext(db, userId, query) {
                 (SELECT COUNT(*) FROM pn_cases WHERE patient_id = p.id) as total_pn_cases,
                 (SELECT MAX(appointment_date) FROM appointments WHERE patient_id = p.id) as last_visit
             FROM patients p
-            ORDER BY p.created_at DESC
-            LIMIT 100
+            ORDER BY p.id DESC
+            LIMIT 200
         `);
         context.patients = patients;
 
@@ -625,15 +625,33 @@ A:
         prompt += `Username: ${context.user.username}\n\n`;
     }
 
-    // Add patients list
+    // Add patients list - SHOW ALL LOADED PATIENTS
     if (context.patients && context.patients.length > 0) {
-        prompt += `Patient Database (${context.patients.length} recent patients):\n`;
-        context.patients.slice(0, 10).forEach(p => {
-            prompt += `- HN: ${p.hn} | ${p.full_name} | Age: ${p.age || 'N/A'} | Gender: ${p.gender || 'N/A'}`;
-            if (p.medical_conditions) prompt += ` | Conditions: ${p.medical_conditions.substring(0, 50)}`;
-            if (p.last_visit) prompt += ` | Last Visit: ${p.last_visit}`;
+        prompt += `========================================\n`;
+        prompt += `📋 PATIENT DATABASE (${context.patients.length} patients loaded)\n`;
+        prompt += `========================================\n`;
+        prompt += `⚠️ CRITICAL: You have access to ${context.patients.length} patient records with their patient.id\n`;
+        prompt += `When user asks about specific HN, use patient.id to query related data in other tables.\n\n`;
+
+        // Show first 50 patients with ID prominently
+        context.patients.slice(0, 50).forEach(p => {
+            prompt += `[ID:${p.id}] HN:${p.hn} | ${p.full_name} | Age:${p.age || 'N/A'} | Gender:${p.gender || 'N/A'}`;
+            if (p.medical_conditions) prompt += ` | ${p.medical_conditions.substring(0, 40)}`;
+            if (p.last_visit) prompt += ` | LastVisit:${p.last_visit}`;
             prompt += `\n`;
         });
+
+        if (context.patients.length > 50) {
+            prompt += `\n... and ${context.patients.length - 50} more patients in database\n`;
+        }
+
+        prompt += `\n💡 HOW TO USE patient.id:\n`;
+        prompt += `1. When user asks "ข้อมูล HN PT250101":\n`;
+        prompt += `   - Find patient in list above: [ID:42] HN:PT250101\n`;
+        prompt += `   - You now know patient_id = 42\n`;
+        prompt += `   - Tell user about appointments/bills/pn_cases for patient_id = 42\n`;
+        prompt += `2. If HN not in visible list, tell user you'll need to query database\n`;
+        prompt += `========================================\n\n`;
         prompt += '\n';
     }
 
@@ -644,9 +662,12 @@ A:
         prompt += `🔍 SPECIFIC PATIENT QUERY RESULT\n`;
         prompt += `========================================\n`;
         prompt += `USER ASKED ABOUT: HN ${p.hn}\n`;
+        prompt += `DATABASE QUERY: FOUND ✓\n`;
+        prompt += `PATIENT ID: ${p.id} (use this ID to reference data in other tables)\n\n`;
         prompt += `THIS IS THE COMPLETE DATA FOR THIS PATIENT:\n\n`;
 
         prompt += `PATIENT DETAILS:\n`;
+        prompt += `- Patient ID: ${p.id} ⚠️ (PRIMARY KEY - use for querying other tables)\n`;
         prompt += `- HN: ${p.hn}\n`;
         prompt += `- Name: ${p.first_name} ${p.last_name}\n`;
         prompt += `- Age: ${p.age} years | Gender: ${p.gender} | DOB: ${p.date_of_birth}\n`;
@@ -662,8 +683,12 @@ A:
         if (p.last_visit) prompt += `- Last Visit: ${p.last_visit}\n`;
         if (p.latest_diagnosis) prompt += `- Latest Diagnosis: ${p.latest_diagnosis}\n\n`;
 
+        prompt += `----------------------------------------\n`;
+        prompt += `📊 RELATED DATA (queried using patient_id = ${p.id})\n`;
+        prompt += `----------------------------------------\n\n`;
+
         if (p.pnCases && p.pnCases.length > 0) {
-            prompt += `PN CASES (${p.pnCases.length} total):\n`;
+            prompt += `PN CASES (${p.pnCases.length} total) - FROM pn_cases WHERE patient_id = ${p.id}:\n`;
             p.pnCases.forEach((pn, idx) => {
                 prompt += `${idx + 1}. ${pn.pn_code || 'PN-' + pn.id}\n`;
                 prompt += `   Status: ${pn.status}\n`;
@@ -676,7 +701,7 @@ A:
         }
 
         if (p.soapNotes && p.soapNotes.length > 0) {
-            prompt += `SOAP NOTES (${p.soapNotes.length} total):\n`;
+            prompt += `SOAP NOTES (${p.soapNotes.length} total) - FROM soap_notes JOIN pn_cases WHERE patient_id = ${p.id}:\n`;
             p.soapNotes.forEach((soap, idx) => {
                 prompt += `${idx + 1}. Date: ${soap.created_at} | PN: ${soap.pn_code}\n`;
                 if (soap.subjective) prompt += `   S: ${soap.subjective}\n`;
@@ -689,7 +714,7 @@ A:
         }
 
         if (p.bills && p.bills.length > 0) {
-            prompt += `BILLS (${p.bills.length} bills):\n`;
+            prompt += `BILLS (${p.bills.length} bills) - FROM bills WHERE patient_id = ${p.id}:\n`;
             p.bills.forEach((bill, idx) => {
                 prompt += `${idx + 1}. ${bill.bill_code}: ${bill.total_amount} THB - ${bill.payment_status}\n`;
                 if (bill.bill_date) prompt += `   Date: ${bill.bill_date}\n`;
@@ -698,7 +723,7 @@ A:
         }
 
         if (p.appointments && p.appointments.length > 0) {
-            prompt += `APPOINTMENTS (${p.appointments.length} appointments):\n`;
+            prompt += `APPOINTMENTS (${p.appointments.length} appointments) - FROM appointments WHERE patient_id = ${p.id}:\n`;
             p.appointments.forEach((apt, idx) => {
                 prompt += `${idx + 1}. ${apt.appointment_date} ${apt.appointment_time} - ${apt.status}\n`;
             });

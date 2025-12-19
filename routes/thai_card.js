@@ -190,18 +190,27 @@ router.options('/thai-card-write', (req, res) => {
     res.sendStatus(200);
 });
 
-// POST - Receive card data from reader (Legacy endpoint for compatibility)
-router.post('/thai_card', authenticateToken, async (req, res) => {
+// POST - Receive card data from reader (Legacy endpoint - matches Windows app URL)
+router.post('/thai_card', async (req, res) => {
     try {
+        // Add CORS headers to allow Windows app to connect
+        res.header('Access-Control-Allow-Origin', '*');
+        res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
+        res.header('Access-Control-Allow-Headers', 'Content-Type');
+
         console.log('[Thai Card] POST - Data received:', req.body);
 
         // Store the latest card data
         latestCardData = {
             cid: req.body.cid || req.body.citizenId,
+            th_title: req.body.th_title || req.body.title,
+            th_fname: req.body.th_fname || req.body.firstname || req.body.name,
+            th_lname: req.body.th_lname || req.body.lastname,
             name: req.body.name || req.body.fullname,
             firstname: req.body.firstname,
             lastname: req.body.lastname,
             dob: req.body.dob || req.body.birthdate,
+            gender: req.body.gender,
             address: req.body.address,
             issueDate: req.body.issueDate,
             expireDate: req.body.expireDate,
@@ -224,6 +233,14 @@ router.post('/thai_card', authenticateToken, async (req, res) => {
         console.error('[Thai Card] POST error:', error);
         res.status(500).json({ error: 'Failed to process Thai card data' });
     }
+});
+
+// OPTIONS - Handle preflight requests for CORS on /thai_card
+router.options('/thai_card', (req, res) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type');
+    res.sendStatus(200);
 });
 
 // DELETE - Clear card data

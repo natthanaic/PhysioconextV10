@@ -409,26 +409,52 @@ async function gatherContext(db, userId, query) {
         `, [today, today, today, today]);
         context.statistics = stats[0] || {};
 
-        // 8. Check if asking about specific patient by HN (supports PT250003 format)
-        const hnMatch = query.match(/PT\d{6}/i) || query.match(/HN[\s:]*?(PT\d{6})/i);
-        if (hnMatch) {
-            const hn = (hnMatch[0].match(/PT\d{6}/i) || [])[0]?.toUpperCase();
-            if (hn) {
-                const [patientDetail] = await db.execute(`
-                    SELECT
-                        p.*,
-                        YEAR(CURDATE()) - YEAR(p.date_of_birth) as age,
-                        (SELECT COUNT(*) FROM appointments WHERE patient_id = p.id) as total_visits,
-                        (SELECT COUNT(*) FROM pn_cases WHERE patient_id = p.id) as total_cases,
-                        (SELECT MAX(appointment_date) FROM appointments WHERE patient_id = p.id) as last_visit,
-                        (SELECT diagnosis FROM pn_cases WHERE patient_id = p.id ORDER BY created_at DESC LIMIT 1) as latest_diagnosis
-                    FROM patients p
-                    WHERE p.hn = ?
-                    LIMIT 1
-                `, [hn]);
+        // 8. Check if asking about specific patient by HN or patient number
+        // Support: PT250112, 250112, HN PT250112, ผู้ป่วย 250112, etc.
+        const hnFullMatch = query.match(/PT\d{6}/i);
+        const hnPartialMatch = query.match(/\d{6}/); // จับเลข 6 หลัก
 
-            if (patientDetail.length > 0) {
-                context.specificPatient = patientDetail[0];
+        let searchPattern = null;
+        if (hnFullMatch) {
+            searchPattern = hnFullMatch[0].toUpperCase(); // PT250112
+        } else if (hnPartialMatch) {
+            searchPattern = hnPartialMatch[0]; // 250112
+        }
+
+        if (searchPattern) {
+            // Search with LIKE to find all matching patients
+            const [patientMatches] = await db.execute(`
+                SELECT
+                    p.*,
+                    YEAR(CURDATE()) - YEAR(p.date_of_birth) as age,
+                    (SELECT COUNT(*) FROM appointments WHERE patient_id = p.id) as total_visits,
+                    (SELECT COUNT(*) FROM pn_cases WHERE patient_id = p.id) as total_cases,
+                    (SELECT MAX(appointment_date) FROM appointments WHERE patient_id = p.id) as last_visit,
+                    (SELECT diagnosis FROM pn_cases WHERE patient_id = p.id ORDER BY created_at DESC LIMIT 1) as latest_diagnosis
+                FROM patients p
+                WHERE p.hn LIKE ?
+                ORDER BY p.hn ASC
+                LIMIT 10
+            `, [`%${searchPattern}%`]);
+
+            if (patientMatches.length > 1) {
+                // Multiple patients found - show search results
+                context.patientSearchResults = {
+                    searchPattern: searchPattern,
+                    count: patientMatches.length,
+                    patients: patientMatches.map(p => ({
+                        id: p.id,
+                        hn: p.hn,
+                        name: `${p.first_name} ${p.last_name}`,
+                        age: p.age,
+                        gender: p.gender,
+                        last_visit: p.last_visit
+                    }))
+                };
+            } else if (patientMatches.length === 1) {
+                // Exact match - load full patient details
+                const patientDetail = patientMatches[0];
+                context.specificPatient = patientDetail;
 
                 // Get this patient's PN cases
                 const [patientPNCases] = await db.execute(`
@@ -439,7 +465,7 @@ async function gatherContext(db, userId, query) {
                     WHERE pn.patient_id = ?
                     ORDER BY pn.created_at DESC
                     LIMIT 20
-                `, [patientDetail[0].id]);
+                `, [patientDetail.id]);
                 context.specificPatient.pnCases = patientPNCases;
 
                 // Get this patient's SOAP notes
@@ -450,28 +476,27 @@ async function gatherContext(db, userId, query) {
                     WHERE pn.patient_id = ?
                     ORDER BY s.created_at DESC
                     LIMIT 20
-                `, [patientDetail[0].id]);
+                `, [patientDetail.id]);
                 context.specificPatient.soapNotes = patientSoap;
 
                 // Get this patient's bills
                 const [patientBills] = await db.execute(`
                     SELECT * FROM bills WHERE patient_id = ? ORDER BY created_at DESC LIMIT 10
-                `, [patientDetail[0].id]);
+                `, [patientDetail.id]);
                 context.specificPatient.bills = patientBills;
 
                 // Get this patient's appointments
                 const [patientAppts] = await db.execute(`
                     SELECT * FROM appointments WHERE patient_id = ? ORDER BY appointment_date DESC LIMIT 10
-                `, [patientDetail[0].id]);
+                `, [patientDetail.id]);
                 context.specificPatient.appointments = patientAppts;
             } else {
-                // Patient not found - tell AI explicitly
+                // No patient found - tell AI explicitly
                 context.notFoundPatient = {
-                    hn: hn,
+                    searchPattern: searchPattern,
                     searched: true,
-                    message: `ไม่พบผู้ป่วย HN ${hn} ในระบบ`
+                    message: `ไม่พบผู้ป่วยที่มีรหัส ${searchPattern} ในระบบ`
                 };
-            }
             }
         }
 
@@ -735,18 +760,44 @@ A:
         prompt += `========================================\n\n`;
     }
 
+    // Add SEARCH RESULTS if multiple patients found
+    if (context.patientSearchResults) {
+        const sr = context.patientSearchResults;
+        prompt += `========================================\n`;
+        prompt += `🔍 PATIENT SEARCH RESULTS\n`;
+        prompt += `========================================\n`;
+        prompt += `USER SEARCHED FOR: ${sr.searchPattern}\n`;
+        prompt += `DATABASE QUERY: FOUND ${sr.count} MATCHING PATIENTS\n\n`;
+        prompt += `⚠️ CRITICAL: ระบบค้นหาด้วย LIKE '%${sr.searchPattern}%' และพบผู้ป่วย ${sr.count} ราย:\n\n`;
+
+        sr.patients.forEach((p, idx) => {
+            prompt += `${idx + 1}. [ID:${p.id}] HN:${p.hn} | ${p.name} | Age:${p.age} | Gender:${p.gender}`;
+            if (p.last_visit) prompt += ` | Last Visit:${p.last_visit}`;
+            prompt += `\n`;
+        });
+
+        prompt += `\n📋 CORRECT RESPONSE:\n`;
+        prompt += `"พบผู้ป่วย ${sr.count} รายที่ตรงกับ ${sr.searchPattern}:\n`;
+        sr.patients.forEach((p, idx) => {
+            prompt += `${idx + 1}. HN ${p.hn} - ${p.name}\n`;
+        });
+        prompt += `กรุณาระบุ HN ที่ต้องการดูข้อมูลเพิ่มเติม"\n\n`;
+        prompt += `========================================\n\n`;
+    }
+
     // Add NOT FOUND patient information
     if (context.notFoundPatient) {
         const nf = context.notFoundPatient;
         prompt += `========================================\n`;
         prompt += `❌ PATIENT NOT FOUND IN DATABASE\n`;
         prompt += `========================================\n`;
-        prompt += `USER ASKED ABOUT: HN ${nf.hn}\n`;
-        prompt += `DATABASE QUERY RESULT: NOT FOUND\n\n`;
-        prompt += `⚠️ CRITICAL: ระบบได้ทำการค้นหา HN ${nf.hn} ในฐานข้อมูลแล้ว\n`;
-        prompt += `ผลการค้นหา: ไม่พบผู้ป่วยรายนี้ในระบบ\n\n`;
+        prompt += `USER SEARCHED FOR: ${nf.searchPattern}\n`;
+        prompt += `DATABASE QUERY: LIKE '%${nf.searchPattern}%'\n`;
+        prompt += `RESULT: NOT FOUND (0 matches)\n\n`;
+        prompt += `⚠️ CRITICAL: ระบบได้ทำการค้นหา ${nf.searchPattern} ในฐานข้อมูลแล้ว\n`;
+        prompt += `ผลการค้นหา: ไม่พบผู้ป่วยที่มีรหัสนี้ในระบบ\n\n`;
         prompt += `📋 CORRECT RESPONSE:\n`;
-        prompt += `"ไม่พบข้อมูลผู้ป่วย HN ${nf.hn} ในระบบครับ/ค่ะ กรุณาตรวจสอบเลข HN อีกครั้ง"\n\n`;
+        prompt += `"ไม่พบข้อมูลผู้ป่วยที่มีรหัส ${nf.searchPattern} ในระบบครับ/ค่ะ กรุณาตรวจสอบเลข HN อีกครั้ง"\n\n`;
         prompt += `⛔ DO NOT:\n`;
         prompt += `- สร้างข้อมูลผู้ป่วยขึ้นมาเอง\n`;
         prompt += `- บอกว่ามีผู้ป่วยรายนี้\n`;

@@ -137,7 +137,47 @@ router.get('/thai_card', authenticateToken, async (req, res) => {
     }
 });
 
-// POST - Receive card data from reader (API endpoint)
+// POST - Receive card data from Windows NFC card reader
+router.post('/thai-card-write', async (req, res) => {
+    try {
+        console.log('[Thai Card Write] Data Received from Card Reader:', req.body);
+
+        // Store the latest card data
+        latestCardData = {
+            cid: req.body.cid || req.body.citizenId,
+            th_title: req.body.th_title || req.body.title,
+            th_fname: req.body.th_fname || req.body.firstname || req.body.name,
+            th_lname: req.body.th_lname || req.body.lastname,
+            name: req.body.name || req.body.fullname,
+            firstname: req.body.firstname,
+            lastname: req.body.lastname,
+            dob: req.body.dob || req.body.birthdate,
+            gender: req.body.gender,
+            address: req.body.address,
+            issueDate: req.body.issueDate,
+            expireDate: req.body.expireDate,
+            timestamp: new Date()
+        };
+
+        // Clear data after 5 minutes
+        setTimeout(() => {
+            if (latestCardData && latestCardData.cid === req.body.cid) {
+                latestCardData = null;
+            }
+        }, 5 * 60 * 1000);
+
+        res.json({
+            status: 'success',
+            message: 'Thai card data received successfully',
+            data: latestCardData
+        });
+    } catch (error) {
+        console.error('[Thai Card Write] Error:', error);
+        res.status(500).json({ status: 'error', error: 'Failed to process Thai card data' });
+    }
+});
+
+// POST - Receive card data from reader (Legacy endpoint for compatibility)
 router.post('/thai_card', authenticateToken, async (req, res) => {
     try {
         console.log('[Thai Card] POST - Data received:', req.body);

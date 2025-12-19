@@ -409,22 +409,23 @@ async function gatherContext(db, userId, query) {
         `, [today, today, today, today]);
         context.statistics = stats[0] || {};
 
-        // 8. Check if asking about specific patient by HN (supports HNPT250112 format)
-        const hnMatch = query.match(/HN[\w\s:]*?([A-Z0-9]+)/i) || query.match(/patient\s+([A-Z0-9]+)/i);
+        // 8. Check if asking about specific patient by HN (supports PT250003 format)
+        const hnMatch = query.match(/PT\d{6}/i) || query.match(/HN[\s:]*?(PT\d{6})/i);
         if (hnMatch) {
-            const hn = hnMatch[1];
-            const [patientDetail] = await db.execute(`
-                SELECT
-                    p.*,
-                    YEAR(CURDATE()) - YEAR(p.date_of_birth) as age,
-                    (SELECT COUNT(*) FROM appointments WHERE patient_id = p.id) as total_visits,
-                    (SELECT COUNT(*) FROM pn_cases WHERE patient_id = p.id) as total_cases,
-                    (SELECT MAX(appointment_date) FROM appointments WHERE patient_id = p.id) as last_visit,
-                    (SELECT diagnosis FROM pn_cases WHERE patient_id = p.id ORDER BY created_at DESC LIMIT 1) as latest_diagnosis
-                FROM patients p
-                WHERE p.hn LIKE ?
-                LIMIT 1
-            `, [`%${hn}%`]);
+            const hn = (hnMatch[0].match(/PT\d{6}/i) || [])[0]?.toUpperCase();
+            if (hn) {
+                const [patientDetail] = await db.execute(`
+                    SELECT
+                        p.*,
+                        YEAR(CURDATE()) - YEAR(p.date_of_birth) as age,
+                        (SELECT COUNT(*) FROM appointments WHERE patient_id = p.id) as total_visits,
+                        (SELECT COUNT(*) FROM pn_cases WHERE patient_id = p.id) as total_cases,
+                        (SELECT MAX(appointment_date) FROM appointments WHERE patient_id = p.id) as last_visit,
+                        (SELECT diagnosis FROM pn_cases WHERE patient_id = p.id ORDER BY created_at DESC LIMIT 1) as latest_diagnosis
+                    FROM patients p
+                    WHERE p.hn = ?
+                    LIMIT 1
+                `, [hn]);
 
             if (patientDetail.length > 0) {
                 context.specificPatient = patientDetail[0];
@@ -519,22 +520,57 @@ RULE_03: ยึดข้อมูลปัจจุบันเป็นหล�
 📊 DATABASE SCHEMA UNDERSTANDING
 ========================================
 
+🔑 CRITICAL: DATABASE RELATIONSHIP (สำคัญมาก!)
+- patients.id = PRIMARY KEY (auto increment) - ตัวเลข เช่น 1, 2, 3, 42, 100
+- patients.hn = UNIQUE identifier (รูปแบบ PT{YY}{XXXX}) เช่น PT250003, PT260001
+- ทุกตารางใช้ patient_id เป็น FOREIGN KEY ชี้ไปที่ patients.id (ไม่ใช่ HN!)
+
+เมื่อถาม HN (เช่น PT250003):
+1. ค้นหา patients.hn = 'PT250003' ก่อน → ได้ patients.id (เช่น 42)
+2. จึงใช้ patient_id = 42 ค้นหาข้อมูลใน appointments, pn_cases, bills, soap_notes, courses
+3. ⚠️ ห้ามค้นหาด้วย HN โดยตรงในตารางอื่น - ต้องใช้ patients.id เท่านั้น!
+
+HN FORMAT:
+- รูปแบบ: PT{YY}{SEQUENCE}
+- PT250003 = ปี 2025, ลำดับที่ 3
+- PT260001 = ปี 2026, ลำดับที่ 1
+- SEQUENCE: 0000-9999 (รีเซ็ตทุกปี)
+- ⚠️ ต้อง match แบบ exact case-insensitive: PT250003 (6 หลัก)
+
+TABLE: patients (ทะเบียนคนไข้ - ข้อมูลความละเอียดอ่อนสูง)
+- PRIMARY KEY: id (auto increment integer)
+- UNIQUE: hn (PT{YY}{XXXX} format)
+- Key Fields: first_name, last_name, date_of_birth, medical_conditions, allergies
+- Security Level: CRITICAL
+- ⚠️ ห้ามเปิดเผย phone หรือ address ในบทสนทนาทั่วไป
+
 TABLE: appointments (การนัดหมาย - หัวใจหลักของการดำเนินงาน)
+- FOREIGN KEY: patient_id → patients.id
 - Key Fields: status, appointment_date, start_time, reason, cancellation_reason
 - Logic: ต้องแยกแยะระหว่าง
   * คนไข้ที่มาจริง (status = 'COMPLETED')
   * ยกเลิก (status = 'CANCELLED' - ต้องดูเหตุผล cancellation_reason)
   * นัดล่วงหน้า (status = 'SCHEDULED')
 
-TABLE: patients (ทะเบียนคนไข้ - ข้อมูลความละเอียดอ่อนสูง)
-- Key Fields: hn, first_name, last_name, diagnosis, rehab_goal
-- Security Level: CRITICAL
-- ⚠️ ห้ามเปิดเผย phone หรือ address ในบทสนทนาทั่วไป
+TABLE: pn_cases (เคสกายภาพบำบัด)
+- FOREIGN KEY: patient_id → patients.id
+- Key Fields: pn_code, diagnosis, chief_complaint, treatment_plan, status
+- ใช้ patient_id เชื่อมกับ patients.id
 
-TABLE: bills & bill_items (การเงินและบริการ)
+TABLE: soap_notes (บันทึกการรักษา)
+- FOREIGN KEY: pn_case_id → pn_cases.id
+- เชื่อมกับผู้ป่วยผ่าน: soap_notes → pn_cases → patients
+- Key Fields: subjective, objective, assessment, plan, pain_level
+
+TABLE: bills (บิล/ใบเสร็จ)
+- FOREIGN KEY: patient_id → patients.id
 - Key Fields: total_amount, payment_status, service_name, is_course_cutting
 - Logic: ยอดขายจริงต้องดูที่ payment_status = 'PAID' เท่านั้น
 - ต้องแยกระหว่างการจ่ายเงินสดกับการตัดคอร์ส (is_course_cutting)
+
+TABLE: courses (คอร์สการรักษา)
+- FOREIGN KEY: patient_id → patients.id
+- Key Fields: total_sessions, completed_sessions, status
 
 TABLE: audit_logs (ประวัติระบบ - ความปลอดภัยและตรวจสอบ)
 - Key Fields: action, user_id, old_values, new_values
@@ -801,15 +837,19 @@ A:
     prompt += `========================================\n\n`;
 
     prompt += `EXAMPLE 1 - Patient Lookup:\n`;
-    prompt += `Q: "ผู้ป่วย HNPT250112 มีอาการอะไร?" or "Show me patient HNPT250112"\n`;
-    prompt += `A: Look for HN in patients database above. Report:\n`;
-    prompt += `   - ชื่อผู้ป่วย (Full name)\n`;
-    prompt += `   - อายุ/เพศ (Age/Gender)\n`;
-    prompt += `   - โรคประจำตัว (medical_conditions)\n`;
-    prompt += `   - ประวัติแพ้ยา (allergies) - ALWAYS mention for safety!\n`;
-    prompt += `   - ยาที่ทาน (current_medications)\n`;
-    prompt += `   - การวินิจฉัยล่าสุด (latest_diagnosis from pnCases)\n`;
-    prompt += `   - จำนวนครั้งที่มารับบริการ (total_visits)\n\n`;
+    prompt += `Q: "ผู้ป่วย PT250003 มีอาการอะไร?" or "Show me patient PT250003"\n`;
+    prompt += `A: STEP-BY-STEP:\n`;
+    prompt += `   1. ค้นหา patients.hn = 'PT250003' → ได้ patients.id (เช่น 42)\n`;
+    prompt += `   2. ใช้ patient_id = 42 ดึงข้อมูล appointments, pn_cases, bills\n`;
+    prompt += `   3. รายงาน:\n`;
+    prompt += `      - ชื่อผู้ป่วย (Full name)\n`;
+    prompt += `      - อายุ/เพศ (Age/Gender)\n`;
+    prompt += `      - โรคประจำตัว (medical_conditions)\n`;
+    prompt += `      - ⚠️ ประวัติแพ้ยา (allergies) - ALWAYS mention for safety!\n`;
+    prompt += `      - ยาที่ทาน (current_medications)\n`;
+    prompt += `      - การวินิจฉัยล่าสุด (latest_diagnosis from pnCases)\n`;
+    prompt += `      - จำนวนครั้งที่มารับบริการ (total_visits)\n`;
+    prompt += `   4. ⚠️ อ้างอิงด้วย HN (PT250003) ไม่ใช้ชื่อเต็ม\n\n`;
 
     prompt += `EXAMPLE 2 - Today's Schedule:\n`;
     prompt += `Q: "วันนี้มีนัดกี่คน?" or "What's today's schedule?"\n`;
@@ -861,7 +901,11 @@ A:
     prompt += `- Courses: ACTIVE → COMPLETED / CANCELLED\n\n`;
 
     prompt += `Data Format Rules:\n`;
-    prompt += `- HN Format: HNPT{YYMMDD} (e.g., HNPT250112 = registered 2025-01-12)\n`;
+    prompt += `- HN Format: PT{YY}{XXXX} (e.g., PT250003 = ปี 2025 ลำดับที่ 3)\n`;
+    prompt += `  * PT = Prefix คงที่\n`;
+    prompt += `  * YY = ปี 2 หลัก (25 = 2025, 26 = 2026)\n`;
+    prompt += `  * XXXX = ลำดับ 4 หลัก (0000-9999, รีเซ็ตทุกปี)\n`;
+    prompt += `  * ตัวอย่าง: PT250001, PT250002, PT250003, PT260001\n`;
     prompt += `- PN Code Format: PN-{year}-{sequence} (e.g., PN-2025-001)\n`;
     prompt += `- Bill Code Format: BILL-{year}-{sequence}\n`;
     prompt += `- Dates: YYYY-MM-DD (MySQL format)\n`;

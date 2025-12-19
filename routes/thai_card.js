@@ -140,6 +140,11 @@ router.get('/thai_card', authenticateToken, async (req, res) => {
 // POST - Receive card data from Windows NFC card reader
 router.post('/thai-card-write', async (req, res) => {
     try {
+        // Add CORS headers to allow Windows app to connect
+        res.header('Access-Control-Allow-Origin', '*');
+        res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
+        res.header('Access-Control-Allow-Headers', 'Content-Type');
+
         console.log('[Thai Card Write] Data Received from Card Reader:', req.body);
 
         // Store the latest card data
@@ -175,6 +180,14 @@ router.post('/thai-card-write', async (req, res) => {
         console.error('[Thai Card Write] Error:', error);
         res.status(500).json({ status: 'error', error: 'Failed to process Thai card data' });
     }
+});
+
+// OPTIONS - Handle preflight requests for CORS
+router.options('/thai-card-write', (req, res) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type');
+    res.sendStatus(200);
 });
 
 // POST - Receive card data from reader (Legacy endpoint for compatibility)

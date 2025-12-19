@@ -196,9 +196,13 @@ router.post('/thai_card', async (req, res) => {
         // Add CORS headers to allow Windows app to connect
         res.header('Access-Control-Allow-Origin', '*');
         res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
-        res.header('Access-Control-Allow-Headers', 'Content-Type');
+        res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
-        console.log('[Thai Card] POST - Data received:', req.body);
+        console.log('=== THAI CARD POST REQUEST ===');
+        console.log('Headers:', req.headers);
+        console.log('Body:', req.body);
+        console.log('Content-Type:', req.headers['content-type']);
+        console.log('==============================');
 
         // Store the latest card data
         latestCardData = {
@@ -217,6 +221,8 @@ router.post('/thai_card', async (req, res) => {
             timestamp: new Date()
         };
 
+        console.log('Stored data:', latestCardData);
+
         // Clear data after 5 minutes
         setTimeout(() => {
             if (latestCardData && latestCardData.cid === req.body.cid) {
@@ -231,15 +237,16 @@ router.post('/thai_card', async (req, res) => {
         });
     } catch (error) {
         console.error('[Thai Card] POST error:', error);
-        res.status(500).json({ error: 'Failed to process Thai card data' });
+        res.status(500).json({ success: false, error: 'Failed to process Thai card data' });
     }
 });
 
 // OPTIONS - Handle preflight requests for CORS on /thai_card
 router.options('/thai_card', (req, res) => {
+    console.log('=== THAI CARD OPTIONS REQUEST ===');
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     res.sendStatus(200);
 });
 

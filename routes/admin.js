@@ -490,6 +490,13 @@ router.delete('/users/:id', authenticateToken, authorize('ADMIN'), async (req, r
                 console.log('[DELETE] Audit logs deletion error:', e.message);
             }
 
+            // Nullify notification_settings.updated_by references
+            try {
+                await connection.execute('UPDATE notification_settings SET updated_by = NULL WHERE updated_by = ?', [id]);
+            } catch (e) {
+                console.log('[DELETE] Notification settings update error:', e.message);
+            }
+
             // Delete created records (handle tables that may not exist)
             try {
                 await connection.execute('DELETE FROM broadcast_campaigns WHERE created_by = ?', [id]);
@@ -605,6 +612,13 @@ router.delete('/users/:id', authenticateToken, authorize('ADMIN'), async (req, r
                 await connection.execute('DELETE FROM audit_logs WHERE user_id = ?', [id]);
             } catch (e) {
                 console.log('[DELETE] Audit logs deletion error:', e.message);
+            }
+
+            // Nullify notification_settings.updated_by references
+            try {
+                await connection.execute('UPDATE notification_settings SET updated_by = NULL WHERE updated_by = ?', [id]);
+            } catch (e) {
+                console.log('[DELETE] Notification settings update error:', e.message);
             }
 
             // Don't delete chat messages/conversations - keep for record but mark user as deleted

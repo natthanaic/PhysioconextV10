@@ -477,7 +477,10 @@ router.delete('/users/:id', authenticateToken, authorize('ADMIN'), async (req, r
             await connection.execute('DELETE FROM chat_typing_status WHERE user_id = ?', [id]);
             await connection.execute('DELETE FROM chat_messages WHERE sender_id = ?', [id]);
             await connection.execute('DELETE FROM chat_conversations WHERE user1_id = ? OR user2_id = ?', [id, id]);
-            await connection.execute('DELETE FROM user_clinic_grants WHERE user_id = ?', [id]);
+
+            // Delete grants TO this user and grants BY this user
+            await connection.execute('DELETE FROM user_clinic_grants WHERE user_id = ? OR granted_by = ?', [id, id]);
+
             await connection.execute('DELETE FROM otp_codes WHERE user_id = ?', [id]);
 
             // Delete audit logs for this user (may have FK constraint)
@@ -585,7 +588,15 @@ router.delete('/users/:id', authenticateToken, authorize('ADMIN'), async (req, r
             }
 
             // Clean up user-specific data
+            // Delete grants TO this user
             await connection.execute('DELETE FROM user_clinic_grants WHERE user_id = ?', [id]);
+
+            // Transfer grants GRANTED BY this user to current admin
+            await connection.execute(
+                'UPDATE user_clinic_grants SET granted_by = ? WHERE granted_by = ?',
+                [req.user.id, id]
+            );
+
             await connection.execute('DELETE FROM otp_codes WHERE user_id = ?', [id]);
             await connection.execute('DELETE FROM chat_typing_status WHERE user_id = ?', [id]);
 

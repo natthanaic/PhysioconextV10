@@ -2476,8 +2476,13 @@ router.put('/bills/:id', authenticateToken, authorize('ADMIN'), async (req, res)
         const { id } = req.params;
         const {
             patient_id,
+            walk_in_name,
+            walk_in_phone,
             clinic_id,
+            appointment_id,
             pn_case_id,
+            course_id,
+            is_course_cutting,
             bill_date,
             due_date,
             items,
@@ -2488,15 +2493,74 @@ router.put('/bills/:id', authenticateToken, authorize('ADMIN'), async (req, res)
             payment_status,
             payment_method,
             payment_date,
-            notes
+            payment_notes,
+            bill_notes
         } = req.body;
 
+        const toNullable = (value) => {
+            if (value === undefined || value === null) return null;
+            if (typeof value === 'string') {
+                const trimmed = value.trim();
+                if (trimmed === '' || trimmed.toLowerCase() === 'null' || trimmed.toLowerCase() === 'undefined') {
+                    return null;
+                }
+                return trimmed;
+            }
+            return value;
+        };
+
+        const toNumber = (value, fallback = 0) => {
+            const num = parseFloat(value);
+            return Number.isFinite(num) ? num : fallback;
+        };
+
+        const normalizedIsCourseCutting = is_course_cutting === true || is_course_cutting === 1 || is_course_cutting === '1';
+
+        const parseItems = (value) => {
+            if (Array.isArray(value)) return value;
+            if (typeof value === 'string') {
+                try {
+                    const parsed = JSON.parse(value);
+                    return Array.isArray(parsed) ? parsed : [];
+                } catch (e) {
+                    console.warn('[BILLS] Failed to parse items payload as JSON, falling back to empty array');
+                    return [];
+                }
+            }
+            return [];
+        };
+
+        const normalizedItems = parseItems(items).map((rawItem, index) => {
+            const quantity = Math.max(1, toNumber(rawItem.quantity, 1));
+            const unitPrice = toNumber(rawItem.unit_price, 0);
+            const totalPrice = toNumber(rawItem.total_price, quantity * unitPrice);
+            const serviceNameRaw = toNullable(rawItem.service_name);
+            const serviceIdRaw = toNullable(rawItem.service_id);
+
+            const serviceName = serviceNameRaw
+                || (serviceIdRaw ? `Service ${serviceIdRaw}` : `Item ${index + 1}`);
+
+            return {
+                service_id: serviceIdRaw,
+                service_name: serviceName,
+                quantity,
+                unit_price: unitPrice,
+                total_price: totalPrice,
+                notes: toNullable(rawItem.notes)
+            };
+        });
+
         // Update bill
-        await connection.execute(`
+        const [updateResult] = await connection.execute(`
             UPDATE bills SET
                 patient_id = ?,
+                walk_in_name = ?,
+                walk_in_phone = ?,
                 clinic_id = ?,
+                appointment_id = ?,
                 pn_case_id = ?,
+                course_id = ?,
+                is_course_cutting = ?,
                 bill_date = ?,
                 due_date = ?,
                 subtotal = ?,
@@ -2506,20 +2570,42 @@ router.put('/bills/:id', authenticateToken, authorize('ADMIN'), async (req, res)
                 payment_status = ?,
                 payment_method = ?,
                 payment_date = ?,
-                notes = ?
+                payment_notes = ?,
+                bill_notes = ?
             WHERE id = ?
         `, [
-            patient_id, clinic_id, pn_case_id, bill_date, due_date,
-            subtotal, discount, tax, total_amount,
-            payment_status, payment_method, payment_date, notes, id
+            toNullable(patient_id),
+            toNullable(walk_in_name),
+            toNullable(walk_in_phone),
+            toNullable(clinic_id),
+            toNullable(appointment_id),
+            toNullable(pn_case_id),
+            toNullable(course_id),
+            normalizedIsCourseCutting ? 1 : 0,
+            toNullable(bill_date),
+            toNullable(due_date),
+            toNumber(subtotal),
+            toNumber(discount),
+            toNumber(tax),
+            toNumber(total_amount),
+            payment_status || 'UNPAID',
+            toNullable(payment_method),
+            toNullable(payment_date),
+            toNullable(payment_notes),
+            toNullable(bill_notes),
+            id
         ]);
+
+        if (updateResult.affectedRows === 0) {
+            throw new Error(`Bill with id ${id} not found`);
+        }
 
         // Delete existing items and insert new ones
         if (items !== undefined) {
             await connection.execute('DELETE FROM bill_items WHERE bill_id = ?', [id]);
 
-            if (items.length > 0) {
-                for (const item of items) {
+            if (normalizedItems.length > 0) {
+                for (const item of normalizedItems) {
                     await connection.execute(`
                         INSERT INTO bill_items (
                             bill_id, service_id, service_name, quantity, unit_price, total_price, notes
@@ -2543,7 +2629,7 @@ router.put('/bills/:id', authenticateToken, authorize('ADMIN'), async (req, res)
     } catch (error) {
         await connection.rollback();
         console.error('Update bill error:', error);
-        res.status(500).json({ error: 'Failed to update bill' });
+        res.status(500).json({ error: 'Failed to update bill', details: error.message });
     } finally {
         connection.release();
     }

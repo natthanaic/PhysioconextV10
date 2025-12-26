@@ -2479,7 +2479,6 @@ router.put('/bills/:id', authenticateToken, async (req, res) => {
             clinic_id,
             pn_case_id,
             bill_date,
-            due_date,
             items,
             discount,
             tax,
@@ -2501,7 +2500,7 @@ router.put('/bills/:id', authenticateToken, async (req, res) => {
         console.log('[BILLS] Updating bill ID:', id);
         console.log('[BILLS] Calculated subtotal:', subtotal, 'total_amount:', total_amount);
 
-        // Update bill
+        // Update bill (note: bills table doesn't have due_date column)
         await connection.execute(`
             UPDATE bills SET
                 patient_id = ?,
@@ -2510,7 +2509,6 @@ router.put('/bills/:id', authenticateToken, async (req, res) => {
                 clinic_id = ?,
                 pn_case_id = ?,
                 bill_date = ?,
-                due_date = ?,
                 subtotal = ?,
                 discount = ?,
                 tax = ?,
@@ -2527,7 +2525,6 @@ router.put('/bills/:id', authenticateToken, async (req, res) => {
             clinic_id,
             pn_case_id || null,
             bill_date,
-            due_date || null,
             subtotal,
             discount || 0,
             tax || 0,

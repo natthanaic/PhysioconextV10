@@ -2655,7 +2655,7 @@ router.post('/soap-smart/generate', authenticateToken, async (req, res) => {
             // Try with pt_assessments table
             const [cases] = await db.execute(`
                 SELECT c.*,
-                       p.first_name, p.last_name, p.gender, p.date_of_birth,
+                       p.first_name, p.last_name, p.gender,
                        pt.pt_diagnosis, pt.pt_chief_complaint, pt.pt_present_history, pt.pt_pain_score
                 FROM pn_cases c
                 LEFT JOIN patients p ON c.patient_id = p.id
@@ -2672,7 +2672,7 @@ router.post('/soap-smart/generate', authenticateToken, async (req, res) => {
             console.log('[SOAP Smart] pt_assessments table not available, continuing without PT data');
             const [cases] = await db.execute(`
                 SELECT c.*,
-                       p.first_name, p.last_name, p.gender, p.date_of_birth
+                       p.first_name, p.last_name, p.gender
                 FROM pn_cases c
                 LEFT JOIN patients p ON c.patient_id = p.id
                 WHERE c.id = ?
@@ -2712,7 +2712,7 @@ router.post('/soap-smart/generate', authenticateToken, async (req, res) => {
 
         // Build AI prompt based on field type
         let prompt = '';
-        const patientInfo = `Patient: ${currentCase.first_name} ${currentCase.last_name}, ${currentCase.gender}, Age: ${currentCase.date_of_birth ? Math.floor((Date.now() - new Date(currentCase.date_of_birth)) / (1000 * 60 * 60 * 24 * 365)) : 'N/A'}`;
+        const patientInfo = `Patient: ${currentCase.first_name} ${currentCase.last_name}, Gender: ${currentCase.gender || 'N/A'}`;
         const diagnosis = `Diagnosis: ${currentCase.diagnosis || 'N/A'}`;
         const ptInfo = currentCase.pt_diagnosis ? `PT Diagnosis: ${currentCase.pt_diagnosis}\nChief Complaint: ${currentCase.pt_chief_complaint || 'N/A'}\nPresent History: ${currentCase.pt_present_history || 'N/A'}\nPain Score: ${currentCase.pt_pain_score || 'N/A'}/10` : '';
 

@@ -97,17 +97,18 @@ app.use('/api/auth', authRoutes);
 app.use('/api/auth', tfaRoutes);
 app.use('/api/google', googleOAuthRoutes);
 app.use('/api/patients', patientsRoutes);
+
+// --- THAI CARD API ROUTE ---
+// CRITICAL: Must be mounted FIRST before any other /api routes to prevent route conflicts
+// This enables: https://rehabplus.lantavafix.com/api/thai_card
+app.use('/api', thaiCardRoute);
+
 app.use('/api', adminRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api', appointmentsRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api', testRoutes);
 app.use('/api', specializedRoutes);
-
-// --- THAI CARD API ROUTE ---
-// IMPORTANT: Must be mounted BEFORE pn-cases to avoid /:id catch-all conflict
-// This enables: https://rehabplus.lantavafix.com/api/thai_card
-app.use('/api', thaiCardRoute);
 
 // --- EXPENSE MANAGEMENT ROUTE ---
 // Admin-only expense tracking and financial management

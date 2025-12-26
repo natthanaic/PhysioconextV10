@@ -4,6 +4,8 @@ const router = express.Router();
 
 // Thai card reader endpoint (no authentication required - trusted local device)
 router.post('/thai_card', async (req, res) => {
+    console.log('[THAI CARD] Route matched! Processing request...');
+
     try {
         const db = req.app.locals.db;
         const cardData = req.body;

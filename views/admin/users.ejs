@@ -718,6 +718,10 @@
                                 <button class="btn btn-sm btn-light border text-muted" disabled title="You cannot delete your own account">
                                     <i class="bi bi-trash"></i>
                                 </button>
+                            ` : user.active ? `
+                                <button class="btn btn-sm btn-light border text-muted" disabled title="Deactivate user first before deleting">
+                                    <i class="bi bi-trash"></i>
+                                </button>
                             ` : `
                                 <button class="btn btn-sm btn-light border text-danger" onclick="showDeleteUserModal(${user.id})" title="Delete User">
                                     <i class="bi bi-trash"></i>

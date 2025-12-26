@@ -130,3 +130,19 @@
         </div>
     </div>
 </nav>
+
+<script>
+    // Global logout function - available on all pages with sidebar
+    if (typeof logout === 'undefined') {
+        function logout() {
+            // Clear auth token
+            document.cookie = 'authToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+
+            // Clear all localStorage
+            localStorage.clear();
+
+            // Redirect to login
+            window.location.href = '/login';
+        }
+    }
+</script>

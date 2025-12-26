@@ -259,13 +259,26 @@
                 <div class="row">
                     <!-- Main Settings Column -->
                     <div class="col-lg-8">
-                        <!-- Gemini AI Configuration -->
+                        <!-- AI Provider Tabs -->
                         <div class="settings-card">
-                            <div class="card-header d-flex justify-content-between align-items-center">
-                                <h4><i class="bi bi-robot text-primary"></i> Google Gemini AI</h4>
-                                <span class="feature-badge">Smart Booking</span>
+                            <div class="card-header">
+                                <ul class="nav nav-tabs card-header-tabs" id="aiProviderTabs" role="tablist">
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link active" id="gemini-tab" data-bs-toggle="tab" data-bs-target="#gemini-panel" type="button" role="tab">
+                                            <i class="bi bi-robot me-2"></i>Gemini AI
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" id="shinoai-tab" data-bs-toggle="tab" data-bs-target="#shinoai-panel" type="button" role="tab">
+                                            <i class="bi bi-cpu me-2"></i>ShinoAI
+                                        </button>
+                                    </li>
+                                </ul>
                             </div>
                             <div class="card-body">
+                                <div class="tab-content" id="aiProviderTabContent">
+                                    <!-- Gemini AI Tab -->
+                                    <div class="tab-pane fade show active" id="gemini-panel" role="tabpanel">
                                 <div class="warning-box">
                                     <i class="bi bi-shield-lock-fill mt-1"></i>
                                     <div>
@@ -318,21 +331,67 @@
                                         </div>
 
                                         <div class="col-12 mt-4">
-                                            <label class="form-label mb-3">Active Features</label>
+                                            <label class="form-label mb-3">🎯 Clinic AI Features</label>
                                             <div class="d-flex flex-column gap-2">
-                                                <div class="form-check form-switch p-3 border rounded bg-light">
-                                                    <input class="form-check-input ms-0 me-3" type="checkbox" id="feature-symptom-analysis" name="features.symptomAnalysis" checked>
-                                                    <label class="form-check-label fw-bold" for="feature-symptom-analysis">
-                                                        Symptom Analysis
+                                                <!-- SOAP Smart -->
+                                                <div class="form-check form-switch p-3 border rounded" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);">
+                                                    <input class="form-check-input ms-0 me-3" type="checkbox" id="feature-soap-smart" name="features.soapSmart">
+                                                    <label class="form-check-label fw-bold" for="feature-soap-smart">
+                                                        🩺 SOAP Smart
+                                                        <span class="badge bg-primary ms-2" style="font-size: 0.65rem;">PRO</span>
                                                     </label>
-                                                    <div class="text-muted small mt-1">Analyses patient descriptions to recommend pain zones</div>
+                                                    <div class="text-muted small mt-1">
+                                                        AI-powered SOAP note generation in PN cases: Subjective intro suggestions, Objective recommendations, Assessment polishing, and Plan optimization with modality suggestions
+                                                    </div>
                                                 </div>
+
+                                                <!-- Smart Booking -->
                                                 <div class="form-check form-switch p-3 border rounded bg-light">
-                                                    <input class="form-check-input ms-0 me-3" type="checkbox" id="feature-note-polish" name="features.notePolish" checked>
-                                                    <label class="form-check-label fw-bold" for="feature-note-polish">
-                                                        Note Polishing
+                                                    <input class="form-check-input ms-0 me-3" type="checkbox" id="feature-smart-booking" name="features.smartBooking" checked>
+                                                    <label class="form-check-label fw-bold" for="feature-smart-booking">
+                                                        📅 Smart Booking
                                                     </label>
-                                                    <div class="text-muted small mt-1">Professionalizes appointment notes automatically</div>
+                                                    <div class="text-muted small mt-1">Analyzes patient symptoms to recommend pain zones on public booking form</div>
+                                                </div>
+
+                                                <!-- PatientsPlus -->
+                                                <div class="form-check form-switch p-3 border rounded bg-light">
+                                                    <input class="form-check-input ms-0 me-3" type="checkbox" id="feature-patients-plus" name="features.patientsPlus">
+                                                    <label class="form-check-label fw-bold" for="feature-patients-plus">
+                                                        👥 PatientsPlus
+                                                        <span class="badge bg-info ms-2" style="font-size: 0.65rem;">COMING SOON</span>
+                                                    </label>
+                                                    <div class="text-muted small mt-1">Intelligent patient insights and treatment recommendations based on history</div>
+                                                </div>
+
+                                                <!-- FINpredict -->
+                                                <div class="form-check form-switch p-3 border rounded bg-light">
+                                                    <input class="form-check-input ms-0 me-3" type="checkbox" id="feature-fin-predict" name="features.finPredict">
+                                                    <label class="form-check-label fw-bold" for="feature-fin-predict">
+                                                        💰 FINpredict
+                                                        <span class="badge bg-info ms-2" style="font-size: 0.65rem;">COMING SOON</span>
+                                                    </label>
+                                                    <div class="text-muted small mt-1">Financial forecasting and revenue predictions using AI analytics</div>
+                                                </div>
+
+                                                <!-- NotificationPlus -->
+                                                <div class="form-check form-switch p-3 border rounded bg-light">
+                                                    <input class="form-check-input ms-0 me-3" type="checkbox" id="feature-notification-plus" name="features.notificationPlus">
+                                                    <label class="form-check-label fw-bold" for="feature-notification-plus">
+                                                        🔔 NotificationPlus
+                                                        <span class="badge bg-info ms-2" style="font-size: 0.65rem;">COMING SOON</span>
+                                                    </label>
+                                                    <div class="text-muted small mt-1">Smart notification timing and personalized message optimization</div>
+                                                </div>
+
+                                                <!-- MarketingPlus -->
+                                                <div class="form-check form-switch p-3 border rounded bg-light">
+                                                    <input class="form-check-input ms-0 me-3" type="checkbox" id="feature-marketing-plus" name="features.marketingPlus">
+                                                    <label class="form-check-label fw-bold" for="feature-marketing-plus">
+                                                        📢 MarketingPlus
+                                                        <span class="badge bg-info ms-2" style="font-size: 0.65rem;">COMING SOON</span>
+                                                    </label>
+                                                    <div class="text-muted small mt-1">AI-generated marketing content and campaign optimization</div>
                                                 </div>
                                             </div>
                                         </div>
@@ -347,37 +406,210 @@
                                         </button>
                                     </div>
                                 </form>
+                                    </div>
+                                    <!-- End Gemini AI Tab -->
+
+                                    <!-- ShinoAI Tab (uses same Gemini settings) -->
+                                    <div class="tab-pane fade" id="shinoai-panel" role="tabpanel">
+                                        <div class="alert alert-info d-flex align-items-start gap-3 mb-4">
+                                            <i class="bi bi-info-circle-fill fs-4 mt-1"></i>
+                                            <div>
+                                                <strong>ShinoAI - Your Clinic Management Assistant</strong><br>
+                                                <span class="small">ShinoAI is an intelligent chatbot that helps manage your clinic by providing instant access to:</span>
+                                                <ul class="small mb-0 mt-2">
+                                                    <li>📋 Today's appointments and schedule</li>
+                                                    <li>📊 Business performance (income, expenses)</li>
+                                                    <li>👥 Patient statistics</li>
+                                                    <li>🎯 Active PN cases summary</li>
+                                                </ul>
+                                                <span class="small mt-2 d-block"><strong>Configuration:</strong> ShinoAI uses the same Gemini AI API settings configured below. The chatbot is accessible via the floating button on all pages.</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="warning-box">
+                                            <i class="bi bi-shield-lock-fill mt-1"></i>
+                                            <div>
+                                                <strong>Security Notice</strong><br>
+                                                Your API key is stored securely on the server and never exposed to public users. Only administrators can view and modify these settings.
+                                            </div>
+                                        </div>
+
+                                        <form id="gemini-settings-form-shino">
+                                            <div class="row g-3">
+                                                <div class="col-md-6">
+                                                    <label for="gemini-enabled-shino" class="form-label">
+                                                        Enable AI Features
+                                                    </label>
+                                                    <select class="form-select" id="gemini-enabled-shino" name="enabled" required>
+                                                        <option value="1">Enabled</option>
+                                                        <option value="0">Disabled</option>
+                                                    </select>
+                                                    <div class="form-text small">Toggle AI features</div>
+                                                </div>
+
+                                                <div class="col-md-6">
+                                                    <label for="gemini-model-shino" class="form-label">
+                                                        AI Model
+                                                    </label>
+                                                    <select class="form-select" id="gemini-model-shino" name="model" required>
+                                                        <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                                                        <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash (Experimental)</option>
+                                                        <option value="gemini-1.5-flash">Gemini 1.5 Flash (Stable)</option>
+                                                        <option value="gemini-1.5-pro">Gemini 1.5 Pro (Advanced)</option>
+                                                        <option value="gemini-exp-1206">Gemini Experimental (1206)</option>
+                                                    </select>
+                                                    <div class="form-text small">Select processing model</div>
+                                                </div>
+
+                                                <div class="col-12">
+                                                    <label for="gemini-api-key-shino" class="form-label">
+                                                        API Key
+                                                    </label>
+                                                    <div class="input-group">
+                                                        <input type="password" class="form-control" id="gemini-api-key-shino" name="apiKey"
+                                                               placeholder="Enter your Gemini API key" required>
+                                                        <button class="btn btn-outline-secondary" type="button" id="toggle-api-key-shino" style="border-top-left-radius: 0; border-bottom-left-radius: 0;">
+                                                            <i class="bi bi-eye"></i>
+                                                        </button>
+                                                    </div>
+                                                    <div class="form-text small">
+                                                        Get your API key from <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-decoration-none">Google AI Studio</a>
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-12 mt-4">
+                                                    <label class="form-label mb-3">🎯 Clinic AI Features</label>
+                                                    <div class="d-flex flex-column gap-2">
+                                                        <!-- SOAP Smart -->
+                                                        <div class="form-check form-switch p-3 border rounded" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);">
+                                                            <input class="form-check-input ms-0 me-3" type="checkbox" id="feature-soap-smart-shino" name="features.soapSmart">
+                                                            <label class="form-check-label fw-bold" for="feature-soap-smart-shino">
+                                                                🩺 SOAP Smart
+                                                                <span class="badge bg-primary ms-2" style="font-size: 0.65rem;">PRO</span>
+                                                            </label>
+                                                            <div class="text-muted small mt-1">
+                                                                AI-powered SOAP note generation in PN cases: Subjective intro suggestions, Objective recommendations, Assessment polishing, and Plan optimization with modality suggestions
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- Smart Booking -->
+                                                        <div class="form-check form-switch p-3 border rounded bg-light">
+                                                            <input class="form-check-input ms-0 me-3" type="checkbox" id="feature-smart-booking-shino" name="features.smartBooking" checked>
+                                                            <label class="form-check-label fw-bold" for="feature-smart-booking-shino">
+                                                                📅 Smart Booking
+                                                            </label>
+                                                            <div class="text-muted small mt-1">Analyzes patient symptoms to recommend pain zones on public booking form</div>
+                                                        </div>
+
+                                                        <!-- PatientsPlus -->
+                                                        <div class="form-check form-switch p-3 border rounded bg-light">
+                                                            <input class="form-check-input ms-0 me-3" type="checkbox" id="feature-patients-plus-shino" name="features.patientsPlus">
+                                                            <label class="form-check-label fw-bold" for="feature-patients-plus-shino">
+                                                                👥 PatientsPlus
+                                                                <span class="badge bg-info ms-2" style="font-size: 0.65rem;">COMING SOON</span>
+                                                            </label>
+                                                            <div class="text-muted small mt-1">Intelligent patient insights and treatment recommendations based on history</div>
+                                                        </div>
+
+                                                        <!-- FINpredict -->
+                                                        <div class="form-check form-switch p-3 border rounded bg-light">
+                                                            <input class="form-check-input ms-0 me-3" type="checkbox" id="feature-fin-predict-shino" name="features.finPredict">
+                                                            <label class="form-check-label fw-bold" for="feature-fin-predict-shino">
+                                                                💰 FINpredict
+                                                                <span class="badge bg-info ms-2" style="font-size: 0.65rem;">COMING SOON</span>
+                                                            </label>
+                                                            <div class="text-muted small mt-1">Financial forecasting and revenue predictions using AI analytics</div>
+                                                        </div>
+
+                                                        <!-- NotificationPlus -->
+                                                        <div class="form-check form-switch p-3 border rounded bg-light">
+                                                            <input class="form-check-input ms-0 me-3" type="checkbox" id="feature-notification-plus-shino" name="features.notificationPlus">
+                                                            <label class="form-check-label fw-bold" for="feature-notification-plus-shino">
+                                                                🔔 NotificationPlus
+                                                                <span class="badge bg-info ms-2" style="font-size: 0.65rem;">COMING SOON</span>
+                                                            </label>
+                                                            <div class="text-muted small mt-1">Smart notification timing and personalized message optimization</div>
+                                                        </div>
+
+                                                        <!-- MarketingPlus -->
+                                                        <div class="form-check form-switch p-3 border rounded bg-light">
+                                                            <input class="form-check-input ms-0 me-3" type="checkbox" id="feature-marketing-plus-shino" name="features.marketingPlus">
+                                                            <label class="form-check-label fw-bold" for="feature-marketing-plus-shino">
+                                                                📢 MarketingPlus
+                                                                <span class="badge bg-info ms-2" style="font-size: 0.65rem;">COMING SOON</span>
+                                                            </label>
+                                                            <div class="text-muted small mt-1">AI-generated marketing content and campaign optimization</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="mt-4 pt-3 border-top d-flex gap-2">
+                                                <button type="submit" class="btn btn-primary">
+                                                    <i class="bi bi-save me-2"></i>Save Settings
+                                                </button>
+                                                <button type="button" class="btn btn-success" id="test-ai-btn-shino">
+                                                    <i class="bi bi-lightning-charge me-2"></i>Test Connection
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                    <!-- End ShinoAI Tab -->
+                                </div>
+                                <!-- End Tab Content -->
                             </div>
                         </div>
                     </div>
 
                     <!-- Info Column -->
                     <div class="col-lg-4">
-                        <div class="settings-card h-100">
+                        <div class="settings-card mb-3">
                             <div class="card-header">
-                                <h4><i class="bi bi-info-circle text-info"></i> How It Works</h4>
+                                <h4><i class="bi bi-robot text-primary"></i> Gemini AI Features</h4>
                             </div>
                             <div class="card-body">
-                                <div class="mb-4">
+                                <div class="mb-3">
                                     <div class="info-icon-wrapper bg-primary bg-opacity-10 text-primary">
                                         <i class="bi bi-chat-heart-fill"></i>
                                     </div>
                                     <h6 class="fw-bold">Smart Symptom Detection</h6>
-                                    <p class="text-muted small mb-0">Users describe their symptoms in natural language, and AI recommends the appropriate pain zone and treatment plan.</p>
+                                    <p class="text-muted small mb-0">Public booking form analyzes symptoms to recommend pain zones.</p>
                                 </div>
-                                <div class="mb-4">
+                                <div>
                                     <div class="info-icon-wrapper bg-success bg-opacity-10 text-success">
                                         <i class="bi bi-magic"></i>
                                     </div>
                                     <h6 class="fw-bold">Note Enhancement</h6>
-                                    <p class="text-muted small mb-0">AI automatically polishes rough notes into professional, medically accurate records.</p>
+                                    <p class="text-muted small mb-0">Polishes rough notes into professional medical records.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="settings-card">
+                            <div class="card-header">
+                                <h4><i class="bi bi-cpu text-info"></i> ShinoAI Features</h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <div class="info-icon-wrapper bg-info bg-opacity-10 text-info">
+                                        <i class="bi bi-calendar-check"></i>
+                                    </div>
+                                    <h6 class="fw-bold">Clinic Dashboard</h6>
+                                    <p class="text-muted small mb-0">Ask "What's today's schedule?" to see appointments and pending requests.</p>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="info-icon-wrapper bg-warning bg-opacity-10 text-warning">
+                                        <i class="bi bi-graph-up"></i>
+                                    </div>
+                                    <h6 class="fw-bold">Business Insights</h6>
+                                    <p class="text-muted small mb-0">Get monthly income, expenses, new patients, and active cases statistics.</p>
                                 </div>
                                 <div>
                                     <div class="info-icon-wrapper bg-secondary bg-opacity-10 text-secondary">
                                         <i class="bi bi-shield-lock-fill"></i>
                                     </div>
                                     <h6 class="fw-bold">Secure & Private</h6>
-                                    <p class="text-muted small mb-0">Processing happens securely on your server. API keys are never exposed to the client-side.</p>
+                                    <p class="text-muted small mb-0">No personal data exposed. Admin-only access to management stats.</p>
                                 </div>
                             </div>
                         </div>

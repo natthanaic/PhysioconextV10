@@ -139,39 +139,36 @@ router.get('/clinics', authenticateToken, async (req, res) => {
     }
 });
 
-// Get users by role (for appointments, etc.)
-router.get('/users', authenticateToken, async (req, res) => {
-    try {
-        const db = req.app.locals.db;
-        const { role } = req.query;
-
-        let query = 'SELECT id, email, first_name, last_name, role, clinic_id FROM users WHERE active = 1';
-        const params = [];
-
-        // Filter by role if provided
-        if (role) {
-            query += ' AND role = ?';
-            params.push(role);
-        }
-
-        query += ' ORDER BY first_name, last_name';
-
-        const [users] = await db.execute(query, params);
-        res.json(users);
-    } catch (error) {
-        console.error('Get users error:', error);
-        res.status(500).json({ error: 'Failed to retrieve users' });
-    }
-});
-
 // ========================================
 // USER MANAGEMENT ROUTES (ADMIN ONLY)
 // ========================================
 
-// Get all users
-router.get('/users', async (req, res) => {
+// Get all users (consolidated route for both admin page and role filtering)
+router.get('/users', authenticateToken, async (req, res) => {
     try {
         const db = req.app.locals.db;
+        const { role, simple } = req.query;
+
+        // If 'simple' query param is present, return simplified list for dropdowns
+        if (simple === 'true') {
+            let query = 'SELECT id, email, first_name, last_name, role, clinic_id FROM users WHERE active = 1';
+            const params = [];
+
+            if (role) {
+                query += ' AND role = ?';
+                params.push(role);
+            }
+
+            query += ' ORDER BY first_name, last_name';
+
+            const [users] = await db.execute(query, params);
+            return res.json(users);
+        }
+
+        // Admin page: return full user list with clinic names (requires ADMIN role)
+        if (req.user.role !== 'ADMIN') {
+            return res.status(403).json({ error: 'Admin access required' });
+        }
 
         const [users] = await db.execute(
             `SELECT u.*, c.name as clinic_name
@@ -188,7 +185,7 @@ router.get('/users', async (req, res) => {
 });
 
 // Create user
-router.post('/users', async (req, res) => {
+router.post('/users', authenticateToken, authorize('ADMIN'), async (req, res) => {
     try {
         const db = req.app.locals.db;
         const { email, password, role, first_name, last_name, clinic_id, phone, license_number } = req.body;
@@ -221,7 +218,7 @@ router.post('/users', async (req, res) => {
 });
 
 // Update user
-router.put('/users/:id', async (req, res) => {
+router.put('/users/:id', authenticateToken, authorize('ADMIN'), async (req, res) => {
     try {
         const db = req.app.locals.db;
         const { id } = req.params;
@@ -304,11 +301,19 @@ router.put('/users/:id', async (req, res) => {
 });
 
 // Toggle user status
-router.patch('/users/:id/status', async (req, res) => {
+router.patch('/users/:id/status', authenticateToken, authorize('ADMIN'), async (req, res) => {
     try {
         const db = req.app.locals.db;
         const { id } = req.params;
         const { active } = req.body;
+
+        // Prevent admins from deactivating themselves
+        if (parseInt(id) === req.user.id && !active) {
+            return res.status(403).json({
+                error: 'You cannot deactivate your own account',
+                message: 'For security reasons, admins cannot deactivate themselves. Please ask another admin to deactivate your account if needed.'
+            });
+        }
 
         await db.execute(
             'UPDATE users SET active = ?, updated_at = NOW() WHERE id = ?',
@@ -325,7 +330,7 @@ router.patch('/users/:id/status', async (req, res) => {
 });
 
 // Get user clinic grants
-router.get('/users/:id/grants', async (req, res) => {
+router.get('/users/:id/grants', authenticateToken, authorize('ADMIN'), async (req, res) => {
     try {
         const db = req.app.locals.db;
         const { id } = req.params;
@@ -345,12 +350,371 @@ router.get('/users/:id/grants', async (req, res) => {
     }
 });
 
+// Get user data summary (for delete confirmation)
+router.get('/users/:id/data-summary', authenticateToken, authorize('ADMIN'), async (req, res) => {
+    try {
+        const db = req.app.locals.db;
+        const { id } = req.params;
+
+        // Get user info
+        const [users] = await db.execute(
+            'SELECT id, email, first_name, last_name, role, clinic_id FROM users WHERE id = ?',
+            [id]
+        );
+
+        if (users.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        const user = users[0];
+
+        // Count patients created by this user
+        const [patientCount] = await db.execute(
+            'SELECT COUNT(*) as count FROM patients WHERE created_by = ?',
+            [id]
+        );
+
+        // Count appointments where user is PT
+        const [appointmentCount] = await db.execute(
+            'SELECT COUNT(*) as count FROM appointments WHERE pt_id = ? AND status != "CANCELLED"',
+            [id]
+        );
+
+        // Count PN cases created or assigned to this user
+        const [pnCaseCount] = await db.execute(
+            'SELECT COUNT(*) as count FROM pn_cases WHERE created_by = ? OR assigned_pt_id = ?',
+            [id, id]
+        );
+
+        // Count bills created by this user
+        const [billCount] = await db.execute(
+            'SELECT COUNT(*) as count FROM bills WHERE created_by = ?',
+            [id]
+        );
+
+        // Count broadcasts created by this user (table may not exist)
+        let broadcastCount = [{ count: 0 }];
+        try {
+            const [result] = await db.execute(
+                'SELECT COUNT(*) as count FROM broadcast_campaigns WHERE created_by = ?',
+                [id]
+            );
+            broadcastCount = result;
+        } catch (broadcastError) {
+            console.log('[DATA SUMMARY] Broadcast table not found or error:', broadcastError.message);
+        }
+
+        // Get available PTs for transfer (excluding this user)
+        const [availablePTs] = await db.execute(
+            `SELECT id, CONCAT(first_name, ' ', last_name) as name, email
+             FROM users
+             WHERE role IN ('PT', 'PT_ADMIN') AND active = 1 AND id != ?
+             ORDER BY first_name, last_name`,
+            [id]
+        );
+
+        res.json({
+            user: {
+                id: user.id,
+                name: `${user.first_name} ${user.last_name}`,
+                email: user.email,
+                role: user.role,
+                clinic_id: user.clinic_id
+            },
+            data_count: {
+                patients: patientCount[0].count,
+                appointments: appointmentCount[0].count,
+                pn_cases: pnCaseCount[0].count,
+                bills: billCount[0].count,
+                broadcasts: broadcastCount[0].count,
+                total: patientCount[0].count + appointmentCount[0].count + pnCaseCount[0].count + billCount[0].count + broadcastCount[0].count
+            },
+            transfer_options: {
+                available_pts: availablePTs
+            }
+        });
+    } catch (error) {
+        console.error('[DATA SUMMARY] Error:', error);
+        console.error('[DATA SUMMARY] Error details:', error.message);
+        res.status(500).json({ error: 'Failed to retrieve user data summary', details: error.message });
+    }
+});
+
+// Delete user with data transfer
+router.delete('/users/:id', authenticateToken, authorize('ADMIN'), async (req, res) => {
+    const connection = await req.app.locals.db.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        const { id } = req.params;
+        const { transfer_to_user_id, transfer_to_clinic_id, delete_all_data } = req.body;
+
+        // Prevent deleting yourself
+        if (parseInt(id) === req.user.id) {
+            return res.status(403).json({
+                error: 'You cannot delete your own account',
+                message: 'Please ask another admin to delete your account if needed.'
+            });
+        }
+
+        // Get user info
+        const [users] = await connection.execute(
+            'SELECT id, email, first_name, last_name, role, clinic_id FROM users WHERE id = ?',
+            [id]
+        );
+
+        if (users.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        const userToDelete = users[0];
+
+        if (delete_all_data) {
+            // DELETE ALL DATA - Use with extreme caution
+            console.log(`[DELETE USER] Deleting all data for user ${id}`);
+
+            // Delete in order to respect foreign key constraints
+            try {
+                await connection.execute('DELETE FROM chat_typing_status WHERE user_id = ?', [id]);
+            } catch (e) {
+                console.log('[DELETE] Chat typing status table error:', e.message);
+            }
+
+            try {
+                await connection.execute('DELETE FROM chat_messages WHERE sender_id = ?', [id]);
+            } catch (e) {
+                console.log('[DELETE] Chat messages table error:', e.message);
+            }
+
+            try {
+                await connection.execute('DELETE FROM chat_conversations WHERE user1_id = ? OR user2_id = ?', [id, id]);
+            } catch (e) {
+                console.log('[DELETE] Chat conversations table error:', e.message);
+            }
+
+            // Delete grants TO this user and grants BY this user
+            await connection.execute('DELETE FROM user_clinic_grants WHERE user_id = ? OR granted_by = ?', [id, id]);
+
+            // Delete OTP codes (table may not exist)
+            try {
+                await connection.execute('DELETE FROM otp_codes WHERE user_id = ?', [id]);
+            } catch (e) {
+                console.log('[DELETE] OTP codes table error:', e.message);
+            }
+
+            // Delete audit logs for this user (may have FK constraint)
+            try {
+                await connection.execute('DELETE FROM audit_logs WHERE user_id = ?', [id]);
+            } catch (e) {
+                console.log('[DELETE] Audit logs deletion error:', e.message);
+            }
+
+            // Nullify notification_settings.updated_by references
+            try {
+                await connection.execute('UPDATE notification_settings SET updated_by = NULL WHERE updated_by = ?', [id]);
+            } catch (e) {
+                console.log('[DELETE] Notification settings update error:', e.message);
+            }
+
+            // Delete created records (handle tables that may not exist)
+            try {
+                await connection.execute('DELETE FROM broadcast_campaigns WHERE created_by = ?', [id]);
+            } catch (e) {
+                console.log('[DELETE] Broadcast table not found:', e.message);
+            }
+
+            try {
+                await connection.execute('DELETE FROM expenses WHERE created_by = ?', [id]);
+            } catch (e) {
+                console.log('[DELETE] Expenses table error:', e.message);
+            }
+
+            // Delete appointments where user is PT
+            await connection.execute('DELETE FROM appointments WHERE pt_id = ?', [id]);
+
+            // Delete PN cases
+            await connection.execute('DELETE FROM pn_cases WHERE created_by = ? OR assigned_pt_id = ?', [id, id]);
+
+            // Delete bills
+            await connection.execute('DELETE FROM bills WHERE created_by = ?', [id]);
+
+            // Delete patients
+            await connection.execute('DELETE FROM patients WHERE created_by = ?', [id]);
+
+        } else {
+            // TRANSFER DATA
+            console.log(`[DELETE USER] Transferring data for user ${id}`);
+
+            const transferUserId = transfer_to_user_id || 1; // Default to admin (ID 1)
+            const transferClinicId = transfer_to_clinic_id || null;
+
+            // Transfer patients created by this user
+            if (transferClinicId) {
+                await connection.execute(
+                    'UPDATE patients SET created_by = ?, clinic_id = ? WHERE created_by = ?',
+                    [transferUserId, transferClinicId, id]
+                );
+            } else {
+                await connection.execute(
+                    'UPDATE patients SET created_by = ? WHERE created_by = ?',
+                    [transferUserId, id]
+                );
+            }
+
+            // Transfer appointments to another PT (if user is PT)
+            if (userToDelete.role === 'PT' || userToDelete.role === 'PT_ADMIN') {
+                if (transfer_to_user_id) {
+                    await connection.execute(
+                        'UPDATE appointments SET pt_id = ?, updated_at = NOW() WHERE pt_id = ? AND status != "CANCELLED"',
+                        [transfer_to_user_id, id]
+                    );
+                } else {
+                    // Set to NULL if no transfer PT specified
+                    await connection.execute(
+                        'UPDATE appointments SET pt_id = NULL, updated_at = NOW() WHERE pt_id = ? AND status != "CANCELLED"',
+                        [id]
+                    );
+                }
+            }
+
+            // Transfer PN cases
+            if (transfer_to_user_id) {
+                await connection.execute(
+                    'UPDATE pn_cases SET created_by = ? WHERE created_by = ?',
+                    [transfer_to_user_id, id]
+                );
+                await connection.execute(
+                    'UPDATE pn_cases SET assigned_pt_id = ? WHERE assigned_pt_id = ?',
+                    [transfer_to_user_id, id]
+                );
+            }
+
+            // Transfer bills, broadcasts, expenses to admin (handle tables that may not exist)
+            await connection.execute(
+                'UPDATE bills SET created_by = ? WHERE created_by = ?',
+                [transferUserId, id]
+            );
+
+            try {
+                await connection.execute(
+                    'UPDATE broadcast_campaigns SET created_by = ? WHERE created_by = ?',
+                    [transferUserId, id]
+                );
+            } catch (e) {
+                console.log('[DELETE] Broadcast table not found:', e.message);
+            }
+
+            try {
+                await connection.execute(
+                    'UPDATE expenses SET created_by = ? WHERE created_by = ?',
+                    [transferUserId, id]
+                );
+            } catch (e) {
+                console.log('[DELETE] Expenses table error:', e.message);
+            }
+
+            // Clean up user-specific data
+            // Delete grants TO this user
+            await connection.execute('DELETE FROM user_clinic_grants WHERE user_id = ?', [id]);
+
+            // Transfer grants GRANTED BY this user to current admin
+            await connection.execute(
+                'UPDATE user_clinic_grants SET granted_by = ? WHERE granted_by = ?',
+                [req.user.id, id]
+            );
+
+            // Delete OTP codes (table may not exist)
+            try {
+                await connection.execute('DELETE FROM otp_codes WHERE user_id = ?', [id]);
+            } catch (e) {
+                console.log('[DELETE] OTP codes table error:', e.message);
+            }
+
+            // Delete chat typing status (table may not exist)
+            try {
+                await connection.execute('DELETE FROM chat_typing_status WHERE user_id = ?', [id]);
+            } catch (e) {
+                console.log('[DELETE] Chat typing status table error:', e.message);
+            }
+
+            // Delete audit logs for this user (may have FK constraint)
+            try {
+                await connection.execute('DELETE FROM audit_logs WHERE user_id = ?', [id]);
+            } catch (e) {
+                console.log('[DELETE] Audit logs deletion error:', e.message);
+            }
+
+            // Nullify notification_settings.updated_by references
+            try {
+                await connection.execute('UPDATE notification_settings SET updated_by = NULL WHERE updated_by = ?', [id]);
+            } catch (e) {
+                console.log('[DELETE] Notification settings update error:', e.message);
+            }
+
+            // Don't delete chat messages/conversations - keep for record but mark user as deleted
+        }
+
+        // Audit log BEFORE deleting user (in case audit_logs has FK to users)
+        try {
+            await auditLog(
+                connection,
+                req.user.id,
+                'DELETE',
+                'user',
+                id,
+                { user: userToDelete },
+                {
+                    delete_all_data,
+                    transfer_to_user_id,
+                    transfer_to_clinic_id
+                },
+                req
+            );
+        } catch (auditError) {
+            console.log('[DELETE USER] Audit log error (continuing):', auditError.message);
+        }
+
+        // Finally, delete the user
+        console.log(`[DELETE USER] About to delete user ${id} from users table`);
+        try {
+            const [result] = await connection.execute('DELETE FROM users WHERE id = ?', [id]);
+            console.log(`[DELETE USER] User deleted successfully. Rows affected:`, result.affectedRows);
+        } catch (deleteError) {
+            console.error('[DELETE USER] Failed to delete user from users table');
+            console.error('[DELETE USER] Error:', deleteError.message);
+            console.error('[DELETE USER] Error code:', deleteError.code);
+            console.error('[DELETE USER] SQL:', deleteError.sql);
+            throw deleteError; // Re-throw to trigger rollback
+        }
+
+        await connection.commit();
+
+        res.json({
+            success: true,
+            message: `User deleted successfully. ${delete_all_data ? 'All data removed.' : 'Data transferred.'}`
+        });
+    } catch (error) {
+        await connection.rollback();
+        console.error('[DELETE USER] Error:', error);
+        console.error('[DELETE USER] Error message:', error.message);
+        console.error('[DELETE USER] Error code:', error.code);
+        console.error('[DELETE USER] SQL:', error.sql);
+        res.status(500).json({
+            error: 'Failed to delete user',
+            details: error.message,
+            code: error.code
+        });
+    } finally {
+        connection.release();
+    }
+});
+
 // ========================================
 // CLINIC GRANT ROUTES
 // ========================================
 
 // Add clinic grant
-router.post('/grants', async (req, res) => {
+router.post('/grants', authenticateToken, authorize('ADMIN'), async (req, res) => {
     try {
         const db = req.app.locals.db;
         const { user_id, clinic_id } = req.body;
@@ -380,7 +744,7 @@ router.post('/grants', async (req, res) => {
 });
 
 // Remove clinic grant
-router.delete('/grants/:userId/:clinicId', async (req, res) => {
+router.delete('/grants/:userId/:clinicId', authenticateToken, authorize('ADMIN'), async (req, res) => {
     try {
         const db = req.app.locals.db;
         const { userId, clinicId } = req.params;
@@ -2124,10 +2488,17 @@ router.post('/ai-settings', authenticateToken, authorize('ADMIN'), async (req, r
             enabled: enabled || false,
             model: model || 'gemini-2.5-flash',
             apiKey: apiKey,
-            features: features || { symptomAnalysis: true, notePolish: true }
+            features: features || {
+                soapSmart: false,
+                smartBooking: true,
+                patientsPlus: false,
+                finPredict: false,
+                notificationPlus: false,
+                marketingPlus: false
+            }
         });
 
-        // Check if settings exist
+        // Check if settings exist in notification_settings
         const [existing] = await db.execute(`
             SELECT id FROM notification_settings WHERE setting_type = 'gemini_ai' LIMIT 1
         `);
@@ -2148,10 +2519,30 @@ router.post('/ai-settings', authenticateToken, authorize('ADMIN'), async (req, r
             `, [settingValue]);
         }
 
+        // Also save to system_settings for ShinoAI compatibility
+        try {
+            // Update or insert ai_api_key
+            await db.execute(`
+                INSERT INTO system_settings (setting_key, setting_value, updated_at)
+                VALUES ('ai_api_key', ?, NOW())
+                ON DUPLICATE KEY UPDATE setting_value = ?, updated_at = NOW()
+            `, [apiKey, apiKey]);
+
+            // Update or insert model
+            await db.execute(`
+                INSERT INTO system_settings (setting_key, setting_value, updated_at)
+                VALUES ('model', ?, NOW())
+                ON DUPLICATE KEY UPDATE setting_value = ?, updated_at = NOW()
+            `, [model, model]);
+        } catch (sysSettingsError) {
+            // If system_settings table doesn't exist, log but don't fail
+            console.log('[AI Settings] system_settings table not available:', sysSettingsError.message);
+        }
+
         // Audit log
         await auditLog(db, userId, 'update', 'ai_settings', 0, null, { enabled, model: model }, req);
 
-        res.json({ success: true, message: 'AI settings saved successfully' });
+        res.json({ success: true, message: 'AI settings saved successfully (Gemini AI & ShinoAI)' });
     } catch (error) {
         console.error('Save AI settings error:', error);
         res.status(500).json({ error: 'Failed to save AI settings' });
@@ -2211,6 +2602,143 @@ router.post('/ai-settings/test', authenticateToken, authorize('ADMIN'), async (r
         let errorMessage = 'Failed to connect to AI service';
         if (error.response?.data?.error?.message) {
             errorMessage = error.response.data.error.message;
+        } else if (error.message) {
+            errorMessage = error.message;
+        }
+
+        res.status(500).json({ error: errorMessage });
+    }
+});
+
+// ========================================
+// SHINOAI SETTINGS
+// ========================================
+
+// Get ShinoAI settings
+router.get('/shinoai-settings', authenticateToken, authorize('ADMIN'), async (req, res) => {
+    try {
+        const db = req.app.locals.db;
+
+        const [settings] = await db.execute(`
+            SELECT * FROM notification_settings WHERE setting_type = 'shinoai' LIMIT 1
+        `);
+
+        if (settings.length === 0) {
+            return res.status(404).json({ error: 'ShinoAI settings not configured yet' });
+        }
+
+        const shinoaiConfig = JSON.parse(settings[0].setting_value);
+        res.json(shinoaiConfig);
+    } catch (error) {
+        console.error('Get ShinoAI settings error:', error);
+        res.status(500).json({ error: 'Failed to load ShinoAI settings' });
+    }
+});
+
+// Save ShinoAI settings
+router.post('/shinoai-settings', authenticateToken, authorize('ADMIN'), async (req, res) => {
+    try {
+        const db = req.app.locals.db;
+        const userId = req.user.id;
+        const { enabled, apiUrl, apiKey, model, features } = req.body;
+
+        // Validate required fields
+        if (apiUrl === undefined || apiKey === undefined) {
+            return res.status(400).json({ error: 'API URL and API key are required' });
+        }
+
+        const settingValue = JSON.stringify({
+            enabled: enabled || false,
+            apiUrl: apiUrl,
+            apiKey: apiKey,
+            model: model || 'shino-default',
+            features: features || { chatAssistant: true, documentGeneration: true, dataAnalysis: true }
+        });
+
+        // Check if settings exist
+        const [existing] = await db.execute(`
+            SELECT id FROM notification_settings WHERE setting_type = 'shinoai' LIMIT 1
+        `);
+
+        if (existing.length > 0) {
+            // Update existing
+            await db.execute(`
+                UPDATE notification_settings
+                SET setting_value = ?, updated_by = ?, updated_at = NOW()
+                WHERE setting_type = 'shinoai'
+            `, [settingValue, userId]);
+        } else {
+            // Insert new
+            await db.execute(`
+                INSERT INTO notification_settings
+                (setting_type, setting_value, updated_by, created_at, updated_at)
+                VALUES ('shinoai', ?, ?, NOW(), NOW())
+            `, [settingValue, userId]);
+        }
+
+        // Audit log
+        await auditLog(db, userId, 'update', 'shinoai_settings', 0, null, { enabled, apiUrl: '***', model }, req);
+
+        res.json({ success: true, message: 'ShinoAI settings saved successfully' });
+    } catch (error) {
+        console.error('Save ShinoAI settings error:', error);
+        res.status(500).json({ error: 'Failed to save ShinoAI settings' });
+    }
+});
+
+// Test ShinoAI connection
+router.post('/shinoai-settings/test', authenticateToken, authorize('ADMIN'), async (req, res) => {
+    try {
+        const db = req.app.locals.db;
+
+        // Get current ShinoAI settings
+        const [settings] = await db.execute(`
+            SELECT setting_value FROM notification_settings WHERE setting_type = 'shinoai' LIMIT 1
+        `);
+
+        if (settings.length === 0) {
+            return res.status(400).json({ error: 'ShinoAI settings not configured. Please save settings first.' });
+        }
+
+        const shinoaiConfig = JSON.parse(settings[0].setting_value);
+
+        if (!shinoaiConfig.enabled) {
+            return res.status(400).json({ error: 'ShinoAI features are currently disabled' });
+        }
+
+        if (!shinoaiConfig.apiKey || !shinoaiConfig.apiUrl) {
+            return res.status(400).json({ error: 'API URL or API key not configured' });
+        }
+
+        // Test ShinoAI API
+        const testPayload = {
+            message: 'Test connection',
+            model: shinoaiConfig.model || 'shino-default'
+        };
+
+        const response = await axios.post(`${shinoaiConfig.apiUrl}/test`, testPayload, {
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${shinoaiConfig.apiKey}`
+            },
+            timeout: 10000
+        });
+
+        if (response.data) {
+            res.json({
+                success: true,
+                response: response.data,
+                message: 'ShinoAI connection test successful'
+            });
+        } else {
+            throw new Error('No response from ShinoAI');
+        }
+    } catch (error) {
+        console.error('Test ShinoAI connection error:', error);
+
+        let errorMessage = 'Failed to connect to ShinoAI service';
+        if (error.response?.data?.error) {
+            errorMessage = error.response.data.error;
         } else if (error.message) {
             errorMessage = error.message;
         }
@@ -2479,7 +3007,6 @@ router.put('/bills/:id', authenticateToken, async (req, res) => {
             clinic_id,
             pn_case_id,
             bill_date,
-            due_date,
             items,
             discount,
             tax,
@@ -2501,7 +3028,7 @@ router.put('/bills/:id', authenticateToken, async (req, res) => {
         console.log('[BILLS] Updating bill ID:', id);
         console.log('[BILLS] Calculated subtotal:', subtotal, 'total_amount:', total_amount);
 
-        // Update bill
+        // Update bill (note: bills table doesn't have due_date column)
         await connection.execute(`
             UPDATE bills SET
                 patient_id = ?,
@@ -2510,7 +3037,6 @@ router.put('/bills/:id', authenticateToken, async (req, res) => {
                 clinic_id = ?,
                 pn_case_id = ?,
                 bill_date = ?,
-                due_date = ?,
                 subtotal = ?,
                 discount = ?,
                 tax = ?,
@@ -2527,7 +3053,6 @@ router.put('/bills/:id', authenticateToken, async (req, res) => {
             clinic_id,
             pn_case_id || null,
             bill_date,
-            due_date || null,
             subtotal,
             discount || 0,
             tax || 0,

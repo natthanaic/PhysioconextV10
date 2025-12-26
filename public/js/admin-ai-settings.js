@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function setupEventListeners() {
-    // Form submission
+    // Gemini form submission
     document.getElementById('gemini-settings-form').addEventListener('submit', saveAISettings);
 
     // Toggle API key visibility
@@ -13,6 +13,19 @@ function setupEventListeners() {
 
     // Test AI connection
     document.getElementById('test-ai-btn').addEventListener('click', testAIConnection);
+
+    // ShinoAI form (uses same Gemini settings)
+    document.getElementById('gemini-settings-form-shino').addEventListener('submit', saveAISettings);
+    document.getElementById('toggle-api-key-shino').addEventListener('click', toggleAPIKeyVisibilityShino);
+    document.getElementById('test-ai-btn-shino').addEventListener('click', testAIConnection);
+
+    // Tab switching - load settings when switching to ShinoAI tab
+    const shinoaiTab = document.getElementById('shinoai-tab');
+    if (shinoaiTab) {
+        shinoaiTab.addEventListener('shown.bs.tab', () => {
+            loadAISettings(); // Reload to populate ShinoAI form
+        });
+    }
 }
 
 // Load current AI settings
@@ -38,13 +51,31 @@ async function loadAISettings() {
 
 // Populate form with settings
 function populateForm(settings) {
+    // Populate Gemini AI form
     document.getElementById('gemini-enabled').value = settings.enabled ? '1' : '0';
     document.getElementById('gemini-model').value = settings.model || 'gemini-2.5-flash';
     document.getElementById('gemini-api-key').value = settings.apiKey || '';
 
-    // Features
-    document.getElementById('feature-symptom-analysis').checked = settings.features?.symptomAnalysis !== false;
-    document.getElementById('feature-note-polish').checked = settings.features?.notePolish !== false;
+    // Clinic AI Features - Gemini Tab
+    document.getElementById('feature-soap-smart').checked = settings.features?.soapSmart || false;
+    document.getElementById('feature-smart-booking').checked = settings.features?.smartBooking !== false; // Default true
+    document.getElementById('feature-patients-plus').checked = settings.features?.patientsPlus || false;
+    document.getElementById('feature-fin-predict').checked = settings.features?.finPredict || false;
+    document.getElementById('feature-notification-plus').checked = settings.features?.notificationPlus || false;
+    document.getElementById('feature-marketing-plus').checked = settings.features?.marketingPlus || false;
+
+    // Populate ShinoAI form (same settings)
+    document.getElementById('gemini-enabled-shino').value = settings.enabled ? '1' : '0';
+    document.getElementById('gemini-model-shino').value = settings.model || 'gemini-2.5-flash';
+    document.getElementById('gemini-api-key-shino').value = settings.apiKey || '';
+
+    // Clinic AI Features - ShinoAI Tab (same as Gemini)
+    document.getElementById('feature-soap-smart-shino').checked = settings.features?.soapSmart || false;
+    document.getElementById('feature-smart-booking-shino').checked = settings.features?.smartBooking !== false; // Default true
+    document.getElementById('feature-patients-plus-shino').checked = settings.features?.patientsPlus || false;
+    document.getElementById('feature-fin-predict-shino').checked = settings.features?.finPredict || false;
+    document.getElementById('feature-notification-plus-shino').checked = settings.features?.notificationPlus || false;
+    document.getElementById('feature-marketing-plus-shino').checked = settings.features?.marketingPlus || false;
 }
 
 // Update status indicator
@@ -66,13 +97,26 @@ async function saveAISettings(e) {
     e.preventDefault();
 
     const formData = new FormData(e.target);
+    const formId = e.target.id;
+
+    // Determine which form was submitted and get the correct feature checkbox IDs
+    let featureSuffix = '';
+    if (formId === 'gemini-settings-form-shino') {
+        featureSuffix = '-shino';
+    }
+
     const settings = {
         enabled: formData.get('enabled') === '1',
         model: formData.get('model'),
         apiKey: formData.get('apiKey'),
         features: {
-            symptomAnalysis: document.getElementById('feature-symptom-analysis').checked,
-            notePolish: document.getElementById('feature-note-polish').checked
+            // Clinic AI Features
+            soapSmart: document.getElementById('feature-soap-smart' + featureSuffix).checked,
+            smartBooking: document.getElementById('feature-smart-booking' + featureSuffix).checked,
+            patientsPlus: document.getElementById('feature-patients-plus' + featureSuffix).checked,
+            finPredict: document.getElementById('feature-fin-predict' + featureSuffix).checked,
+            notificationPlus: document.getElementById('feature-notification-plus' + featureSuffix).checked,
+            marketingPlus: document.getElementById('feature-marketing-plus' + featureSuffix).checked
         }
     };
 
@@ -90,6 +134,8 @@ async function saveAISettings(e) {
         if (response.ok) {
             showAlert('AI settings saved successfully', 'success');
             updateStatusIndicator(settings.enabled);
+            // Reload settings to sync both forms
+            await loadAISettings();
         } else {
             showAlert(result.error || 'Failed to save settings', 'danger');
         }
@@ -99,10 +145,27 @@ async function saveAISettings(e) {
     }
 }
 
-// Toggle API key visibility
+// Toggle API key visibility (Gemini form)
 function toggleAPIKeyVisibility() {
     const input = document.getElementById('gemini-api-key');
     const button = document.getElementById('toggle-api-key');
+    const icon = button.querySelector('i');
+
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('bi-eye');
+        icon.classList.add('bi-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('bi-eye-slash');
+        icon.classList.add('bi-eye');
+    }
+}
+
+// Toggle API key visibility (ShinoAI form)
+function toggleAPIKeyVisibilityShino() {
+    const input = document.getElementById('gemini-api-key-shino');
+    const button = document.getElementById('toggle-api-key-shino');
     const icon = button.querySelector('i');
 
     if (input.type === 'password') {

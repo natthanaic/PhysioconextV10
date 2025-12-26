@@ -92,6 +92,19 @@ try { broadcastRoutes = require('./routes/broadcast'); } catch(e) { console.log(
 
 // MOUNT ROUTES
 app.use('/webhook', webhooksRoutes);
+
+// --- DEBUG MIDDLEWARE FOR THAI CARD ---
+app.use('/api/thai_card', (req, res, next) => {
+    console.log('========================================');
+    console.log('[THAI CARD DEBUG] Request received!');
+    console.log('Method:', req.method);
+    console.log('Path:', req.path);
+    console.log('Original URL:', req.originalUrl);
+    console.log('Body:', req.body);
+    console.log('========================================');
+    next();
+});
+
 app.use('/api/public', publicRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/auth', tfaRoutes);

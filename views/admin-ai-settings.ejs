@@ -259,13 +259,26 @@
                 <div class="row">
                     <!-- Main Settings Column -->
                     <div class="col-lg-8">
-                        <!-- Gemini AI Configuration -->
+                        <!-- AI Provider Tabs -->
                         <div class="settings-card">
-                            <div class="card-header d-flex justify-content-between align-items-center">
-                                <h4><i class="bi bi-robot text-primary"></i> Google Gemini AI</h4>
-                                <span class="feature-badge">Smart Booking</span>
+                            <div class="card-header">
+                                <ul class="nav nav-tabs card-header-tabs" id="aiProviderTabs" role="tablist">
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link active" id="gemini-tab" data-bs-toggle="tab" data-bs-target="#gemini-panel" type="button" role="tab">
+                                            <i class="bi bi-robot me-2"></i>Gemini AI
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" id="shinoai-tab" data-bs-toggle="tab" data-bs-target="#shinoai-panel" type="button" role="tab">
+                                            <i class="bi bi-cpu me-2"></i>ShinoAI
+                                        </button>
+                                    </li>
+                                </ul>
                             </div>
                             <div class="card-body">
+                                <div class="tab-content" id="aiProviderTabContent">
+                                    <!-- Gemini AI Tab -->
+                                    <div class="tab-pane fade show active" id="gemini-panel" role="tabpanel">
                                 <div class="warning-box">
                                     <i class="bi bi-shield-lock-fill mt-1"></i>
                                     <div>
@@ -347,112 +360,104 @@
                                         </button>
                                     </div>
                                 </form>
-                            </div>
-                        </div>
-
-                        <!-- ShinoAI Configuration -->
-                        <div class="settings-card">
-                            <div class="card-header d-flex justify-content-between align-items-center">
-                                <h4><i class="bi bi-cpu text-info"></i> ShinoAI</h4>
-                                <span class="feature-badge" style="background: rgba(13, 202, 240, 0.1); color: #0dcaf0;">Advanced AI</span>
-                            </div>
-                            <div class="card-body">
-                                <div class="warning-box">
-                                    <i class="bi bi-shield-lock-fill mt-1"></i>
-                                    <div>
-                                        <strong>Security Notice</strong><br>
-                                        Your API credentials are encrypted and stored securely. Only administrators can access these settings.
                                     </div>
-                                </div>
+                                    <!-- End Gemini AI Tab -->
 
-                                <form id="shinoai-settings-form">
-                                    <div class="row g-3">
-                                        <div class="col-md-6">
-                                            <label for="shinoai-enabled" class="form-label">
-                                                Enable ShinoAI
-                                            </label>
-                                            <select class="form-select" id="shinoai-enabled" name="enabled" required>
-                                                <option value="1">Enabled</option>
-                                                <option value="0">Disabled</option>
-                                            </select>
-                                            <div class="form-text small">Activate ShinoAI features</div>
+                                    <!-- ShinoAI Tab (uses same Gemini settings) -->
+                                    <div class="tab-pane fade" id="shinoai-panel" role="tabpanel">
+                                        <div class="alert alert-info d-flex align-items-start gap-3 mb-4">
+                                            <i class="bi bi-info-circle-fill fs-4 mt-1"></i>
+                                            <div>
+                                                <strong>ShinoAI Configuration</strong><br>
+                                                <span class="small">ShinoAI uses the same Google Gemini AI configuration shown in the Gemini AI tab. All settings below are shared between both providers.</span>
+                                            </div>
                                         </div>
 
-                                        <div class="col-md-6">
-                                            <label for="shinoai-model" class="form-label">
-                                                AI Model
-                                            </label>
-                                            <select class="form-select" id="shinoai-model" name="model" required>
-                                                <option value="shino-default">Shino Default</option>
-                                                <option value="shino-advanced">Shino Advanced</option>
-                                                <option value="shino-medical">Shino Medical (Healthcare)</option>
-                                                <option value="shino-analytics">Shino Analytics</option>
-                                            </select>
-                                            <div class="form-text small">Select ShinoAI model</div>
+                                        <div class="warning-box">
+                                            <i class="bi bi-shield-lock-fill mt-1"></i>
+                                            <div>
+                                                <strong>Security Notice</strong><br>
+                                                Your API key is stored securely on the server and never exposed to public users. Only administrators can view and modify these settings.
+                                            </div>
                                         </div>
 
-                                        <div class="col-12">
-                                            <label for="shinoai-api-url" class="form-label">
-                                                API URL
-                                            </label>
-                                            <input type="url" class="form-control" id="shinoai-api-url" name="apiUrl"
-                                                   placeholder="https://api.shinoai.com/v1" required>
-                                            <div class="form-text small">ShinoAI API endpoint URL</div>
-                                        </div>
+                                        <form id="gemini-settings-form-shino">
+                                            <div class="row g-3">
+                                                <div class="col-md-6">
+                                                    <label for="gemini-enabled-shino" class="form-label">
+                                                        Enable AI Features
+                                                    </label>
+                                                    <select class="form-select" id="gemini-enabled-shino" name="enabled" required>
+                                                        <option value="1">Enabled</option>
+                                                        <option value="0">Disabled</option>
+                                                    </select>
+                                                    <div class="form-text small">Toggle AI features</div>
+                                                </div>
 
-                                        <div class="col-12">
-                                            <label for="shinoai-api-key" class="form-label">
-                                                API Key
-                                            </label>
-                                            <div class="input-group">
-                                                <input type="password" class="form-control" id="shinoai-api-key" name="apiKey"
-                                                       placeholder="Enter your ShinoAI API key" required>
-                                                <button class="btn btn-outline-secondary" type="button" id="toggle-shinoai-key" style="border-top-left-radius: 0; border-bottom-left-radius: 0;">
-                                                    <i class="bi bi-eye"></i>
+                                                <div class="col-md-6">
+                                                    <label for="gemini-model-shino" class="form-label">
+                                                        AI Model
+                                                    </label>
+                                                    <select class="form-select" id="gemini-model-shino" name="model" required>
+                                                        <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                                                        <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash (Experimental)</option>
+                                                        <option value="gemini-1.5-flash">Gemini 1.5 Flash (Stable)</option>
+                                                        <option value="gemini-1.5-pro">Gemini 1.5 Pro (Advanced)</option>
+                                                        <option value="gemini-exp-1206">Gemini Experimental (1206)</option>
+                                                    </select>
+                                                    <div class="form-text small">Select processing model</div>
+                                                </div>
+
+                                                <div class="col-12">
+                                                    <label for="gemini-api-key-shino" class="form-label">
+                                                        API Key
+                                                    </label>
+                                                    <div class="input-group">
+                                                        <input type="password" class="form-control" id="gemini-api-key-shino" name="apiKey"
+                                                               placeholder="Enter your Gemini API key" required>
+                                                        <button class="btn btn-outline-secondary" type="button" id="toggle-api-key-shino" style="border-top-left-radius: 0; border-bottom-left-radius: 0;">
+                                                            <i class="bi bi-eye"></i>
+                                                        </button>
+                                                    </div>
+                                                    <div class="form-text small">
+                                                        Get your API key from <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-decoration-none">Google AI Studio</a>
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-12 mt-4">
+                                                    <label class="form-label mb-3">Active Features</label>
+                                                    <div class="d-flex flex-column gap-2">
+                                                        <div class="form-check form-switch p-3 border rounded bg-light">
+                                                            <input class="form-check-input ms-0 me-3" type="checkbox" id="feature-symptom-analysis-shino" name="features.symptomAnalysis" checked>
+                                                            <label class="form-check-label fw-bold" for="feature-symptom-analysis-shino">
+                                                                Symptom Analysis
+                                                            </label>
+                                                            <div class="text-muted small mt-1">Analyses patient descriptions to recommend pain zones</div>
+                                                        </div>
+                                                        <div class="form-check form-switch p-3 border rounded bg-light">
+                                                            <input class="form-check-input ms-0 me-3" type="checkbox" id="feature-note-polish-shino" name="features.notePolish" checked>
+                                                            <label class="form-check-label fw-bold" for="feature-note-polish-shino">
+                                                                Note Polishing
+                                                            </label>
+                                                            <div class="text-muted small mt-1">Professionalizes appointment notes automatically</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="mt-4 pt-3 border-top d-flex gap-2">
+                                                <button type="submit" class="btn btn-primary">
+                                                    <i class="bi bi-save me-2"></i>Save Settings
+                                                </button>
+                                                <button type="button" class="btn btn-success" id="test-ai-btn-shino">
+                                                    <i class="bi bi-lightning-charge me-2"></i>Test Connection
                                                 </button>
                                             </div>
-                                            <div class="form-text small">
-                                                Contact ShinoAI support for API access
-                                            </div>
-                                        </div>
-
-                                        <div class="col-12 mt-4">
-                                            <label class="form-label mb-3">Active Features</label>
-                                            <div class="d-flex flex-column gap-2">
-                                                <div class="form-check form-switch p-3 border rounded bg-light">
-                                                    <input class="form-check-input ms-0 me-3" type="checkbox" id="feature-chat-assistant" name="features.chatAssistant" checked>
-                                                    <label class="form-check-label fw-bold" for="feature-chat-assistant">
-                                                        Chat Assistant
-                                                    </label>
-                                                    <div class="text-muted small mt-1">AI-powered chat for patient support</div>
-                                                </div>
-                                                <div class="form-check form-switch p-3 border rounded bg-light">
-                                                    <input class="form-check-input ms-0 me-3" type="checkbox" id="feature-doc-generation" name="features.documentGeneration" checked>
-                                                    <label class="form-check-label fw-bold" for="feature-doc-generation">
-                                                        Document Generation
-                                                    </label>
-                                                    <div class="text-muted small mt-1">Automatic medical document creation</div>
-                                                </div>
-                                                <div class="form-check form-switch p-3 border rounded bg-light">
-                                                    <input class="form-check-input ms-0 me-3" type="checkbox" id="feature-data-analysis" name="features.dataAnalysis" checked>
-                                                    <label class="form-check-label fw-bold" for="feature-data-analysis">
-                                                        Data Analysis
-                                                    </label>
-                                                    <div class="text-muted small mt-1">Advanced analytics and insights</div>
-                                                </div>
-                                            </div>
-                                        </div>
+                                        </form>
                                     </div>
-
-                                    <div class="mt-4 pt-3 border-top d-flex gap-2">
-                                        <button type="submit" class="btn btn-primary">
-                                            <i class="bi bi-save me-2"></i>Save Settings
-                                        </button>
-                                        <button type="button" class="btn btn-info text-white" id="test-shinoai-btn">
-                                            <i class="bi bi-lightning-charge me-2"></i>Test Connection
-                                        </button>
-                                    </div>
-                                </form>
+                                    <!-- End ShinoAI Tab -->
+                                </div>
+                                <!-- End Tab Content -->
                             </div>
                         </div>
                     </div>

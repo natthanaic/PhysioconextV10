@@ -446,6 +446,7 @@
         let users = [];
         let clinics = [];
         let isLoading = false;
+        const currentUserId = <%= user.id %>; // Current logged-in user ID
 
         // Refresh all data
         async function refreshData() {
@@ -556,9 +557,15 @@
                             <button class="btn btn-sm btn-light border" onclick="showGrants(${user.id})" title="Clinic Access">
                                 <i class="bi bi-building-lock text-warning"></i>
                             </button>
-                            <button class="btn btn-sm btn-light border text-${user.active ? 'danger' : 'success'}" onclick="toggleUserStatus(${user.id}, ${user.active})" title="Toggle Status">
-                                <i class="bi bi-${user.active ? 'slash-circle' : 'check-circle'}"></i>
-                            </button>
+                            ${user.id === currentUserId && user.active ? `
+                                <button class="btn btn-sm btn-light border text-muted" disabled title="You cannot deactivate your own account">
+                                    <i class="bi bi-slash-circle"></i>
+                                </button>
+                            ` : `
+                                <button class="btn btn-sm btn-light border text-${user.active ? 'danger' : 'success'}" onclick="toggleUserStatus(${user.id}, ${user.active})" title="Toggle Status">
+                                    <i class="bi bi-${user.active ? 'slash-circle' : 'check-circle'}"></i>
+                                </button>
+                            `}
                         </div>
                     </td>
                 </tr>
@@ -639,6 +646,12 @@
         }
 
         async function toggleUserStatus(userId, currentStatus) {
+            // Double-check: prevent self-deactivation on frontend
+            if (userId === currentUserId && !currentStatus) {
+                alert('You cannot deactivate your own account.\n\nFor security reasons, please ask another admin to deactivate your account if needed.');
+                return;
+            }
+
             if (!confirm(`Are you sure you want to ${currentStatus ? 'deactivate' : 'activate'} this user?`)) {
                 return;
             }
@@ -653,11 +666,15 @@
 
                 if (response.ok) {
                     console.log('[USERS] User status toggled successfully');
+                    alert(`User ${currentStatus ? 'deactivated' : 'activated'} successfully!`);
                     // Refresh data to get latest state
                     await refreshData();
+                } else if (response.status === 403) {
+                    const error = await response.json();
+                    alert(error.message || error.error);
                 } else {
                     const error = await response.json();
-                    alert('Error: ' + error.error);
+                    alert('Error: ' + (error.message || error.error));
                 }
             } catch (error) {
                 console.error('[USERS] Toggle status error:', error);

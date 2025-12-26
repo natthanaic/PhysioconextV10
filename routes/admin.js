@@ -304,11 +304,19 @@ router.put('/users/:id', async (req, res) => {
 });
 
 // Toggle user status
-router.patch('/users/:id/status', async (req, res) => {
+router.patch('/users/:id/status', authenticateToken, authorize('ADMIN'), async (req, res) => {
     try {
         const db = req.app.locals.db;
         const { id } = req.params;
         const { active } = req.body;
+
+        // Prevent admins from deactivating themselves
+        if (parseInt(id) === req.user.id && !active) {
+            return res.status(403).json({
+                error: 'You cannot deactivate your own account',
+                message: 'For security reasons, admins cannot deactivate themselves. Please ask another admin to deactivate your account if needed.'
+            });
+        }
 
         await db.execute(
             'UPDATE users SET active = ?, updated_at = NOW() WHERE id = ?',

@@ -2712,82 +2712,116 @@ router.post('/soap-smart/generate', authenticateToken, async (req, res) => {
 
         // Build AI prompt based on field type
         let prompt = '';
-        const patientInfo = `Patient: ${currentCase.first_name} ${currentCase.last_name}, Gender: ${currentCase.gender || 'N/A'}`;
-        const diagnosis = `Diagnosis: ${currentCase.diagnosis || 'N/A'}`;
-        const ptInfo = currentCase.pt_diagnosis ? `PT Diagnosis: ${currentCase.pt_diagnosis}\nChief Complaint: ${currentCase.pt_chief_complaint || 'N/A'}\nPresent History: ${currentCase.pt_present_history || 'N/A'}\nPain Score: ${currentCase.pt_pain_score || 'N/A'}/10` : '';
+        const caseInfo = `HN: ${currentCase.hn || 'N/A'}\nPN Code: ${currentCase.pn_code || 'N/A'}\nPatient ID: ${currentCase.patient_id || 'N/A'}`;
+        const patientInfo = `Patient Name: ${currentCase.first_name} ${currentCase.last_name}\nGender: ${currentCase.gender || 'Not specified'}`;
+        const diagnosis = `Diagnosis: ${currentCase.diagnosis || 'Not specified'}`;
+        const purpose = `Purpose: ${currentCase.purpose || 'Not specified'}`;
+        const ptInfo = currentCase.pt_diagnosis ? `\nPT Assessment:\n- PT Diagnosis: ${currentCase.pt_diagnosis}\n- Chief Complaint: ${currentCase.pt_chief_complaint || 'Not recorded'}\n- Present History: ${currentCase.pt_present_history || 'Not recorded'}\n- Pain Score: ${currentCase.pt_pain_score || 'Not recorded'}/10` : '\nPT Assessment: Not available';
 
         switch (fieldType) {
             case 'subjective':
                 prompt = `You are a physiotherapist assistant helping to write the Subjective section of a SOAP note.
 
+CRITICAL INSTRUCTIONS:
+- ONLY use the actual data provided below
+- DO NOT make up or hallucinate any patient information, symptoms, or details
+- If information is missing or marked as "Not specified/Not recorded/Not available", write a template that prompts the physiotherapist to fill in the details
+- Do NOT invent specific symptoms, pain locations, or patient statements
+
+AVAILABLE DATA:
+${caseInfo}
 ${patientInfo}
 ${diagnosis}
+${purpose}
 ${ptInfo}
+${previousPlan ? `\nPrevious Session Plan (for continuity):\n${previousPlan}` : '\nPrevious Session: No previous session data available'}
 
-${previousPlan ? `Previous Session Plan: ${previousPlan}\n\nUse the previous session's plan to provide continuity and context for this session's subjective assessment.` : ''}
+TASK:
+Write a professional Subjective section template based ONLY on the actual data above. If the PT Assessment is "Not available", create a template with placeholders like "[patient's chief complaint]", "[pain level]", "[functional limitations]" that the physiotherapist needs to fill in during the session.
 
-Write a professional Subjective section that includes:
-- Patient's chief complaint and symptoms
-- How the patient has been feeling since the last session (if previous plan provided)
-- Current pain levels and functional limitations
-- Patient's goals for this session
-
-Write in a professional, clinical tone. Keep it concise (3-5 sentences). Write in English.`;
+Keep it concise (3-5 sentences). Write in English. Use professional clinical tone.`;
                 break;
 
             case 'objective':
-                const subjectiveContext = context?.subjective ? `\nSubjective: ${context.subjective}` : '';
+                const subjectiveContext = context?.subjective ? `\nSubjective Section:\n${context.subjective}` : '\nSubjective Section: Not yet written';
                 prompt = `You are a physiotherapist assistant helping to write the Objective section of a SOAP note.
 
+CRITICAL INSTRUCTIONS:
+- ONLY use the actual data provided below
+- DO NOT make up or hallucinate examination findings, measurements, or test results
+- If information is missing, write a template with placeholders for the physiotherapist to fill in during examination
+- Do NOT invent specific ROM values, strength grades, or functional test results
+
+AVAILABLE DATA:
+${caseInfo}
 ${patientInfo}
 ${diagnosis}
 ${ptInfo}${subjectiveContext}
 
-Based on the patient information and subjective data, write a professional Objective section that includes:
-- Physical examination findings
-- Range of motion assessments
-- Strength testing results
-- Functional movement observations
-- Pain assessment findings
+TASK:
+Write a professional Objective section template based ONLY on the actual data above. Include placeholders like "[ROM measurements]", "[strength testing results]", "[palpation findings]", "[functional tests]" for the physiotherapist to complete during examination.
 
-Write in a professional, clinical tone. Keep it concise (3-5 sentences). Write in English.`;
+Keep it concise (3-5 sentences). Write in English. Use professional clinical tone.`;
                 break;
 
             case 'assessment':
                 const currentText = context?.currentContent || '';
-                prompt = `You are a professional physiotherapy editor. Polish and improve this Assessment text while maintaining the clinical meaning.
 
-Original text: "${currentText}"
+                if (!currentText || currentText.trim() === '') {
+                    return res.status(400).json({
+                        error: 'Assessment field is empty. Please write your assessment first, then use AI to polish it.',
+                        suggestion: null
+                    });
+                }
 
+                prompt = `You are a professional physiotherapy editor. Polish and improve the following Assessment text.
+
+CRITICAL INSTRUCTIONS:
+- DO NOT change the clinical meaning or add new medical information
+- DO NOT make up or add details that are not in the original text
+- ONLY improve grammar, structure, and professional tone
+- Keep all the original clinical observations and conclusions
+
+ORIGINAL TEXT:
+"${currentText}"
+
+CONTEXT:
+${caseInfo}
 ${patientInfo}
 ${diagnosis}
 
-Requirements:
-- Make it more professional and clinical
-- Improve grammar and structure
-- Keep the same meaning and key points
-- Use proper medical terminology
-- Keep it concise
+TASK:
+Polish the text to be more professional and clinical. Fix grammar and improve medical terminology. Do NOT add new information or change the clinical meaning.
 
 Provide only the polished version without explanations. Write in English.`;
                 break;
 
             case 'plan':
-                const assessmentContext = context?.assessment ? `\nAssessment: ${context.assessment}` : '';
+                const assessmentContext = context?.assessment ? `\nAssessment:\n${context.assessment}` : '\nAssessment: Not yet written';
+                const objectiveContext = context?.objective ? `\nObjective:\n${context.objective}` : '\nObjective: Not yet written';
+
                 prompt = `You are a physiotherapist assistant helping to write the Plan section of a SOAP note.
 
+CRITICAL INSTRUCTIONS:
+- Suggest general treatment approaches based ONLY on the diagnosis provided
+- DO NOT make up specific modality settings, exercise parameters, or treatment details
+- Provide a template with general recommendations that the physiotherapist can customize
+- Use placeholders like "[specific exercises]", "[treatment duration]", "[modality settings]"
+
+AVAILABLE DATA:
+${caseInfo}
 ${patientInfo}
 ${diagnosis}
-${ptInfo}${assessmentContext}
+${ptInfo}${objectiveContext}${assessmentContext}
 
-Write a professional Plan section that includes:
-- Treatment modalities to be used (e.g., manual therapy, therapeutic exercises, electrotherapy)
-- Specific interventions planned
-- Home exercise program recommendations
-- Follow-up and progression plan
+TASK:
+Write a professional Plan section with general treatment recommendations based on the diagnosis. Include categories like:
+- Treatment modalities (without specific settings)
+- Exercise approaches (without exact parameters)
 - Patient education points
+- Follow-up recommendations
 
-Write in a professional, clinical tone. Keep it concise (4-6 sentences). Write in English.`;
+Keep it concise (4-6 sentences). Write in English. Use professional clinical tone.`;
                 break;
 
             default:

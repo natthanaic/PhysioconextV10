@@ -2497,8 +2497,27 @@ router.put('/bills/:id', authenticateToken, authorize('ADMIN'), async (req, res)
             bill_notes
         } = req.body;
 
+        const toNullable = (value) => {
+            if (value === undefined || value === null) return null;
+            if (typeof value === 'string') {
+                const trimmed = value.trim();
+                if (trimmed === '' || trimmed.toLowerCase() === 'null' || trimmed.toLowerCase() === 'undefined') {
+                    return null;
+                }
+                return trimmed;
+            }
+            return value;
+        };
+
+        const toNumber = (value, fallback = 0) => {
+            const num = parseFloat(value);
+            return Number.isFinite(num) ? num : fallback;
+        };
+
+        const normalizedIsCourseCutting = is_course_cutting === true || is_course_cutting === 1 || is_course_cutting === '1';
+
         // Update bill
-        await connection.execute(`
+        const [updateResult] = await connection.execute(`
             UPDATE bills SET
                 patient_id = ?,
                 walk_in_name = ?,
@@ -2521,46 +2540,59 @@ router.put('/bills/:id', authenticateToken, authorize('ADMIN'), async (req, res)
                 bill_notes = ?
             WHERE id = ?
         `, [
-            patient_id || null,
-            walk_in_name || null,
-            walk_in_phone || null,
-            clinic_id || null,
-            appointment_id || null,
-            pn_case_id || null,
-            course_id || null,
-            is_course_cutting ? 1 : 0,
-            bill_date || null,
-            due_date || null,
-            subtotal || 0,
-            discount || 0,
-            tax || 0,
-            total_amount || 0,
+            toNullable(patient_id),
+            toNullable(walk_in_name),
+            toNullable(walk_in_phone),
+            toNullable(clinic_id),
+            toNullable(appointment_id),
+            toNullable(pn_case_id),
+            toNullable(course_id),
+            normalizedIsCourseCutting ? 1 : 0,
+            toNullable(bill_date),
+            toNullable(due_date),
+            toNumber(subtotal),
+            toNumber(discount),
+            toNumber(tax),
+            toNumber(total_amount),
             payment_status || 'UNPAID',
-            payment_method || null,
-            payment_date || null,
-            payment_notes || null,
-            bill_notes || null,
+            toNullable(payment_method),
+            toNullable(payment_date),
+            toNullable(payment_notes),
+            toNullable(bill_notes),
             id
         ]);
+
+        if (updateResult.affectedRows === 0) {
+            throw new Error(`Bill with id ${id} not found`);
+        }
 
         // Delete existing items and insert new ones
         if (items !== undefined) {
             await connection.execute('DELETE FROM bill_items WHERE bill_id = ?', [id]);
 
             if (items.length > 0) {
-                for (const item of items) {
+                for (const rawItem of items) {
+                    const item = {
+                        service_id: toNullable(rawItem.service_id),
+                        service_name: toNullable(rawItem.service_name),
+                        quantity: toNumber(rawItem.quantity),
+                        unit_price: toNumber(rawItem.unit_price),
+                        total_price: toNumber(rawItem.total_price),
+                        notes: toNullable(rawItem.notes)
+                    };
+
                     await connection.execute(`
                         INSERT INTO bill_items (
                             bill_id, service_id, service_name, quantity, unit_price, total_price, notes
                         ) VALUES (?, ?, ?, ?, ?, ?, ?)
                     `, [
                         id,
-                        item.service_id || null,
-                        item.service_name || null,
-                        item.quantity || 0,
-                        item.unit_price || 0,
-                        item.total_price || 0,
-                        item.notes || null
+                        item.service_id,
+                        item.service_name,
+                        item.quantity,
+                        item.unit_price,
+                        item.total_price,
+                        item.notes
                     ]);
                 }
             }
@@ -2572,7 +2604,7 @@ router.put('/bills/:id', authenticateToken, authorize('ADMIN'), async (req, res)
     } catch (error) {
         await connection.rollback();
         console.error('Update bill error:', error);
-        res.status(500).json({ error: 'Failed to update bill' });
+        res.status(500).json({ error: 'Failed to update bill', details: error.message });
     } finally {
         connection.release();
     }

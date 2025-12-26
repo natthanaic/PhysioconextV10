@@ -1303,24 +1303,51 @@
                 btnReadCard.innerHTML = '<i class="bi bi-credit-card-2-front me-1"></i> Waiting for card...';
                 btnReadCard.classList.add('btn-warning');
                 btnReadCard.classList.remove('btn-primary');
+                btnReadCard.classList.remove('btn-danger');
             }
 
             cardPollingInterval = setInterval(() => {
                 fetch('/api/thai_card')
                     .then(res => res.json())
                     .then(data => {
-                        if (data.status === 'waiting' || !data.cid) {
-                            // No card data yet, keep polling
+                        // Update button based on reader connection status
+                        const btnReadCard = document.getElementById('btnReadCard');
+
+                        if (data.status === 'waiting') {
+                            if (!data.readerConnected) {
+                                // Reader not connected
+                                if (btnReadCard) {
+                                    btnReadCard.innerHTML = '<i class="bi bi-exclamation-triangle me-1"></i> Reader Not Connected';
+                                    btnReadCard.classList.add('btn-danger');
+                                    btnReadCard.classList.remove('btn-warning');
+                                }
+                                console.log('[THAI CARD] Card reader not connected');
+                            } else {
+                                // Reader connected, waiting for card
+                                if (btnReadCard) {
+                                    btnReadCard.innerHTML = '<i class="bi bi-credit-card-2-front me-1"></i> Waiting for card...';
+                                    btnReadCard.classList.add('btn-warning');
+                                    btnReadCard.classList.remove('btn-danger');
+                                }
+                            }
                             return;
                         }
 
-                        // Card data received!
-                        console.log('[THAI CARD] Auto-detected card data!', data);
-                        stopCardPolling();
-                        populateFormWithCardData(data);
+                        if (data.cid) {
+                            // Card data received!
+                            console.log('[THAI CARD] Auto-detected card data!', data);
+                            stopCardPolling();
+                            populateFormWithCardData(data);
+                        }
                     })
                     .catch(err => {
                         console.error('[THAI CARD] Polling error:', err);
+                        const btnReadCard = document.getElementById('btnReadCard');
+                        if (btnReadCard) {
+                            btnReadCard.innerHTML = '<i class="bi bi-exclamation-triangle me-1"></i> Connection Error';
+                            btnReadCard.classList.add('btn-danger');
+                            btnReadCard.classList.remove('btn-warning');
+                        }
                     });
             }, 2000); // Poll every 2 seconds
         }

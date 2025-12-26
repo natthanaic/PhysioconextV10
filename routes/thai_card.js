@@ -2,28 +2,37 @@
 const express = require('express');
 const router = express.Router();
 
-// In-memory cache for latest card data (expires after 30 seconds)
+// In-memory cache for card reader status
 let latestCardData = null;
 let cardDataTimestamp = null;
-const CARD_DATA_EXPIRY_MS = 30000; // 30 seconds
+let lastReaderHeartbeat = null;
+const CARD_DATA_EXPIRY_MS = 60000; // 60 seconds - keep data longer for testing
+const READER_TIMEOUT_MS = 10000; // 10 seconds - if no heartbeat, reader is disconnected
 
-// GET endpoint - returns cached card data if available
+// GET endpoint - returns card reader status and data
 router.get('/', (req, res) => {
     console.log('[THAI CARD] GET request received');
 
+    const now = Date.now();
+    const readerConnected = lastReaderHeartbeat && (now - lastReaderHeartbeat) < READER_TIMEOUT_MS;
+
     // Check if we have recent card data
     if (latestCardData && cardDataTimestamp) {
-        const age = Date.now() - cardDataTimestamp;
+        const age = now - cardDataTimestamp;
 
         if (age < CARD_DATA_EXPIRY_MS) {
             console.log('[THAI CARD] Returning cached card data (age: ' + age + 'ms)');
 
-            // Return the cached data and clear it (single use)
-            const data = latestCardData;
-            latestCardData = null;
-            cardDataTimestamp = null;
-
-            return res.json(data);
+            // Return the cached data with metadata (keep cache for testing)
+            return res.json({
+                ...latestCardData,
+                _metadata: {
+                    readerConnected: readerConnected,
+                    dataAge: age,
+                    cachedAt: new Date(cardDataTimestamp).toISOString(),
+                    lastHeartbeat: lastReaderHeartbeat ? new Date(lastReaderHeartbeat).toISOString() : null
+                }
+            });
         } else {
             console.log('[THAI CARD] Cached card data expired (age: ' + age + 'ms)');
             latestCardData = null;
@@ -31,10 +40,25 @@ router.get('/', (req, res) => {
         }
     }
 
-    // No card data available
+    // No card data available - return connection status
     res.json({
         status: 'waiting',
-        message: 'No card data available. Waiting for card insertion.'
+        readerConnected: readerConnected,
+        message: readerConnected
+            ? 'Card reader connected. Waiting for card insertion.'
+            : 'No card reader connected. Please ensure the local NFC reader application is running.',
+        lastHeartbeat: lastReaderHeartbeat ? new Date(lastReaderHeartbeat).toISOString() : null
+    });
+});
+
+// Heartbeat endpoint - local app can ping this to show it's running
+router.post('/heartbeat', (req, res) => {
+    lastReaderHeartbeat = Date.now();
+    console.log('[THAI CARD] Heartbeat received from card reader');
+    res.json({
+        success: true,
+        message: 'Card reader heartbeat registered',
+        timestamp: new Date().toISOString()
     });
 });
 
@@ -88,10 +112,14 @@ router.post('/', async (req, res) => {
             };
         }
 
+        // Update heartbeat - reader is connected
+        lastReaderHeartbeat = Date.now();
+
         // Cache the card data for frontend polling
         latestCardData = responseData;
         cardDataTimestamp = Date.now();
         console.log('[THAI CARD POST] Card data cached for frontend polling');
+        console.log('[THAI CARD POST] Reader heartbeat updated');
 
         // Return response to the local card reader application
         res.json(responseData);

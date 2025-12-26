@@ -1167,10 +1167,42 @@ async function showSOAPModal(caseId) {
                                             <table class="table table-bordered">
                                                 <thead class="table-light">
                                                     <tr>
-                                                        <th width="25%" class="text-center">Subjective</th>
-                                                        <th width="25%" class="text-center">Objective</th>
-                                                        <th width="25%" class="text-center">Assessment</th>
-                                                        <th width="25%" class="text-center">Plan</th>
+                                                        <th width="25%" class="text-center">
+                                                            Subjective
+                                                            <button type="button" class="btn btn-sm btn-primary ms-2 soap-ai-btn"
+                                                                onclick="generateSOAPField(${caseId}, 'subjective')"
+                                                                id="ai-btn-subjective"
+                                                                title="AI Generate Subjective">
+                                                                <i class="bi bi-stars"></i>
+                                                            </button>
+                                                        </th>
+                                                        <th width="25%" class="text-center">
+                                                            Objective
+                                                            <button type="button" class="btn btn-sm btn-primary ms-2 soap-ai-btn"
+                                                                onclick="generateSOAPField(${caseId}, 'objective')"
+                                                                id="ai-btn-objective"
+                                                                title="AI Generate Objective">
+                                                                <i class="bi bi-stars"></i>
+                                                            </button>
+                                                        </th>
+                                                        <th width="25%" class="text-center">
+                                                            Assessment
+                                                            <button type="button" class="btn btn-sm btn-primary ms-2 soap-ai-btn"
+                                                                onclick="generateSOAPField(${caseId}, 'assessment')"
+                                                                id="ai-btn-assessment"
+                                                                title="AI Generate Assessment">
+                                                                <i class="bi bi-stars"></i>
+                                                            </button>
+                                                        </th>
+                                                        <th width="25%" class="text-center">
+                                                            Plan
+                                                            <button type="button" class="btn btn-sm btn-primary ms-2 soap-ai-btn"
+                                                                onclick="generateSOAPField(${caseId}, 'plan')"
+                                                                id="ai-btn-plan"
+                                                                title="AI Generate Plan">
+                                                                <i class="bi bi-stars"></i>
+                                                            </button>
+                                                        </th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -1275,6 +1307,82 @@ async function submitSOAP(caseId) {
     } catch (error) {
         console.error('Error submitting SOAP:', error);
         showAlert('Error submitting SOAP notes', 'danger');
+    }
+}
+
+// Generate SOAP field using AI
+async function generateSOAPField(caseId, fieldType) {
+    try {
+        const button = document.getElementById(`ai-btn-${fieldType}`);
+        const textarea = document.getElementById(`soap_${fieldType}`);
+
+        if (!button || !textarea) {
+            console.error('Button or textarea not found for field:', fieldType);
+            return;
+        }
+
+        // Disable button and show loading state
+        button.disabled = true;
+        const originalHTML = button.innerHTML;
+        button.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+        // Get current content from other fields for context
+        const context = {
+            subjective: document.getElementById('soap_subjective')?.value || '',
+            objective: document.getElementById('soap_objective')?.value || '',
+            assessment: document.getElementById('soap_assessment')?.value || '',
+            plan: document.getElementById('soap_plan')?.value || '',
+            currentContent: textarea.value || ''
+        };
+
+        // Call backend API to generate SOAP field
+        const response = await fetch('/api/admin/soap-smart/generate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                caseId: caseId,
+                fieldType: fieldType,
+                context: context
+            })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to generate AI content');
+        }
+
+        const result = await response.json();
+
+        if (result.suggestion) {
+            // Show suggestion in a confirmation dialog
+            const userAccepted = confirm(
+                `AI Suggestion for ${fieldType.charAt(0).toUpperCase() + fieldType.slice(1)}:\n\n` +
+                `${result.suggestion}\n\n` +
+                `Do you want to use this text?`
+            );
+
+            if (userAccepted) {
+                textarea.value = result.suggestion;
+                showAlert(`AI ${fieldType} added successfully`, 'success');
+            }
+        }
+
+        // Restore button
+        button.disabled = false;
+        button.innerHTML = originalHTML;
+
+    } catch (error) {
+        console.error('Error generating SOAP field:', error);
+        showAlert(error.message || 'Error generating AI content', 'danger');
+
+        // Restore button
+        const button = document.getElementById(`ai-btn-${fieldType}`);
+        if (button) {
+            button.disabled = false;
+            button.innerHTML = '<i class="bi bi-stars"></i>';
+        }
     }
 }
 

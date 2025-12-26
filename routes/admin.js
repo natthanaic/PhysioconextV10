@@ -2615,6 +2615,188 @@ router.post('/ai-settings/test', authenticateToken, authorize('ADMIN'), async (r
 });
 
 // ========================================
+// SOAP SMART AI GENERATION
+// ========================================
+
+// Generate SOAP field using AI
+router.post('/soap-smart/generate', authenticateToken, async (req, res) => {
+    try {
+        const db = req.app.locals.db;
+        const { caseId, fieldType, context } = req.body;
+
+        if (!caseId || !fieldType) {
+            return res.status(400).json({ error: 'Case ID and field type are required' });
+        }
+
+        // Get AI settings
+        const [settings] = await db.execute(`
+            SELECT setting_value FROM notification_settings WHERE setting_type = 'gemini_ai' LIMIT 1
+        `);
+
+        if (settings.length === 0) {
+            return res.status(400).json({ error: 'AI settings not configured' });
+        }
+
+        const aiConfig = JSON.parse(settings[0].setting_value);
+
+        // Check if SOAP Smart feature is enabled
+        if (!aiConfig.features?.soapSmart) {
+            return res.status(403).json({ error: 'SOAP Smart feature is not enabled. Please enable it in AI Settings.' });
+        }
+
+        if (!aiConfig.enabled || !aiConfig.apiKey) {
+            return res.status(400).json({ error: 'AI is not configured or disabled' });
+        }
+
+        // Get current case data
+        const [cases] = await db.execute(`
+            SELECT c.*,
+                   p.first_name, p.last_name, p.gender, p.date_of_birth,
+                   pt.pt_diagnosis, pt.pt_chief_complaint, pt.pt_present_history, pt.pt_pain_score
+            FROM pn_cases c
+            LEFT JOIN patients p ON c.patient_id = p.id
+            LEFT JOIN pt_assessments pt ON c.id = pt.case_id
+            WHERE c.id = ?
+        `, [caseId]);
+
+        if (cases.length === 0) {
+            return res.status(404).json({ error: 'Case not found' });
+        }
+
+        const currentCase = cases[0];
+
+        // Get previous session's SOAP notes for this patient (for Subjective context)
+        let previousPlan = null;
+        if (fieldType === 'subjective') {
+            const [previousSessions] = await db.execute(`
+                SELECT soap_notes
+                FROM pn_cases
+                WHERE patient_id = ? AND id != ? AND status = 'COMPLETED'
+                ORDER BY created_at DESC
+                LIMIT 1
+            `, [currentCase.patient_id, caseId]);
+
+            if (previousSessions.length > 0 && previousSessions[0].soap_notes) {
+                try {
+                    const soapData = JSON.parse(previousSessions[0].soap_notes);
+                    previousPlan = soapData.plan;
+                } catch (e) {
+                    console.log('Could not parse previous SOAP notes');
+                }
+            }
+        }
+
+        // Build AI prompt based on field type
+        let prompt = '';
+        const patientInfo = `Patient: ${currentCase.first_name} ${currentCase.last_name}, ${currentCase.gender}, Age: ${currentCase.date_of_birth ? Math.floor((Date.now() - new Date(currentCase.date_of_birth)) / (1000 * 60 * 60 * 24 * 365)) : 'N/A'}`;
+        const diagnosis = `Diagnosis: ${currentCase.diagnosis || 'N/A'}`;
+        const ptInfo = currentCase.pt_diagnosis ? `PT Diagnosis: ${currentCase.pt_diagnosis}\nChief Complaint: ${currentCase.pt_chief_complaint || 'N/A'}\nPresent History: ${currentCase.pt_present_history || 'N/A'}\nPain Score: ${currentCase.pt_pain_score || 'N/A'}/10` : '';
+
+        switch (fieldType) {
+            case 'subjective':
+                prompt = `You are a physiotherapist assistant helping to write the Subjective section of a SOAP note.
+
+${patientInfo}
+${diagnosis}
+${ptInfo}
+
+${previousPlan ? `Previous Session Plan: ${previousPlan}\n\nUse the previous session's plan to provide continuity and context for this session's subjective assessment.` : ''}
+
+Write a professional Subjective section that includes:
+- Patient's chief complaint and symptoms
+- How the patient has been feeling since the last session (if previous plan provided)
+- Current pain levels and functional limitations
+- Patient's goals for this session
+
+Write in a professional, clinical tone. Keep it concise (3-5 sentences). Write in English.`;
+                break;
+
+            case 'objective':
+                const subjectiveContext = context?.subjective ? `\nSubjective: ${context.subjective}` : '';
+                prompt = `You are a physiotherapist assistant helping to write the Objective section of a SOAP note.
+
+${patientInfo}
+${diagnosis}
+${ptInfo}${subjectiveContext}
+
+Based on the patient information and subjective data, write a professional Objective section that includes:
+- Physical examination findings
+- Range of motion assessments
+- Strength testing results
+- Functional movement observations
+- Pain assessment findings
+
+Write in a professional, clinical tone. Keep it concise (3-5 sentences). Write in English.`;
+                break;
+
+            case 'assessment':
+                const currentText = context?.currentContent || '';
+                prompt = `You are a professional physiotherapy editor. Polish and improve this Assessment text while maintaining the clinical meaning.
+
+Original text: "${currentText}"
+
+${patientInfo}
+${diagnosis}
+
+Requirements:
+- Make it more professional and clinical
+- Improve grammar and structure
+- Keep the same meaning and key points
+- Use proper medical terminology
+- Keep it concise
+
+Provide only the polished version without explanations. Write in English.`;
+                break;
+
+            case 'plan':
+                const assessmentContext = context?.assessment ? `\nAssessment: ${context.assessment}` : '';
+                prompt = `You are a physiotherapist assistant helping to write the Plan section of a SOAP note.
+
+${patientInfo}
+${diagnosis}
+${ptInfo}${assessmentContext}
+
+Write a professional Plan section that includes:
+- Treatment modalities to be used (e.g., manual therapy, therapeutic exercises, electrotherapy)
+- Specific interventions planned
+- Home exercise program recommendations
+- Follow-up and progression plan
+- Patient education points
+
+Write in a professional, clinical tone. Keep it concise (4-6 sentences). Write in English.`;
+                break;
+
+            default:
+                return res.status(400).json({ error: 'Invalid field type' });
+        }
+
+        // Call Gemini API
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${aiConfig.model}:generateContent?key=${aiConfig.apiKey}`;
+
+        const response = await axios.post(url, {
+            contents: [{
+                parts: [{ text: prompt }]
+            }]
+        });
+
+        const aiResponse = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (!aiResponse) {
+            return res.status(500).json({ error: 'No response from AI' });
+        }
+
+        res.json({ suggestion: aiResponse.trim() });
+
+    } catch (error) {
+        console.error('SOAP Smart generation error:', error);
+        res.status(500).json({
+            error: 'Failed to generate AI content',
+            details: error.message
+        });
+    }
+});
+
+// ========================================
 // SHINOAI SETTINGS
 // ========================================
 

@@ -14,7 +14,7 @@ router.get('/', (req, res) => {
     console.log('[THAI CARD] GET request received');
 
     const now = Date.now();
-    const readerConnected = lastReaderHeartbeat && (now - lastReaderHeartbeat) < READER_TIMEOUT_MS;
+    const readerConnected = lastReaderHeartbeat ? (now - lastReaderHeartbeat) < READER_TIMEOUT_MS : false;
 
     // Check if we have recent card data
     if (latestCardData && cardDataTimestamp) {

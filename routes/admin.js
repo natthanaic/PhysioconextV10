@@ -392,11 +392,17 @@ router.get('/users/:id/data-summary', authenticateToken, authorize('ADMIN'), asy
             [id]
         );
 
-        // Count broadcasts created by this user
-        const [broadcastCount] = await db.execute(
-            'SELECT COUNT(*) as count FROM broadcast_campaigns WHERE created_by = ?',
-            [id]
-        );
+        // Count broadcasts created by this user (table may not exist)
+        let broadcastCount = [{ count: 0 }];
+        try {
+            const [result] = await db.execute(
+                'SELECT COUNT(*) as count FROM broadcast_campaigns WHERE created_by = ?',
+                [id]
+            );
+            broadcastCount = result;
+        } catch (broadcastError) {
+            console.log('[DATA SUMMARY] Broadcast table not found or error:', broadcastError.message);
+        }
 
         // Get available PTs for transfer (excluding this user)
         const [availablePTs] = await db.execute(
@@ -428,8 +434,9 @@ router.get('/users/:id/data-summary', authenticateToken, authorize('ADMIN'), asy
             }
         });
     } catch (error) {
-        console.error('Get user data summary error:', error);
-        res.status(500).json({ error: 'Failed to retrieve user data summary' });
+        console.error('[DATA SUMMARY] Error:', error);
+        console.error('[DATA SUMMARY] Error details:', error.message);
+        res.status(500).json({ error: 'Failed to retrieve user data summary', details: error.message });
     }
 });
 
@@ -473,9 +480,18 @@ router.delete('/users/:id', authenticateToken, authorize('ADMIN'), async (req, r
             await connection.execute('DELETE FROM user_clinic_grants WHERE user_id = ?', [id]);
             await connection.execute('DELETE FROM otp_codes WHERE user_id = ?', [id]);
 
-            // Delete created records
-            await connection.execute('DELETE FROM broadcast_campaigns WHERE created_by = ?', [id]);
-            await connection.execute('DELETE FROM expenses WHERE created_by = ?', [id]);
+            // Delete created records (handle tables that may not exist)
+            try {
+                await connection.execute('DELETE FROM broadcast_campaigns WHERE created_by = ?', [id]);
+            } catch (e) {
+                console.log('[DELETE] Broadcast table not found:', e.message);
+            }
+
+            try {
+                await connection.execute('DELETE FROM expenses WHERE created_by = ?', [id]);
+            } catch (e) {
+                console.log('[DELETE] Expenses table error:', e.message);
+            }
 
             // Delete appointments where user is PT
             await connection.execute('DELETE FROM appointments WHERE pt_id = ?', [id]);
@@ -537,19 +553,29 @@ router.delete('/users/:id', authenticateToken, authorize('ADMIN'), async (req, r
                 );
             }
 
-            // Transfer bills, broadcasts, expenses to admin
+            // Transfer bills, broadcasts, expenses to admin (handle tables that may not exist)
             await connection.execute(
                 'UPDATE bills SET created_by = ? WHERE created_by = ?',
                 [transferUserId, id]
             );
-            await connection.execute(
-                'UPDATE broadcast_campaigns SET created_by = ? WHERE created_by = ?',
-                [transferUserId, id]
-            );
-            await connection.execute(
-                'UPDATE expenses SET created_by = ? WHERE created_by = ?',
-                [transferUserId, id]
-            );
+
+            try {
+                await connection.execute(
+                    'UPDATE broadcast_campaigns SET created_by = ? WHERE created_by = ?',
+                    [transferUserId, id]
+                );
+            } catch (e) {
+                console.log('[DELETE] Broadcast table not found:', e.message);
+            }
+
+            try {
+                await connection.execute(
+                    'UPDATE expenses SET created_by = ? WHERE created_by = ?',
+                    [transferUserId, id]
+                );
+            } catch (e) {
+                console.log('[DELETE] Expenses table error:', e.message);
+            }
 
             // Clean up user-specific data
             await connection.execute('DELETE FROM user_clinic_grants WHERE user_id = ?', [id]);
@@ -586,8 +612,15 @@ router.delete('/users/:id', authenticateToken, authorize('ADMIN'), async (req, r
         });
     } catch (error) {
         await connection.rollback();
-        console.error('Delete user error:', error);
-        res.status(500).json({ error: 'Failed to delete user', details: error.message });
+        console.error('[DELETE USER] Error:', error);
+        console.error('[DELETE USER] Error message:', error.message);
+        console.error('[DELETE USER] Error code:', error.code);
+        console.error('[DELETE USER] SQL:', error.sql);
+        res.status(500).json({
+            error: 'Failed to delete user',
+            details: error.message,
+            code: error.code
+        });
     } finally {
         connection.release();
     }

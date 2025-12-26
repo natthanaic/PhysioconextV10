@@ -350,6 +350,249 @@ router.get('/users/:id/grants', authenticateToken, authorize('ADMIN'), async (re
     }
 });
 
+// Get user data summary (for delete confirmation)
+router.get('/users/:id/data-summary', authenticateToken, authorize('ADMIN'), async (req, res) => {
+    try {
+        const db = req.app.locals.db;
+        const { id } = req.params;
+
+        // Get user info
+        const [users] = await db.execute(
+            'SELECT id, email, first_name, last_name, role, clinic_id FROM users WHERE id = ?',
+            [id]
+        );
+
+        if (users.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        const user = users[0];
+
+        // Count patients created by this user
+        const [patientCount] = await db.execute(
+            'SELECT COUNT(*) as count FROM patients WHERE created_by = ?',
+            [id]
+        );
+
+        // Count appointments where user is PT
+        const [appointmentCount] = await db.execute(
+            'SELECT COUNT(*) as count FROM appointments WHERE pt_id = ? AND status != "CANCELLED"',
+            [id]
+        );
+
+        // Count PN cases created or assigned to this user
+        const [pnCaseCount] = await db.execute(
+            'SELECT COUNT(*) as count FROM pn_cases WHERE created_by = ? OR assigned_pt_id = ?',
+            [id, id]
+        );
+
+        // Count bills created by this user
+        const [billCount] = await db.execute(
+            'SELECT COUNT(*) as count FROM bills WHERE created_by = ?',
+            [id]
+        );
+
+        // Count broadcasts created by this user
+        const [broadcastCount] = await db.execute(
+            'SELECT COUNT(*) as count FROM broadcast_campaigns WHERE created_by = ?',
+            [id]
+        );
+
+        // Get available PTs for transfer (excluding this user)
+        const [availablePTs] = await db.execute(
+            `SELECT id, CONCAT(first_name, ' ', last_name) as name, email
+             FROM users
+             WHERE role IN ('PT', 'PT_ADMIN') AND active = 1 AND id != ?
+             ORDER BY first_name, last_name`,
+            [id]
+        );
+
+        res.json({
+            user: {
+                id: user.id,
+                name: `${user.first_name} ${user.last_name}`,
+                email: user.email,
+                role: user.role,
+                clinic_id: user.clinic_id
+            },
+            data_count: {
+                patients: patientCount[0].count,
+                appointments: appointmentCount[0].count,
+                pn_cases: pnCaseCount[0].count,
+                bills: billCount[0].count,
+                broadcasts: broadcastCount[0].count,
+                total: patientCount[0].count + appointmentCount[0].count + pnCaseCount[0].count + billCount[0].count + broadcastCount[0].count
+            },
+            transfer_options: {
+                available_pts: availablePTs
+            }
+        });
+    } catch (error) {
+        console.error('Get user data summary error:', error);
+        res.status(500).json({ error: 'Failed to retrieve user data summary' });
+    }
+});
+
+// Delete user with data transfer
+router.delete('/users/:id', authenticateToken, authorize('ADMIN'), async (req, res) => {
+    const connection = await req.app.locals.db.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        const { id } = req.params;
+        const { transfer_to_user_id, transfer_to_clinic_id, delete_all_data } = req.body;
+
+        // Prevent deleting yourself
+        if (parseInt(id) === req.user.id) {
+            return res.status(403).json({
+                error: 'You cannot delete your own account',
+                message: 'Please ask another admin to delete your account if needed.'
+            });
+        }
+
+        // Get user info
+        const [users] = await connection.execute(
+            'SELECT id, email, first_name, last_name, role, clinic_id FROM users WHERE id = ?',
+            [id]
+        );
+
+        if (users.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        const userToDelete = users[0];
+
+        if (delete_all_data) {
+            // DELETE ALL DATA - Use with extreme caution
+            console.log(`[DELETE USER] Deleting all data for user ${id}`);
+
+            // Delete in order to respect foreign key constraints
+            await connection.execute('DELETE FROM chat_typing_status WHERE user_id = ?', [id]);
+            await connection.execute('DELETE FROM chat_messages WHERE sender_id = ?', [id]);
+            await connection.execute('DELETE FROM chat_conversations WHERE user1_id = ? OR user2_id = ?', [id, id]);
+            await connection.execute('DELETE FROM user_clinic_grants WHERE user_id = ?', [id]);
+            await connection.execute('DELETE FROM otp_codes WHERE user_id = ?', [id]);
+
+            // Delete created records
+            await connection.execute('DELETE FROM broadcast_campaigns WHERE created_by = ?', [id]);
+            await connection.execute('DELETE FROM expenses WHERE created_by = ?', [id]);
+
+            // Delete appointments where user is PT
+            await connection.execute('DELETE FROM appointments WHERE pt_id = ?', [id]);
+
+            // Delete PN cases
+            await connection.execute('DELETE FROM pn_cases WHERE created_by = ? OR assigned_pt_id = ?', [id, id]);
+
+            // Delete bills
+            await connection.execute('DELETE FROM bills WHERE created_by = ?', [id]);
+
+            // Delete patients
+            await connection.execute('DELETE FROM patients WHERE created_by = ?', [id]);
+
+        } else {
+            // TRANSFER DATA
+            console.log(`[DELETE USER] Transferring data for user ${id}`);
+
+            const transferUserId = transfer_to_user_id || 1; // Default to admin (ID 1)
+            const transferClinicId = transfer_to_clinic_id || null;
+
+            // Transfer patients created by this user
+            if (transferClinicId) {
+                await connection.execute(
+                    'UPDATE patients SET created_by = ?, clinic_id = ? WHERE created_by = ?',
+                    [transferUserId, transferClinicId, id]
+                );
+            } else {
+                await connection.execute(
+                    'UPDATE patients SET created_by = ? WHERE created_by = ?',
+                    [transferUserId, id]
+                );
+            }
+
+            // Transfer appointments to another PT (if user is PT)
+            if (userToDelete.role === 'PT' || userToDelete.role === 'PT_ADMIN') {
+                if (transfer_to_user_id) {
+                    await connection.execute(
+                        'UPDATE appointments SET pt_id = ?, updated_at = NOW() WHERE pt_id = ? AND status != "CANCELLED"',
+                        [transfer_to_user_id, id]
+                    );
+                } else {
+                    // Set to NULL if no transfer PT specified
+                    await connection.execute(
+                        'UPDATE appointments SET pt_id = NULL, updated_at = NOW() WHERE pt_id = ? AND status != "CANCELLED"',
+                        [id]
+                    );
+                }
+            }
+
+            // Transfer PN cases
+            if (transfer_to_user_id) {
+                await connection.execute(
+                    'UPDATE pn_cases SET created_by = ? WHERE created_by = ?',
+                    [transfer_to_user_id, id]
+                );
+                await connection.execute(
+                    'UPDATE pn_cases SET assigned_pt_id = ? WHERE assigned_pt_id = ?',
+                    [transfer_to_user_id, id]
+                );
+            }
+
+            // Transfer bills, broadcasts, expenses to admin
+            await connection.execute(
+                'UPDATE bills SET created_by = ? WHERE created_by = ?',
+                [transferUserId, id]
+            );
+            await connection.execute(
+                'UPDATE broadcast_campaigns SET created_by = ? WHERE created_by = ?',
+                [transferUserId, id]
+            );
+            await connection.execute(
+                'UPDATE expenses SET created_by = ? WHERE created_by = ?',
+                [transferUserId, id]
+            );
+
+            // Clean up user-specific data
+            await connection.execute('DELETE FROM user_clinic_grants WHERE user_id = ?', [id]);
+            await connection.execute('DELETE FROM otp_codes WHERE user_id = ?', [id]);
+            await connection.execute('DELETE FROM chat_typing_status WHERE user_id = ?', [id]);
+
+            // Don't delete chat messages/conversations - keep for record but mark user as deleted
+        }
+
+        // Finally, delete the user
+        await connection.execute('DELETE FROM users WHERE id = ?', [id]);
+
+        // Audit log
+        await auditLog(
+            connection,
+            req.user.id,
+            'DELETE',
+            'user',
+            id,
+            { user: userToDelete },
+            {
+                delete_all_data,
+                transfer_to_user_id,
+                transfer_to_clinic_id
+            },
+            req
+        );
+
+        await connection.commit();
+
+        res.json({
+            success: true,
+            message: `User deleted successfully. ${delete_all_data ? 'All data removed.' : 'Data transferred.'}`
+        });
+    } catch (error) {
+        await connection.rollback();
+        console.error('Delete user error:', error);
+        res.status(500).json({ error: 'Failed to delete user', details: error.message });
+    } finally {
+        connection.release();
+    }
+});
+
 // ========================================
 // CLINIC GRANT ROUTES
 // ========================================

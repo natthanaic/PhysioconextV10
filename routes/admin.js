@@ -2468,7 +2468,7 @@ router.post('/bills', authenticateToken, async (req, res) => {
 });
 
 // Update bill
-router.put('/bills/:id', authenticateToken, async (req, res) => {
+router.put('/bills/:id', authenticateToken, authorize('ADMIN'), async (req, res) => {
     const connection = await req.app.locals.db.getConnection();
     try {
         await connection.beginTransaction();
@@ -2551,7 +2551,7 @@ router.put('/bills/:id', authenticateToken, async (req, res) => {
 
 // Update bill payment status
 // Update bill payment status (accepts both PUT and PATCH)
-router.patch('/bills/:id/payment-status', authenticateToken, async (req, res) => {
+router.patch('/bills/:id/payment-status', authenticateToken, authorize('ADMIN'), async (req, res) => {
     try {
         const db = req.app.locals.db;
         const { id } = req.params;
@@ -2583,7 +2583,7 @@ router.patch('/bills/:id/payment-status', authenticateToken, async (req, res) =>
 });
 
 // Also support PUT for backwards compatibility
-router.put('/bills/:id/payment-status', authenticateToken, async (req, res) => {
+router.put('/bills/:id/payment-status', authenticateToken, authorize('ADMIN'), async (req, res) => {
     try {
         const db = req.app.locals.db;
         const { id } = req.params;

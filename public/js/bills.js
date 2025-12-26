@@ -1001,7 +1001,8 @@ const BillsManager = {
             tax: parseFloat(document.getElementById('bill-tax')?.value) || 0,
             bill_notes: document.getElementById('bill-notes')?.value || null,
             payment_method: document.getElementById('bill-payment-method')?.value || null,
-            payment_status: this.currentBill.payment_status || 'UNPAID'
+            payment_status: this.currentBill.payment_status || 'UNPAID',
+            pn_case_id: this.currentBill.pn_case_id || null
         };
 
         console.log('Updating bill with date:', billDateValue);

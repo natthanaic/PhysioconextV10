@@ -2516,6 +2516,40 @@ router.put('/bills/:id', authenticateToken, authorize('ADMIN'), async (req, res)
 
         const normalizedIsCourseCutting = is_course_cutting === true || is_course_cutting === 1 || is_course_cutting === '1';
 
+        const parseItems = (value) => {
+            if (Array.isArray(value)) return value;
+            if (typeof value === 'string') {
+                try {
+                    const parsed = JSON.parse(value);
+                    return Array.isArray(parsed) ? parsed : [];
+                } catch (e) {
+                    console.warn('[BILLS] Failed to parse items payload as JSON, falling back to empty array');
+                    return [];
+                }
+            }
+            return [];
+        };
+
+        const normalizedItems = parseItems(items).map((rawItem, index) => {
+            const quantity = Math.max(1, toNumber(rawItem.quantity, 1));
+            const unitPrice = toNumber(rawItem.unit_price, 0);
+            const totalPrice = toNumber(rawItem.total_price, quantity * unitPrice);
+            const serviceNameRaw = toNullable(rawItem.service_name);
+            const serviceIdRaw = toNullable(rawItem.service_id);
+
+            const serviceName = serviceNameRaw
+                || (serviceIdRaw ? `Service ${serviceIdRaw}` : `Item ${index + 1}`);
+
+            return {
+                service_id: serviceIdRaw,
+                service_name: serviceName,
+                quantity,
+                unit_price: unitPrice,
+                total_price: totalPrice,
+                notes: toNullable(rawItem.notes)
+            };
+        });
+
         // Update bill
         const [updateResult] = await connection.execute(`
             UPDATE bills SET
@@ -2570,17 +2604,8 @@ router.put('/bills/:id', authenticateToken, authorize('ADMIN'), async (req, res)
         if (items !== undefined) {
             await connection.execute('DELETE FROM bill_items WHERE bill_id = ?', [id]);
 
-            if (items.length > 0) {
-                for (const rawItem of items) {
-                    const item = {
-                        service_id: toNullable(rawItem.service_id),
-                        service_name: toNullable(rawItem.service_name),
-                        quantity: toNumber(rawItem.quantity),
-                        unit_price: toNumber(rawItem.unit_price),
-                        total_price: toNumber(rawItem.total_price),
-                        notes: toNullable(rawItem.notes)
-                    };
-
+            if (normalizedItems.length > 0) {
+                for (const item of normalizedItems) {
                     await connection.execute(`
                         INSERT INTO bill_items (
                             bill_id, service_id, service_name, quantity, unit_price, total_price, notes

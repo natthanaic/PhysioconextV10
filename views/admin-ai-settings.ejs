@@ -368,8 +368,15 @@
                                         <div class="alert alert-info d-flex align-items-start gap-3 mb-4">
                                             <i class="bi bi-info-circle-fill fs-4 mt-1"></i>
                                             <div>
-                                                <strong>ShinoAI Configuration</strong><br>
-                                                <span class="small">ShinoAI uses the same Google Gemini AI configuration shown in the Gemini AI tab. All settings below are shared between both providers.</span>
+                                                <strong>ShinoAI - Your Clinic Management Assistant</strong><br>
+                                                <span class="small">ShinoAI is an intelligent chatbot that helps manage your clinic by providing instant access to:</span>
+                                                <ul class="small mb-0 mt-2">
+                                                    <li>📋 Today's appointments and schedule</li>
+                                                    <li>📊 Business performance (income, expenses)</li>
+                                                    <li>👥 Patient statistics</li>
+                                                    <li>🎯 Active PN cases summary</li>
+                                                </ul>
+                                                <span class="small mt-2 d-block"><strong>Configuration:</strong> ShinoAI uses the same Gemini AI API settings configured below. The chatbot is accessible via the floating button on all pages.</span>
                                             </div>
                                         </div>
 
@@ -464,31 +471,53 @@
 
                     <!-- Info Column -->
                     <div class="col-lg-4">
-                        <div class="settings-card h-100">
+                        <div class="settings-card mb-3">
                             <div class="card-header">
-                                <h4><i class="bi bi-info-circle text-info"></i> How It Works</h4>
+                                <h4><i class="bi bi-robot text-primary"></i> Gemini AI Features</h4>
                             </div>
                             <div class="card-body">
-                                <div class="mb-4">
+                                <div class="mb-3">
                                     <div class="info-icon-wrapper bg-primary bg-opacity-10 text-primary">
                                         <i class="bi bi-chat-heart-fill"></i>
                                     </div>
                                     <h6 class="fw-bold">Smart Symptom Detection</h6>
-                                    <p class="text-muted small mb-0">Users describe their symptoms in natural language, and AI recommends the appropriate pain zone and treatment plan.</p>
+                                    <p class="text-muted small mb-0">Public booking form analyzes symptoms to recommend pain zones.</p>
                                 </div>
-                                <div class="mb-4">
+                                <div>
                                     <div class="info-icon-wrapper bg-success bg-opacity-10 text-success">
                                         <i class="bi bi-magic"></i>
                                     </div>
                                     <h6 class="fw-bold">Note Enhancement</h6>
-                                    <p class="text-muted small mb-0">AI automatically polishes rough notes into professional, medically accurate records.</p>
+                                    <p class="text-muted small mb-0">Polishes rough notes into professional medical records.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="settings-card">
+                            <div class="card-header">
+                                <h4><i class="bi bi-cpu text-info"></i> ShinoAI Features</h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <div class="info-icon-wrapper bg-info bg-opacity-10 text-info">
+                                        <i class="bi bi-calendar-check"></i>
+                                    </div>
+                                    <h6 class="fw-bold">Clinic Dashboard</h6>
+                                    <p class="text-muted small mb-0">Ask "What's today's schedule?" to see appointments and pending requests.</p>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="info-icon-wrapper bg-warning bg-opacity-10 text-warning">
+                                        <i class="bi bi-graph-up"></i>
+                                    </div>
+                                    <h6 class="fw-bold">Business Insights</h6>
+                                    <p class="text-muted small mb-0">Get monthly income, expenses, new patients, and active cases statistics.</p>
                                 </div>
                                 <div>
                                     <div class="info-icon-wrapper bg-secondary bg-opacity-10 text-secondary">
                                         <i class="bi bi-shield-lock-fill"></i>
                                     </div>
                                     <h6 class="fw-bold">Secure & Private</h6>
-                                    <p class="text-muted small mb-0">Processing happens securely on your server. API keys are never exposed to the client-side.</p>
+                                    <p class="text-muted small mb-0">No personal data exposed. Admin-only access to management stats.</p>
                                 </div>
                             </div>
                         </div>

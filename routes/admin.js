@@ -2491,7 +2491,7 @@ router.post('/ai-settings', authenticateToken, authorize('ADMIN'), async (req, r
             features: features || { symptomAnalysis: true, notePolish: true }
         });
 
-        // Check if settings exist
+        // Check if settings exist in notification_settings
         const [existing] = await db.execute(`
             SELECT id FROM notification_settings WHERE setting_type = 'gemini_ai' LIMIT 1
         `);
@@ -2512,10 +2512,30 @@ router.post('/ai-settings', authenticateToken, authorize('ADMIN'), async (req, r
             `, [settingValue]);
         }
 
+        // Also save to system_settings for ShinoAI compatibility
+        try {
+            // Update or insert ai_api_key
+            await db.execute(`
+                INSERT INTO system_settings (setting_key, setting_value, updated_at)
+                VALUES ('ai_api_key', ?, NOW())
+                ON DUPLICATE KEY UPDATE setting_value = ?, updated_at = NOW()
+            `, [apiKey, apiKey]);
+
+            // Update or insert model
+            await db.execute(`
+                INSERT INTO system_settings (setting_key, setting_value, updated_at)
+                VALUES ('model', ?, NOW())
+                ON DUPLICATE KEY UPDATE setting_value = ?, updated_at = NOW()
+            `, [model, model]);
+        } catch (sysSettingsError) {
+            // If system_settings table doesn't exist, log but don't fail
+            console.log('[AI Settings] system_settings table not available:', sysSettingsError.message);
+        }
+
         // Audit log
         await auditLog(db, userId, 'update', 'ai_settings', 0, null, { enabled, model: model }, req);
 
-        res.json({ success: true, message: 'AI settings saved successfully' });
+        res.json({ success: true, message: 'AI settings saved successfully (Gemini AI & ShinoAI)' });
     } catch (error) {
         console.error('Save AI settings error:', error);
         res.status(500).json({ error: 'Failed to save AI settings' });

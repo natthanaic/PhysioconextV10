@@ -349,6 +349,112 @@
                                 </form>
                             </div>
                         </div>
+
+                        <!-- ShinoAI Configuration -->
+                        <div class="settings-card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h4><i class="bi bi-cpu text-info"></i> ShinoAI</h4>
+                                <span class="feature-badge" style="background: rgba(13, 202, 240, 0.1); color: #0dcaf0;">Advanced AI</span>
+                            </div>
+                            <div class="card-body">
+                                <div class="warning-box">
+                                    <i class="bi bi-shield-lock-fill mt-1"></i>
+                                    <div>
+                                        <strong>Security Notice</strong><br>
+                                        Your API credentials are encrypted and stored securely. Only administrators can access these settings.
+                                    </div>
+                                </div>
+
+                                <form id="shinoai-settings-form">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label for="shinoai-enabled" class="form-label">
+                                                Enable ShinoAI
+                                            </label>
+                                            <select class="form-select" id="shinoai-enabled" name="enabled" required>
+                                                <option value="1">Enabled</option>
+                                                <option value="0">Disabled</option>
+                                            </select>
+                                            <div class="form-text small">Activate ShinoAI features</div>
+                                        </div>
+
+                                        <div class="col-md-6">
+                                            <label for="shinoai-model" class="form-label">
+                                                AI Model
+                                            </label>
+                                            <select class="form-select" id="shinoai-model" name="model" required>
+                                                <option value="shino-default">Shino Default</option>
+                                                <option value="shino-advanced">Shino Advanced</option>
+                                                <option value="shino-medical">Shino Medical (Healthcare)</option>
+                                                <option value="shino-analytics">Shino Analytics</option>
+                                            </select>
+                                            <div class="form-text small">Select ShinoAI model</div>
+                                        </div>
+
+                                        <div class="col-12">
+                                            <label for="shinoai-api-url" class="form-label">
+                                                API URL
+                                            </label>
+                                            <input type="url" class="form-control" id="shinoai-api-url" name="apiUrl"
+                                                   placeholder="https://api.shinoai.com/v1" required>
+                                            <div class="form-text small">ShinoAI API endpoint URL</div>
+                                        </div>
+
+                                        <div class="col-12">
+                                            <label for="shinoai-api-key" class="form-label">
+                                                API Key
+                                            </label>
+                                            <div class="input-group">
+                                                <input type="password" class="form-control" id="shinoai-api-key" name="apiKey"
+                                                       placeholder="Enter your ShinoAI API key" required>
+                                                <button class="btn btn-outline-secondary" type="button" id="toggle-shinoai-key" style="border-top-left-radius: 0; border-bottom-left-radius: 0;">
+                                                    <i class="bi bi-eye"></i>
+                                                </button>
+                                            </div>
+                                            <div class="form-text small">
+                                                Contact ShinoAI support for API access
+                                            </div>
+                                        </div>
+
+                                        <div class="col-12 mt-4">
+                                            <label class="form-label mb-3">Active Features</label>
+                                            <div class="d-flex flex-column gap-2">
+                                                <div class="form-check form-switch p-3 border rounded bg-light">
+                                                    <input class="form-check-input ms-0 me-3" type="checkbox" id="feature-chat-assistant" name="features.chatAssistant" checked>
+                                                    <label class="form-check-label fw-bold" for="feature-chat-assistant">
+                                                        Chat Assistant
+                                                    </label>
+                                                    <div class="text-muted small mt-1">AI-powered chat for patient support</div>
+                                                </div>
+                                                <div class="form-check form-switch p-3 border rounded bg-light">
+                                                    <input class="form-check-input ms-0 me-3" type="checkbox" id="feature-doc-generation" name="features.documentGeneration" checked>
+                                                    <label class="form-check-label fw-bold" for="feature-doc-generation">
+                                                        Document Generation
+                                                    </label>
+                                                    <div class="text-muted small mt-1">Automatic medical document creation</div>
+                                                </div>
+                                                <div class="form-check form-switch p-3 border rounded bg-light">
+                                                    <input class="form-check-input ms-0 me-3" type="checkbox" id="feature-data-analysis" name="features.dataAnalysis" checked>
+                                                    <label class="form-check-label fw-bold" for="feature-data-analysis">
+                                                        Data Analysis
+                                                    </label>
+                                                    <div class="text-muted small mt-1">Advanced analytics and insights</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-4 pt-3 border-top d-flex gap-2">
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="bi bi-save me-2"></i>Save Settings
+                                        </button>
+                                        <button type="button" class="btn btn-info text-white" id="test-shinoai-btn">
+                                            <i class="bi bi-lightning-charge me-2"></i>Test Connection
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Info Column -->

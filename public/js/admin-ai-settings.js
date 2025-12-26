@@ -1,11 +1,12 @@
 // Admin AI Settings Management
 document.addEventListener('DOMContentLoaded', () => {
     loadAISettings();
+    loadShinoAISettings();
     setupEventListeners();
 });
 
 function setupEventListeners() {
-    // Form submission
+    // Gemini form submission
     document.getElementById('gemini-settings-form').addEventListener('submit', saveAISettings);
 
     // Toggle API key visibility
@@ -13,6 +14,15 @@ function setupEventListeners() {
 
     // Test AI connection
     document.getElementById('test-ai-btn').addEventListener('click', testAIConnection);
+
+    // ShinoAI form submission
+    document.getElementById('shinoai-settings-form').addEventListener('submit', saveShinoAISettings);
+
+    // Toggle ShinoAI API key visibility
+    document.getElementById('toggle-shinoai-key').addEventListener('click', toggleShinoAIKeyVisibility);
+
+    // Test ShinoAI connection
+    document.getElementById('test-shinoai-btn').addEventListener('click', testShinoAIConnection);
 }
 
 // Load current AI settings
@@ -162,4 +172,125 @@ function showAlert(message, type = 'info') {
     setTimeout(() => {
         alert.remove();
     }, 5000);
+}
+
+// ========================================
+// SHINOAI SETTINGS
+// ========================================
+
+// Load current ShinoAI settings
+async function loadShinoAISettings() {
+    try {
+        const response = await fetch('/api/admin/shinoai-settings');
+
+        if (response.ok) {
+            const settings = await response.json();
+            populateShinoAIForm(settings);
+        } else if (response.status === 404) {
+            // No settings yet - use defaults
+            console.log('ShinoAI settings not configured yet');
+        } else {
+            showAlert('Failed to load ShinoAI settings', 'warning');
+        }
+    } catch (error) {
+        console.error('Load ShinoAI settings error:', error);
+    }
+}
+
+// Populate ShinoAI form with settings
+function populateShinoAIForm(settings) {
+    document.getElementById('shinoai-enabled').value = settings.enabled ? '1' : '0';
+    document.getElementById('shinoai-model').value = settings.model || 'shino-default';
+    document.getElementById('shinoai-api-url').value = settings.apiUrl || '';
+    document.getElementById('shinoai-api-key').value = settings.apiKey || '';
+
+    // Features
+    document.getElementById('feature-chat-assistant').checked = settings.features?.chatAssistant !== false;
+    document.getElementById('feature-doc-generation').checked = settings.features?.documentGeneration !== false;
+    document.getElementById('feature-data-analysis').checked = settings.features?.dataAnalysis !== false;
+}
+
+// Save ShinoAI settings
+async function saveShinoAISettings(e) {
+    e.preventDefault();
+
+    const formData = new FormData(e.target);
+    const settings = {
+        enabled: formData.get('enabled') === '1',
+        model: formData.get('model'),
+        apiUrl: formData.get('apiUrl'),
+        apiKey: formData.get('apiKey'),
+        features: {
+            chatAssistant: document.getElementById('feature-chat-assistant').checked,
+            documentGeneration: document.getElementById('feature-doc-generation').checked,
+            dataAnalysis: document.getElementById('feature-data-analysis').checked
+        }
+    };
+
+    try {
+        const response = await fetch('/api/admin/shinoai-settings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(settings)
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            showAlert('ShinoAI settings saved successfully', 'success');
+        } else {
+            showAlert(result.error || 'Failed to save ShinoAI settings', 'danger');
+        }
+    } catch (error) {
+        console.error('Save ShinoAI settings error:', error);
+        showAlert('Error saving ShinoAI settings', 'danger');
+    }
+}
+
+// Toggle ShinoAI API key visibility
+function toggleShinoAIKeyVisibility() {
+    const input = document.getElementById('shinoai-api-key');
+    const button = document.getElementById('toggle-shinoai-key');
+    const icon = button.querySelector('i');
+
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('bi-eye');
+        icon.classList.add('bi-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('bi-eye-slash');
+        icon.classList.add('bi-eye');
+    }
+}
+
+// Test ShinoAI connection
+async function testShinoAIConnection() {
+    const button = document.getElementById('test-shinoai-btn');
+    const originalHTML = button.innerHTML;
+
+    button.disabled = true;
+    button.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Testing...';
+
+    try {
+        const response = await fetch('/api/admin/shinoai-settings/test', {
+            method: 'POST'
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            showAlert(`ShinoAI Connection Test Successful!`, 'success');
+        } else {
+            showAlert(`Test Failed: ${result.error}`, 'danger');
+        }
+    } catch (error) {
+        console.error('Test ShinoAI connection error:', error);
+        showAlert('Error testing ShinoAI connection', 'danger');
+    } finally {
+        button.disabled = false;
+        button.innerHTML = originalHTML;
+    }
 }

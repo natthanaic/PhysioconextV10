@@ -2584,6 +2584,143 @@ router.post('/ai-settings/test', authenticateToken, authorize('ADMIN'), async (r
 });
 
 // ========================================
+// SHINOAI SETTINGS
+// ========================================
+
+// Get ShinoAI settings
+router.get('/shinoai-settings', authenticateToken, authorize('ADMIN'), async (req, res) => {
+    try {
+        const db = req.app.locals.db;
+
+        const [settings] = await db.execute(`
+            SELECT * FROM notification_settings WHERE setting_type = 'shinoai' LIMIT 1
+        `);
+
+        if (settings.length === 0) {
+            return res.status(404).json({ error: 'ShinoAI settings not configured yet' });
+        }
+
+        const shinoaiConfig = JSON.parse(settings[0].setting_value);
+        res.json(shinoaiConfig);
+    } catch (error) {
+        console.error('Get ShinoAI settings error:', error);
+        res.status(500).json({ error: 'Failed to load ShinoAI settings' });
+    }
+});
+
+// Save ShinoAI settings
+router.post('/shinoai-settings', authenticateToken, authorize('ADMIN'), async (req, res) => {
+    try {
+        const db = req.app.locals.db;
+        const userId = req.user.id;
+        const { enabled, apiUrl, apiKey, model, features } = req.body;
+
+        // Validate required fields
+        if (apiUrl === undefined || apiKey === undefined) {
+            return res.status(400).json({ error: 'API URL and API key are required' });
+        }
+
+        const settingValue = JSON.stringify({
+            enabled: enabled || false,
+            apiUrl: apiUrl,
+            apiKey: apiKey,
+            model: model || 'shino-default',
+            features: features || { chatAssistant: true, documentGeneration: true, dataAnalysis: true }
+        });
+
+        // Check if settings exist
+        const [existing] = await db.execute(`
+            SELECT id FROM notification_settings WHERE setting_type = 'shinoai' LIMIT 1
+        `);
+
+        if (existing.length > 0) {
+            // Update existing
+            await db.execute(`
+                UPDATE notification_settings
+                SET setting_value = ?, updated_by = ?, updated_at = NOW()
+                WHERE setting_type = 'shinoai'
+            `, [settingValue, userId]);
+        } else {
+            // Insert new
+            await db.execute(`
+                INSERT INTO notification_settings
+                (setting_type, setting_value, updated_by, created_at, updated_at)
+                VALUES ('shinoai', ?, ?, NOW(), NOW())
+            `, [settingValue, userId]);
+        }
+
+        // Audit log
+        await auditLog(db, userId, 'update', 'shinoai_settings', 0, null, { enabled, apiUrl: '***', model }, req);
+
+        res.json({ success: true, message: 'ShinoAI settings saved successfully' });
+    } catch (error) {
+        console.error('Save ShinoAI settings error:', error);
+        res.status(500).json({ error: 'Failed to save ShinoAI settings' });
+    }
+});
+
+// Test ShinoAI connection
+router.post('/shinoai-settings/test', authenticateToken, authorize('ADMIN'), async (req, res) => {
+    try {
+        const db = req.app.locals.db;
+
+        // Get current ShinoAI settings
+        const [settings] = await db.execute(`
+            SELECT setting_value FROM notification_settings WHERE setting_type = 'shinoai' LIMIT 1
+        `);
+
+        if (settings.length === 0) {
+            return res.status(400).json({ error: 'ShinoAI settings not configured. Please save settings first.' });
+        }
+
+        const shinoaiConfig = JSON.parse(settings[0].setting_value);
+
+        if (!shinoaiConfig.enabled) {
+            return res.status(400).json({ error: 'ShinoAI features are currently disabled' });
+        }
+
+        if (!shinoaiConfig.apiKey || !shinoaiConfig.apiUrl) {
+            return res.status(400).json({ error: 'API URL or API key not configured' });
+        }
+
+        // Test ShinoAI API
+        const testPayload = {
+            message: 'Test connection',
+            model: shinoaiConfig.model || 'shino-default'
+        };
+
+        const response = await axios.post(`${shinoaiConfig.apiUrl}/test`, testPayload, {
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${shinoaiConfig.apiKey}`
+            },
+            timeout: 10000
+        });
+
+        if (response.data) {
+            res.json({
+                success: true,
+                response: response.data,
+                message: 'ShinoAI connection test successful'
+            });
+        } else {
+            throw new Error('No response from ShinoAI');
+        }
+    } catch (error) {
+        console.error('Test ShinoAI connection error:', error);
+
+        let errorMessage = 'Failed to connect to ShinoAI service';
+        if (error.response?.data?.error) {
+            errorMessage = error.response.data.error;
+        } else if (error.message) {
+            errorMessage = error.message;
+        }
+
+        res.status(500).json({ error: errorMessage });
+    }
+});
+
+// ========================================
 // BILLS MANAGEMENT
 // ========================================
 

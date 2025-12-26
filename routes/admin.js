@@ -474,14 +474,33 @@ router.delete('/users/:id', authenticateToken, authorize('ADMIN'), async (req, r
             console.log(`[DELETE USER] Deleting all data for user ${id}`);
 
             // Delete in order to respect foreign key constraints
-            await connection.execute('DELETE FROM chat_typing_status WHERE user_id = ?', [id]);
-            await connection.execute('DELETE FROM chat_messages WHERE sender_id = ?', [id]);
-            await connection.execute('DELETE FROM chat_conversations WHERE user1_id = ? OR user2_id = ?', [id, id]);
+            try {
+                await connection.execute('DELETE FROM chat_typing_status WHERE user_id = ?', [id]);
+            } catch (e) {
+                console.log('[DELETE] Chat typing status table error:', e.message);
+            }
+
+            try {
+                await connection.execute('DELETE FROM chat_messages WHERE sender_id = ?', [id]);
+            } catch (e) {
+                console.log('[DELETE] Chat messages table error:', e.message);
+            }
+
+            try {
+                await connection.execute('DELETE FROM chat_conversations WHERE user1_id = ? OR user2_id = ?', [id, id]);
+            } catch (e) {
+                console.log('[DELETE] Chat conversations table error:', e.message);
+            }
 
             // Delete grants TO this user and grants BY this user
             await connection.execute('DELETE FROM user_clinic_grants WHERE user_id = ? OR granted_by = ?', [id, id]);
 
-            await connection.execute('DELETE FROM otp_codes WHERE user_id = ?', [id]);
+            // Delete OTP codes (table may not exist)
+            try {
+                await connection.execute('DELETE FROM otp_codes WHERE user_id = ?', [id]);
+            } catch (e) {
+                console.log('[DELETE] OTP codes table error:', e.message);
+            }
 
             // Delete audit logs for this user (may have FK constraint)
             try {
@@ -604,8 +623,19 @@ router.delete('/users/:id', authenticateToken, authorize('ADMIN'), async (req, r
                 [req.user.id, id]
             );
 
-            await connection.execute('DELETE FROM otp_codes WHERE user_id = ?', [id]);
-            await connection.execute('DELETE FROM chat_typing_status WHERE user_id = ?', [id]);
+            // Delete OTP codes (table may not exist)
+            try {
+                await connection.execute('DELETE FROM otp_codes WHERE user_id = ?', [id]);
+            } catch (e) {
+                console.log('[DELETE] OTP codes table error:', e.message);
+            }
+
+            // Delete chat typing status (table may not exist)
+            try {
+                await connection.execute('DELETE FROM chat_typing_status WHERE user_id = ?', [id]);
+            } catch (e) {
+                console.log('[DELETE] Chat typing status table error:', e.message);
+            }
 
             // Delete audit logs for this user (may have FK constraint)
             try {

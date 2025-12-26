@@ -1206,6 +1206,143 @@
         }
 
         // --- SMART CARD READER LOGIC ---
+
+        // Function to populate form with card data
+        function populateFormWithCardData(data) {
+            console.log('[THAI CARD] Auto-populating form with card data:', data);
+
+            // Populate PID
+            const pidInput = document.getElementById('pidInput');
+            if(pidInput && data.cid) {
+                pidInput.value = data.cid;
+                // Trigger validation styles
+                pidInput.dispatchEvent(new Event('blur'));
+            }
+
+            // Populate Title
+            const titleValue = data.th_title || data.title_th || data.prefix || data.titlenameTH || data.th_prefix || data.title;
+            if(titleValue) {
+                const titleInput = document.getElementById('title');
+                const titleMap = {
+                    'นาย': 'นาย',
+                    'นาง': 'นาง',
+                    'นางสาว': 'นางสาว',
+                    'น.ส.': 'นางสาว',
+                    'Mr.': 'Mr.',
+                    'Mrs.': 'Mrs.',
+                    'Ms.': 'Ms.',
+                    'Miss': 'Miss'
+                };
+                const mappedTitle = titleMap[titleValue] || titleValue;
+                titleInput.value = mappedTitle;
+            }
+
+            // Populate Name
+            if(data.th_fname) document.getElementById('first_name').value = data.th_fname;
+            if(data.th_lname) document.getElementById('last_name').value = data.th_lname;
+
+            // Gender
+            const genderSelect = document.getElementById('gender');
+            if(data.gender === 'Male') genderSelect.value = 'M';
+            else if(data.gender === 'Female') genderSelect.value = 'F';
+
+            // DOB (YYYYMMDD -> DD/MM/YYYY) - Convert Buddhist year to Christian year
+            if(data.dob && data.dob.length === 8) {
+                let y = parseInt(data.dob.substr(0,4));
+                const m = data.dob.substr(4,2);
+                const d = data.dob.substr(6,2);
+
+                // Convert Buddhist year (BE) to Christian year (AD)
+                if(y > 2400) {
+                    y = y - 543; // Convert BE to AD
+                }
+
+                const formatted = `${d}/${m}/${y}`;
+                document.getElementById('dob').value = formatted;
+                // Update flatpickr instance
+                if(dobPicker) dobPicker.setDate(formatted);
+            }
+
+            // Address
+            if(data.address) {
+                const addressMain = document.getElementById('address_main');
+                if(addressMain) {
+                    addressMain.value = data.address;
+                }
+
+                const addr1 = document.getElementById('address_line1');
+                if(addr1) {
+                    addr1.value = data.address;
+                    addr1.dispatchEvent(new Event('input'));
+                }
+            }
+
+            // Show success notification
+            showAlert('success', '✓ Thai ID Card data loaded automatically!');
+
+            // Auto-check ID to show form
+            setTimeout(() => {
+                const checkBtn = document.getElementById('btnCheckID');
+                if (checkBtn) checkBtn.click();
+            }, 500);
+        }
+
+        // Auto-polling for card data
+        let cardPollingInterval = null;
+        let pollingActive = false;
+
+        function startCardPolling() {
+            if (pollingActive) return;
+
+            console.log('[THAI CARD] Starting auto-polling for card data...');
+            pollingActive = true;
+
+            // Update button to show polling status
+            const btnReadCard = document.getElementById('btnReadCard');
+            if (btnReadCard) {
+                btnReadCard.innerHTML = '<i class="bi bi-credit-card-2-front me-1"></i> Waiting for card...';
+                btnReadCard.classList.add('btn-warning');
+                btnReadCard.classList.remove('btn-primary');
+            }
+
+            cardPollingInterval = setInterval(() => {
+                fetch('/api/thai_card')
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.status === 'waiting' || !data.cid) {
+                            // No card data yet, keep polling
+                            return;
+                        }
+
+                        // Card data received!
+                        console.log('[THAI CARD] Auto-detected card data!', data);
+                        stopCardPolling();
+                        populateFormWithCardData(data);
+                    })
+                    .catch(err => {
+                        console.error('[THAI CARD] Polling error:', err);
+                    });
+            }, 2000); // Poll every 2 seconds
+        }
+
+        function stopCardPolling() {
+            if (cardPollingInterval) {
+                clearInterval(cardPollingInterval);
+                cardPollingInterval = null;
+                pollingActive = false;
+
+                const btnReadCard = document.getElementById('btnReadCard');
+                if (btnReadCard) {
+                    btnReadCard.innerHTML = '<i class="bi bi-credit-card-2-front me-1"></i> Read Thai ID Card';
+                    btnReadCard.classList.remove('btn-warning');
+                    btnReadCard.classList.add('btn-primary');
+                }
+
+                console.log('[THAI CARD] Stopped polling');
+            }
+        }
+
+        // Manual button click (legacy support)
         const btnReadCard = document.getElementById('btnReadCard');
         if (btnReadCard) {
             btnReadCard.addEventListener('click', function() {
@@ -1218,90 +1355,12 @@
                     .then(res => res.json())
                     .then(data => {
                         if (data.status === 'waiting' || !data.cid) {
-                            alert('No new card data found. Please ensure the card is inserted.');
+                            alert('No card data found. The system is now waiting for a card to be inserted.');
+                            // Start polling for auto-detection
+                            startCardPolling();
                         } else {
-                            // Populate PID
-                            const pidInput = document.getElementById('pidInput');
-                            if(pidInput) {
-                                pidInput.value = data.cid;
-                                // Trigger validation styles
-                                pidInput.dispatchEvent(new Event('blur'));
-                            }
-
-                            // Populate Title - Thai ID cards provide title data
-                            // Try multiple possible field names for title
-                            const titleValue = data.th_title || data.title_th || data.prefix || data.titlenameTH || data.th_prefix || data.title;
-                            console.log('Thai Card Reader - All data received:', data);
-                            console.log('Thai Card Reader - Title field value:', titleValue);
-
-                            if(titleValue) {
-                                const titleInput = document.getElementById('title');
-                                // Map Thai titles from ID card to our standard options
-                                const titleMap = {
-                                    'นาย': 'นาย',
-                                    'นาง': 'นาง',
-                                    'นางสาว': 'นางสาว',
-                                    'น.ส.': 'นางสาว',
-                                    'Mr.': 'Mr.',
-                                    'Mrs.': 'Mrs.',
-                                    'Ms.': 'Ms.',
-                                    'Miss': 'Miss'
-                                };
-                                const mappedTitle = titleMap[titleValue] || titleValue;
-                                titleInput.value = mappedTitle;
-                                console.log('Thai Card Title populated:', titleValue, '-> mapped to:', mappedTitle);
-                            } else {
-                                console.log('Thai Card: No title field found. Available fields:', Object.keys(data));
-                            }
-
-                            // Populate Name
-                            if(data.th_fname) document.getElementById('first_name').value = data.th_fname;
-                            if(data.th_lname) document.getElementById('last_name').value = data.th_lname;
-
-                            // Gender
-                            const genderSelect = document.getElementById('gender');
-                            if(data.gender === 'Male') genderSelect.value = 'M';
-                            else if(data.gender === 'Female') genderSelect.value = 'F';
-
-                            // DOB (YYYYMMDD -> DD/MM/YYYY) - Convert Buddhist year to Christian year
-                            if(data.dob && data.dob.length === 8) {
-                                let y = parseInt(data.dob.substr(0,4));
-                                const m = data.dob.substr(4,2);
-                                const d = data.dob.substr(6,2);
-
-                                // Convert Buddhist year (BE) to Christian year (AD)
-                                // Thai ID cards typically use Buddhist Era (BE = AD + 543)
-                                if(y > 2400) {
-                                    y = y - 543; // Convert BE to AD
-                                }
-
-                                const formatted = `${d}/${m}/${y}`;
-                                document.getElementById('dob').value = formatted;
-                                // Update flatpickr instance
-                                if(dobPicker) dobPicker.setDate(formatted);
-                            }
-
-                            // Address - populate both the new address_main field and structured fields
-                            if(data.address) {
-                                // Populate the main address field (new field replacing fax)
-                                const addressMain = document.getElementById('address_main');
-                                if(addressMain) {
-                                    addressMain.value = data.address;
-                                }
-
-                                // Also populate address_line1 for structured address
-                                const addr1 = document.getElementById('address_line1');
-                                if(addr1) {
-                                    addr1.value = data.address;
-                                    addr1.dispatchEvent(new Event('input'));
-                                }
-                            }
-
-                            // Auto-Check ID to show form
-                            // We wait a moment for the user to see the ID filled
-                            setTimeout(() => {
-                                document.getElementById('btnCheckID').click();
-                            }, 500);
+                            // Use the shared function to populate form
+                            populateFormWithCardData(data);
                         }
                     })
                     .catch(err => {
@@ -1312,6 +1371,25 @@
                         btn.innerHTML = originalContent;
                         btn.disabled = false;
                     });
+            });
+        }
+
+        // Start auto-polling when page loads (for automatic card detection)
+        window.addEventListener('load', () => {
+            // Wait 1 second after page load to start polling
+            setTimeout(() => {
+                startCardPolling();
+            }, 1000);
+        });
+
+        // Stop polling if user manually starts filling the form
+        const pidInput = document.getElementById('pidInput');
+        if (pidInput) {
+            pidInput.addEventListener('input', () => {
+                if (pidInput.value.length > 0 && pollingActive) {
+                    console.log('[THAI CARD] User started manual input, stopping auto-polling');
+                    stopCardPolling();
+                }
             });
         }
 

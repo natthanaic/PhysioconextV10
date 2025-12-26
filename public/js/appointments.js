@@ -283,7 +283,7 @@ function initializeCalendar() {
 // Load PT list
 async function loadPTList() {
     try {
-        const response = await fetch('/api/users?role=PT', {
+        const response = await fetch('/api/users?role=PT&simple=true', {
             headers: {}
         });
 

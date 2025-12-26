@@ -139,39 +139,36 @@ router.get('/clinics', authenticateToken, async (req, res) => {
     }
 });
 
-// Get users by role (for appointments, etc.)
-router.get('/users', authenticateToken, async (req, res) => {
-    try {
-        const db = req.app.locals.db;
-        const { role } = req.query;
-
-        let query = 'SELECT id, email, first_name, last_name, role, clinic_id FROM users WHERE active = 1';
-        const params = [];
-
-        // Filter by role if provided
-        if (role) {
-            query += ' AND role = ?';
-            params.push(role);
-        }
-
-        query += ' ORDER BY first_name, last_name';
-
-        const [users] = await db.execute(query, params);
-        res.json(users);
-    } catch (error) {
-        console.error('Get users error:', error);
-        res.status(500).json({ error: 'Failed to retrieve users' });
-    }
-});
-
 // ========================================
 // USER MANAGEMENT ROUTES (ADMIN ONLY)
 // ========================================
 
-// Get all users
-router.get('/users', async (req, res) => {
+// Get all users (consolidated route for both admin page and role filtering)
+router.get('/users', authenticateToken, async (req, res) => {
     try {
         const db = req.app.locals.db;
+        const { role, simple } = req.query;
+
+        // If 'simple' query param is present, return simplified list for dropdowns
+        if (simple === 'true') {
+            let query = 'SELECT id, email, first_name, last_name, role, clinic_id FROM users WHERE active = 1';
+            const params = [];
+
+            if (role) {
+                query += ' AND role = ?';
+                params.push(role);
+            }
+
+            query += ' ORDER BY first_name, last_name';
+
+            const [users] = await db.execute(query, params);
+            return res.json(users);
+        }
+
+        // Admin page: return full user list with clinic names (requires ADMIN role)
+        if (req.user.role !== 'ADMIN') {
+            return res.status(403).json({ error: 'Admin access required' });
+        }
 
         const [users] = await db.execute(
             `SELECT u.*, c.name as clinic_name
@@ -188,7 +185,7 @@ router.get('/users', async (req, res) => {
 });
 
 // Create user
-router.post('/users', async (req, res) => {
+router.post('/users', authenticateToken, authorize('ADMIN'), async (req, res) => {
     try {
         const db = req.app.locals.db;
         const { email, password, role, first_name, last_name, clinic_id, phone, license_number } = req.body;
@@ -221,7 +218,7 @@ router.post('/users', async (req, res) => {
 });
 
 // Update user
-router.put('/users/:id', async (req, res) => {
+router.put('/users/:id', authenticateToken, authorize('ADMIN'), async (req, res) => {
     try {
         const db = req.app.locals.db;
         const { id } = req.params;
@@ -333,7 +330,7 @@ router.patch('/users/:id/status', authenticateToken, authorize('ADMIN'), async (
 });
 
 // Get user clinic grants
-router.get('/users/:id/grants', async (req, res) => {
+router.get('/users/:id/grants', authenticateToken, authorize('ADMIN'), async (req, res) => {
     try {
         const db = req.app.locals.db;
         const { id } = req.params;
@@ -358,7 +355,7 @@ router.get('/users/:id/grants', async (req, res) => {
 // ========================================
 
 // Add clinic grant
-router.post('/grants', async (req, res) => {
+router.post('/grants', authenticateToken, authorize('ADMIN'), async (req, res) => {
     try {
         const db = req.app.locals.db;
         const { user_id, clinic_id } = req.body;
@@ -388,7 +385,7 @@ router.post('/grants', async (req, res) => {
 });
 
 // Remove clinic grant
-router.delete('/grants/:userId/:clinicId', async (req, res) => {
+router.delete('/grants/:userId/:clinicId', authenticateToken, authorize('ADMIN'), async (req, res) => {
     try {
         const db = req.app.locals.db;
         const { userId, clinicId } = req.params;

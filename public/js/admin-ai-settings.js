@@ -56,20 +56,16 @@ function populateForm(settings) {
     document.getElementById('gemini-model').value = settings.model || 'gemini-2.5-flash';
     document.getElementById('gemini-api-key').value = settings.apiKey || '';
 
-    // Clinic AI Features - Gemini Tab
-    document.getElementById('feature-soap-smart').checked = settings.features?.soapSmart || false;
-    document.getElementById('feature-smart-booking').checked = settings.features?.smartBooking !== false; // Default true
-    document.getElementById('feature-patients-plus').checked = settings.features?.patientsPlus || false;
-    document.getElementById('feature-fin-predict').checked = settings.features?.finPredict || false;
-    document.getElementById('feature-notification-plus').checked = settings.features?.notificationPlus || false;
-    document.getElementById('feature-marketing-plus').checked = settings.features?.marketingPlus || false;
+    // Original Gemini AI Features
+    document.getElementById('feature-symptom-analysis').checked = settings.features?.symptomAnalysis !== false; // Default true
+    document.getElementById('feature-note-polish').checked = settings.features?.notePolish !== false; // Default true
 
-    // Populate ShinoAI form (same settings)
+    // Populate ShinoAI form (same API settings)
     document.getElementById('gemini-enabled-shino').value = settings.enabled ? '1' : '0';
     document.getElementById('gemini-model-shino').value = settings.model || 'gemini-2.5-flash';
     document.getElementById('gemini-api-key-shino').value = settings.apiKey || '';
 
-    // Clinic AI Features - ShinoAI Tab (same as Gemini)
+    // Clinic AI Features - ShinoAI Tab only
     document.getElementById('feature-soap-smart-shino').checked = settings.features?.soapSmart || false;
     document.getElementById('feature-smart-booking-shino').checked = settings.features?.smartBooking !== false; // Default true
     document.getElementById('feature-patients-plus-shino').checked = settings.features?.patientsPlus || false;
@@ -99,25 +95,42 @@ async function saveAISettings(e) {
     const formData = new FormData(e.target);
     const formId = e.target.id;
 
-    // Determine which form was submitted and get the correct feature checkbox IDs
-    let featureSuffix = '';
+    // Build features object based on which tab submitted
+    let features = {};
+
     if (formId === 'gemini-settings-form-shino') {
-        featureSuffix = '-shino';
+        // ShinoAI Tab - Clinic Features
+        features = {
+            soapSmart: document.getElementById('feature-soap-smart-shino').checked,
+            smartBooking: document.getElementById('feature-smart-booking-shino').checked,
+            patientsPlus: document.getElementById('feature-patients-plus-shino').checked,
+            finPredict: document.getElementById('feature-fin-predict-shino').checked,
+            notificationPlus: document.getElementById('feature-notification-plus-shino').checked,
+            marketingPlus: document.getElementById('feature-marketing-plus-shino').checked,
+            // Keep original Gemini features from current settings
+            symptomAnalysis: document.getElementById('feature-symptom-analysis').checked,
+            notePolish: document.getElementById('feature-note-polish').checked
+        };
+    } else {
+        // Gemini AI Tab - Original Features
+        features = {
+            symptomAnalysis: document.getElementById('feature-symptom-analysis').checked,
+            notePolish: document.getElementById('feature-note-polish').checked,
+            // Keep ShinoAI features from current settings
+            soapSmart: document.getElementById('feature-soap-smart-shino').checked,
+            smartBooking: document.getElementById('feature-smart-booking-shino').checked,
+            patientsPlus: document.getElementById('feature-patients-plus-shino').checked,
+            finPredict: document.getElementById('feature-fin-predict-shino').checked,
+            notificationPlus: document.getElementById('feature-notification-plus-shino').checked,
+            marketingPlus: document.getElementById('feature-marketing-plus-shino').checked
+        };
     }
 
     const settings = {
         enabled: formData.get('enabled') === '1',
         model: formData.get('model'),
         apiKey: formData.get('apiKey'),
-        features: {
-            // Clinic AI Features
-            soapSmart: document.getElementById('feature-soap-smart' + featureSuffix).checked,
-            smartBooking: document.getElementById('feature-smart-booking' + featureSuffix).checked,
-            patientsPlus: document.getElementById('feature-patients-plus' + featureSuffix).checked,
-            finPredict: document.getElementById('feature-fin-predict' + featureSuffix).checked,
-            notificationPlus: document.getElementById('feature-notification-plus' + featureSuffix).checked,
-            marketingPlus: document.getElementById('feature-marketing-plus' + featureSuffix).checked
-        }
+        features: features
     };
 
     try {

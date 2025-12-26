@@ -2489,6 +2489,10 @@ router.post('/ai-settings', authenticateToken, authorize('ADMIN'), async (req, r
             model: model || 'gemini-2.5-flash',
             apiKey: apiKey,
             features: features || {
+                // Original Gemini AI Features (for public booking)
+                symptomAnalysis: true,
+                notePolish: true,
+                // ShinoAI Clinic Features (for appointments & dashboard)
                 soapSmart: false,
                 smartBooking: true,
                 patientsPlus: false,

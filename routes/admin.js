@@ -2468,7 +2468,7 @@ router.post('/bills', authenticateToken, async (req, res) => {
 });
 
 // Update bill
-router.put('/bills/:id', authenticateToken, async (req, res) => {
+router.put('/bills/:id', authenticateToken, authorize('ADMIN'), async (req, res) => {
     const connection = await req.app.locals.db.getConnection();
     try {
         await connection.beginTransaction();
@@ -2476,8 +2476,13 @@ router.put('/bills/:id', authenticateToken, async (req, res) => {
         const { id } = req.params;
         const {
             patient_id,
+            walk_in_name,
+            walk_in_phone,
             clinic_id,
+            appointment_id,
             pn_case_id,
+            course_id,
+            is_course_cutting,
             bill_date,
             due_date,
             items,
@@ -2488,15 +2493,21 @@ router.put('/bills/:id', authenticateToken, async (req, res) => {
             payment_status,
             payment_method,
             payment_date,
-            notes
+            payment_notes,
+            bill_notes
         } = req.body;
 
         // Update bill
         await connection.execute(`
             UPDATE bills SET
                 patient_id = ?,
+                walk_in_name = ?,
+                walk_in_phone = ?,
                 clinic_id = ?,
+                appointment_id = ?,
                 pn_case_id = ?,
+                course_id = ?,
+                is_course_cutting = ?,
                 bill_date = ?,
                 due_date = ?,
                 subtotal = ?,
@@ -2506,12 +2517,30 @@ router.put('/bills/:id', authenticateToken, async (req, res) => {
                 payment_status = ?,
                 payment_method = ?,
                 payment_date = ?,
-                notes = ?
+                payment_notes = ?,
+                bill_notes = ?
             WHERE id = ?
         `, [
-            patient_id, clinic_id, pn_case_id, bill_date, due_date,
-            subtotal, discount, tax, total_amount,
-            payment_status, payment_method, payment_date, notes, id
+            patient_id || null,
+            walk_in_name || null,
+            walk_in_phone || null,
+            clinic_id || null,
+            appointment_id || null,
+            pn_case_id || null,
+            course_id || null,
+            is_course_cutting ? 1 : 0,
+            bill_date || null,
+            due_date || null,
+            subtotal || 0,
+            discount || 0,
+            tax || 0,
+            total_amount || 0,
+            payment_status || 'UNPAID',
+            payment_method || null,
+            payment_date || null,
+            payment_notes || null,
+            bill_notes || null,
+            id
         ]);
 
         // Delete existing items and insert new ones
@@ -2526,12 +2555,12 @@ router.put('/bills/:id', authenticateToken, async (req, res) => {
                         ) VALUES (?, ?, ?, ?, ?, ?, ?)
                     `, [
                         id,
-                        item.service_id,
-                        item.service_name,
-                        item.quantity,
-                        item.unit_price,
-                        item.total_price,
-                        item.notes
+                        item.service_id || null,
+                        item.service_name || null,
+                        item.quantity || 0,
+                        item.unit_price || 0,
+                        item.total_price || 0,
+                        item.notes || null
                     ]);
                 }
             }
@@ -2551,7 +2580,7 @@ router.put('/bills/:id', authenticateToken, async (req, res) => {
 
 // Update bill payment status
 // Update bill payment status (accepts both PUT and PATCH)
-router.patch('/bills/:id/payment-status', authenticateToken, async (req, res) => {
+router.patch('/bills/:id/payment-status', authenticateToken, authorize('ADMIN'), async (req, res) => {
     try {
         const db = req.app.locals.db;
         const { id } = req.params;
@@ -2583,7 +2612,7 @@ router.patch('/bills/:id/payment-status', authenticateToken, async (req, res) =>
 });
 
 // Also support PUT for backwards compatibility
-router.put('/bills/:id/payment-status', authenticateToken, async (req, res) => {
+router.put('/bills/:id/payment-status', authenticateToken, authorize('ADMIN'), async (req, res) => {
     try {
         const db = req.app.locals.db;
         const { id } = req.params;

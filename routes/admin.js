@@ -2488,7 +2488,14 @@ router.post('/ai-settings', authenticateToken, authorize('ADMIN'), async (req, r
             enabled: enabled || false,
             model: model || 'gemini-2.5-flash',
             apiKey: apiKey,
-            features: features || { symptomAnalysis: true, notePolish: true }
+            features: features || {
+                soapSmart: false,
+                smartBooking: true,
+                patientsPlus: false,
+                finPredict: false,
+                notificationPlus: false,
+                marketingPlus: false
+            }
         });
 
         // Check if settings exist in notification_settings

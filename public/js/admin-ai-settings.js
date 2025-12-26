@@ -56,18 +56,26 @@ function populateForm(settings) {
     document.getElementById('gemini-model').value = settings.model || 'gemini-2.5-flash';
     document.getElementById('gemini-api-key').value = settings.apiKey || '';
 
-    // Features
-    document.getElementById('feature-symptom-analysis').checked = settings.features?.symptomAnalysis !== false;
-    document.getElementById('feature-note-polish').checked = settings.features?.notePolish !== false;
+    // Clinic AI Features - Gemini Tab
+    document.getElementById('feature-soap-smart').checked = settings.features?.soapSmart || false;
+    document.getElementById('feature-smart-booking').checked = settings.features?.smartBooking !== false; // Default true
+    document.getElementById('feature-patients-plus').checked = settings.features?.patientsPlus || false;
+    document.getElementById('feature-fin-predict').checked = settings.features?.finPredict || false;
+    document.getElementById('feature-notification-plus').checked = settings.features?.notificationPlus || false;
+    document.getElementById('feature-marketing-plus').checked = settings.features?.marketingPlus || false;
 
     // Populate ShinoAI form (same settings)
     document.getElementById('gemini-enabled-shino').value = settings.enabled ? '1' : '0';
     document.getElementById('gemini-model-shino').value = settings.model || 'gemini-2.5-flash';
     document.getElementById('gemini-api-key-shino').value = settings.apiKey || '';
 
-    // Features for ShinoAI
-    document.getElementById('feature-symptom-analysis-shino').checked = settings.features?.symptomAnalysis !== false;
-    document.getElementById('feature-note-polish-shino').checked = settings.features?.notePolish !== false;
+    // Clinic AI Features - ShinoAI Tab (same as Gemini)
+    document.getElementById('feature-soap-smart-shino').checked = settings.features?.soapSmart || false;
+    document.getElementById('feature-smart-booking-shino').checked = settings.features?.smartBooking !== false; // Default true
+    document.getElementById('feature-patients-plus-shino').checked = settings.features?.patientsPlus || false;
+    document.getElementById('feature-fin-predict-shino').checked = settings.features?.finPredict || false;
+    document.getElementById('feature-notification-plus-shino').checked = settings.features?.notificationPlus || false;
+    document.getElementById('feature-marketing-plus-shino').checked = settings.features?.marketingPlus || false;
 }
 
 // Update status indicator
@@ -91,14 +99,10 @@ async function saveAISettings(e) {
     const formData = new FormData(e.target);
     const formId = e.target.id;
 
-    // Determine which form was submitted and get the correct checkbox IDs
-    let symptomCheckbox, noteCheckbox;
+    // Determine which form was submitted and get the correct feature checkbox IDs
+    let featureSuffix = '';
     if (formId === 'gemini-settings-form-shino') {
-        symptomCheckbox = document.getElementById('feature-symptom-analysis-shino');
-        noteCheckbox = document.getElementById('feature-note-polish-shino');
-    } else {
-        symptomCheckbox = document.getElementById('feature-symptom-analysis');
-        noteCheckbox = document.getElementById('feature-note-polish');
+        featureSuffix = '-shino';
     }
 
     const settings = {
@@ -106,8 +110,13 @@ async function saveAISettings(e) {
         model: formData.get('model'),
         apiKey: formData.get('apiKey'),
         features: {
-            symptomAnalysis: symptomCheckbox.checked,
-            notePolish: noteCheckbox.checked
+            // Clinic AI Features
+            soapSmart: document.getElementById('feature-soap-smart' + featureSuffix).checked,
+            smartBooking: document.getElementById('feature-smart-booking' + featureSuffix).checked,
+            patientsPlus: document.getElementById('feature-patients-plus' + featureSuffix).checked,
+            finPredict: document.getElementById('feature-fin-predict' + featureSuffix).checked,
+            notificationPlus: document.getElementById('feature-notification-plus' + featureSuffix).checked,
+            marketingPlus: document.getElementById('feature-marketing-plus' + featureSuffix).checked
         }
     };
 

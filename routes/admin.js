@@ -2692,21 +2692,21 @@ router.post('/soap-smart/generate', authenticateToken, async (req, res) => {
         // Get previous session's SOAP notes for this patient (for Subjective context)
         let previousPlan = null;
         if (fieldType === 'subjective') {
-            const [previousSessions] = await db.execute(`
-                SELECT soap_notes
-                FROM pn_cases
-                WHERE patient_id = ? AND id != ? AND status = 'COMPLETED'
-                ORDER BY created_at DESC
-                LIMIT 1
-            `, [currentCase.patient_id, caseId]);
+            try {
+                const [previousSessions] = await db.execute(`
+                    SELECT s.plan
+                    FROM pn_soap_notes s
+                    JOIN pn_cases c ON s.pn_id = c.id
+                    WHERE c.patient_id = ? AND c.id != ? AND c.status = 'COMPLETED'
+                    ORDER BY s.timestamp DESC
+                    LIMIT 1
+                `, [currentCase.patient_id, caseId]);
 
-            if (previousSessions.length > 0 && previousSessions[0].soap_notes) {
-                try {
-                    const soapData = JSON.parse(previousSessions[0].soap_notes);
-                    previousPlan = soapData.plan;
-                } catch (e) {
-                    console.log('Could not parse previous SOAP notes');
+                if (previousSessions.length > 0 && previousSessions[0].plan) {
+                    previousPlan = previousSessions[0].plan;
                 }
+            } catch (e) {
+                console.log('[SOAP Smart] Could not fetch previous SOAP notes (table may not exist):', e.message);
             }
         }
 

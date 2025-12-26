@@ -3,7 +3,8 @@ const express = require('express');
 const router = express.Router();
 
 // Thai card reader endpoint (no authentication required - trusted local device)
-router.post('/thai_card', async (req, res) => {
+// Route is mounted at /api/thai_card in app.js, so this is just '/'
+router.post('/', async (req, res) => {
     console.log('[THAI CARD] Route matched! Processing request...');
 
     try {

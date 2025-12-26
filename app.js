@@ -99,9 +99,9 @@ app.use('/api/google', googleOAuthRoutes);
 app.use('/api/patients', patientsRoutes);
 
 // --- THAI CARD API ROUTE ---
-// CRITICAL: Must be mounted FIRST before any other /api routes to prevent route conflicts
+// CRITICAL: Mount on EXACT path to prevent route conflicts with catch-all routes
 // This enables: https://rehabplus.lantavafix.com/api/thai_card
-app.use('/api', thaiCardRoute);
+app.use('/api/thai_card', thaiCardRoute);
 
 app.use('/api', adminRoutes);
 app.use('/api/admin', adminRoutes);

@@ -2481,20 +2481,32 @@ router.put('/bills/:id', authenticateToken, async (req, res) => {
             bill_date,
             due_date,
             items,
-            subtotal,
             discount,
             tax,
-            total_amount,
             payment_status,
             payment_method,
             payment_date,
-            notes
+            walk_in_name,
+            walk_in_phone,
+            bill_notes
         } = req.body;
+
+        // Calculate totals from items (same logic as POST endpoint)
+        let subtotal = 0;
+        if (items && items.length > 0) {
+            subtotal = items.reduce((sum, item) => sum + (parseFloat(item.total_price) || 0), 0);
+        }
+        const total_amount = subtotal - (parseFloat(discount) || 0) + (parseFloat(tax) || 0);
+
+        console.log('[BILLS] Updating bill ID:', id);
+        console.log('[BILLS] Calculated subtotal:', subtotal, 'total_amount:', total_amount);
 
         // Update bill
         await connection.execute(`
             UPDATE bills SET
                 patient_id = ?,
+                walk_in_name = ?,
+                walk_in_phone = ?,
                 clinic_id = ?,
                 pn_case_id = ?,
                 bill_date = ?,
@@ -2506,12 +2518,25 @@ router.put('/bills/:id', authenticateToken, async (req, res) => {
                 payment_status = ?,
                 payment_method = ?,
                 payment_date = ?,
-                notes = ?
+                bill_notes = ?
             WHERE id = ?
         `, [
-            patient_id, clinic_id, pn_case_id, bill_date, due_date,
-            subtotal, discount, tax, total_amount,
-            payment_status, payment_method, payment_date, notes, id
+            patient_id,
+            walk_in_name || null,
+            walk_in_phone || null,
+            clinic_id,
+            pn_case_id || null,
+            bill_date,
+            due_date || null,
+            subtotal,
+            discount || 0,
+            tax || 0,
+            total_amount,
+            payment_status,
+            payment_method || null,
+            payment_date || null,
+            bill_notes || null,
+            id
         ]);
 
         // Delete existing items and insert new ones
@@ -2526,24 +2551,26 @@ router.put('/bills/:id', authenticateToken, async (req, res) => {
                         ) VALUES (?, ?, ?, ?, ?, ?, ?)
                     `, [
                         id,
-                        item.service_id,
-                        item.service_name,
+                        item.service_id || null,
+                        item.service_name || null,
                         item.quantity,
                         item.unit_price,
                         item.total_price,
-                        item.notes
+                        item.notes || null
                     ]);
                 }
             }
         }
 
         await connection.commit();
+        console.log('[BILLS] Bill updated successfully');
 
         res.json({ success: true, message: 'Bill updated successfully' });
     } catch (error) {
         await connection.rollback();
-        console.error('Update bill error:', error);
-        res.status(500).json({ error: 'Failed to update bill' });
+        console.error('[BILLS] Update bill error:', error);
+        console.error('[BILLS] Error message:', error.message);
+        res.status(500).json({ error: 'Failed to update bill', details: error.message });
     } finally {
         connection.release();
     }

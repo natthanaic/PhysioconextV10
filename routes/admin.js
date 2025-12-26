@@ -2649,21 +2649,45 @@ router.post('/soap-smart/generate', authenticateToken, async (req, res) => {
         }
 
         // Get current case data
-        const [cases] = await db.execute(`
-            SELECT c.*,
-                   p.first_name, p.last_name, p.gender, p.date_of_birth,
-                   pt.pt_diagnosis, pt.pt_chief_complaint, pt.pt_present_history, pt.pt_pain_score
-            FROM pn_cases c
-            LEFT JOIN patients p ON c.patient_id = p.id
-            LEFT JOIN pt_assessments pt ON c.id = pt.case_id
-            WHERE c.id = ?
-        `, [caseId]);
+        let currentCase = null;
 
-        if (cases.length === 0) {
-            return res.status(404).json({ error: 'Case not found' });
+        try {
+            // Try with pt_assessments table
+            const [cases] = await db.execute(`
+                SELECT c.*,
+                       p.first_name, p.last_name, p.gender, p.date_of_birth,
+                       pt.pt_diagnosis, pt.pt_chief_complaint, pt.pt_present_history, pt.pt_pain_score
+                FROM pn_cases c
+                LEFT JOIN patients p ON c.patient_id = p.id
+                LEFT JOIN pt_assessments pt ON c.id = pt.case_id
+                WHERE c.id = ?
+            `, [caseId]);
+
+            if (cases.length === 0) {
+                return res.status(404).json({ error: 'Case not found' });
+            }
+            currentCase = cases[0];
+        } catch (ptTableError) {
+            // pt_assessments table doesn't exist, query without it
+            console.log('[SOAP Smart] pt_assessments table not available, continuing without PT data');
+            const [cases] = await db.execute(`
+                SELECT c.*,
+                       p.first_name, p.last_name, p.gender, p.date_of_birth
+                FROM pn_cases c
+                LEFT JOIN patients p ON c.patient_id = p.id
+                WHERE c.id = ?
+            `, [caseId]);
+
+            if (cases.length === 0) {
+                return res.status(404).json({ error: 'Case not found' });
+            }
+            currentCase = cases[0];
+            // Add null PT fields
+            currentCase.pt_diagnosis = null;
+            currentCase.pt_chief_complaint = null;
+            currentCase.pt_present_history = null;
+            currentCase.pt_pain_score = null;
         }
-
-        const currentCase = cases[0];
 
         // Get previous session's SOAP notes for this patient (for Subjective context)
         let previousPlan = null;
@@ -2789,9 +2813,21 @@ Write in a professional, clinical tone. Keep it concise (4-6 sentences). Write i
 
     } catch (error) {
         console.error('SOAP Smart generation error:', error);
+        console.error('Error stack:', error.stack);
+
+        // Check for specific error types
+        let errorMessage = 'Failed to generate AI content';
+        let details = error.message;
+
+        if (error.response?.data) {
+            // Axios error from Gemini API
+            console.error('Gemini API error:', error.response.data);
+            details = error.response.data.error?.message || error.message;
+        }
+
         res.status(500).json({
-            error: 'Failed to generate AI content',
-            details: error.message
+            error: errorMessage,
+            details: details
         });
     }
 });

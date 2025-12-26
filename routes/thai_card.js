@@ -2,16 +2,26 @@
 const express = require('express');
 const router = express.Router();
 
+// GET endpoint for testing/debugging
+router.get('/', (req, res) => {
+    console.log('[THAI CARD] GET request received - returning status');
+    res.json({
+        status: 'Thai Card Reader API is running',
+        endpoint: 'POST /api/thai_card',
+        message: 'Use POST method to submit card data'
+    });
+});
+
 // Thai card reader endpoint (no authentication required - trusted local device)
 // Route is mounted at /api/thai_card in app.js, so this is just '/'
 router.post('/', async (req, res) => {
-    console.log('[THAI CARD] Route matched! Processing request...');
+    console.log('[THAI CARD POST] Route matched! Processing request...');
 
     try {
         const db = req.app.locals.db;
         const cardData = req.body;
 
-        console.log('Thai card data received:', cardData);
+        console.log('[THAI CARD POST] Card data received:', cardData);
 
         // Extract data from Thai ID card
         const { cid, th_title, th_fname, th_lname, dob, gender, address } = cardData;

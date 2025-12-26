@@ -480,6 +480,13 @@ router.delete('/users/:id', authenticateToken, authorize('ADMIN'), async (req, r
             await connection.execute('DELETE FROM user_clinic_grants WHERE user_id = ?', [id]);
             await connection.execute('DELETE FROM otp_codes WHERE user_id = ?', [id]);
 
+            // Delete audit logs for this user (may have FK constraint)
+            try {
+                await connection.execute('DELETE FROM audit_logs WHERE user_id = ?', [id]);
+            } catch (e) {
+                console.log('[DELETE] Audit logs deletion error:', e.message);
+            }
+
             // Delete created records (handle tables that may not exist)
             try {
                 await connection.execute('DELETE FROM broadcast_campaigns WHERE created_by = ?', [id]);
@@ -582,27 +589,48 @@ router.delete('/users/:id', authenticateToken, authorize('ADMIN'), async (req, r
             await connection.execute('DELETE FROM otp_codes WHERE user_id = ?', [id]);
             await connection.execute('DELETE FROM chat_typing_status WHERE user_id = ?', [id]);
 
+            // Delete audit logs for this user (may have FK constraint)
+            try {
+                await connection.execute('DELETE FROM audit_logs WHERE user_id = ?', [id]);
+            } catch (e) {
+                console.log('[DELETE] Audit logs deletion error:', e.message);
+            }
+
             // Don't delete chat messages/conversations - keep for record but mark user as deleted
         }
 
-        // Finally, delete the user
-        await connection.execute('DELETE FROM users WHERE id = ?', [id]);
+        // Audit log BEFORE deleting user (in case audit_logs has FK to users)
+        try {
+            await auditLog(
+                connection,
+                req.user.id,
+                'DELETE',
+                'user',
+                id,
+                { user: userToDelete },
+                {
+                    delete_all_data,
+                    transfer_to_user_id,
+                    transfer_to_clinic_id
+                },
+                req
+            );
+        } catch (auditError) {
+            console.log('[DELETE USER] Audit log error (continuing):', auditError.message);
+        }
 
-        // Audit log
-        await auditLog(
-            connection,
-            req.user.id,
-            'DELETE',
-            'user',
-            id,
-            { user: userToDelete },
-            {
-                delete_all_data,
-                transfer_to_user_id,
-                transfer_to_clinic_id
-            },
-            req
-        );
+        // Finally, delete the user
+        console.log(`[DELETE USER] About to delete user ${id} from users table`);
+        try {
+            const [result] = await connection.execute('DELETE FROM users WHERE id = ?', [id]);
+            console.log(`[DELETE USER] User deleted successfully. Rows affected:`, result.affectedRows);
+        } catch (deleteError) {
+            console.error('[DELETE USER] Failed to delete user from users table');
+            console.error('[DELETE USER] Error:', deleteError.message);
+            console.error('[DELETE USER] Error code:', deleteError.code);
+            console.error('[DELETE USER] SQL:', deleteError.sql);
+            throw deleteError; // Re-throw to trigger rollback
+        }
 
         await connection.commit();
 

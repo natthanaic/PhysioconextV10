@@ -228,7 +228,10 @@
                         <h1 class="h2 mb-1">User Management</h1>
                         <span class="subtitle">Staff accounts and permissions</span>
                     </div>
-                    <div class="btn-toolbar mb-2 mb-md-0">
+                    <div class="btn-toolbar mb-2 mb-md-0 d-flex gap-2">
+                        <button type="button" class="btn btn-light border" onclick="refreshData()" title="Refresh">
+                            <i class="bi bi-arrow-clockwise me-1"></i> Refresh
+                        </button>
                         <button type="button" class="btn btn-primary shadow-lg" onclick="showAddUserModal()">
                             <i class="bi bi-person-plus-fill me-2"></i> Add New User
                         </button>
@@ -442,34 +445,69 @@
     <script>
         let users = [];
         let clinics = [];
+        let isLoading = false;
+
+        // Refresh all data
+        async function refreshData() {
+            if (isLoading) return;
+
+            console.log('[USERS] Refreshing data...');
+            await Promise.all([loadUsers(), loadClinics()]);
+            console.log('[USERS] Data refreshed successfully');
+        }
 
         async function loadUsers() {
+            if (isLoading) return;
+            isLoading = true;
+
             try {
+                console.log('[USERS] Loading users from API...');
                 const response = await fetch('/api/admin/users', {
-                    headers: {}
+                    headers: {},
+                    cache: 'no-cache'
                 });
-                
+
                 if (response.ok) {
                     users = await response.json();
+                    console.log('[USERS] Loaded', users.length, 'users');
                     displayUsers(users);
+                } else {
+                    console.error('[USERS] Failed to load users:', response.status);
+                    throw new Error('Failed to load users');
                 }
             } catch (error) {
-                console.error('Error loading users:', error);
+                console.error('[USERS] Error loading users:', error);
+                const tbody = document.getElementById('usersTableBody');
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="text-center py-4 text-danger">
+                            <i class="bi bi-exclamation-triangle fs-3 d-block mb-2"></i>
+                            <div>Error loading users. Please refresh.</div>
+                        </td>
+                    </tr>
+                `;
+            } finally {
+                isLoading = false;
             }
         }
 
         async function loadClinics() {
             try {
+                console.log('[CLINICS] Loading clinics from API...');
                 const response = await fetch('/api/clinics', {
-                    headers: {}
+                    headers: {},
+                    cache: 'no-cache'
                 });
-                
+
                 if (response.ok) {
                     clinics = await response.json();
+                    console.log('[CLINICS] Loaded', clinics.length, 'clinics');
                     populateClinicSelects();
+                } else {
+                    console.error('[CLINICS] Failed to load clinics:', response.status);
                 }
             } catch (error) {
-                console.error('Error loading clinics:', error);
+                console.error('[CLINICS] Error loading clinics:', error);
             }
         }
 
@@ -588,12 +626,14 @@
                 if (response.ok) {
                     alert(`User ${isEdit ? 'updated' : 'created'} successfully!`);
                     bootstrap.Modal.getInstance(document.getElementById('userModal')).hide();
-                    loadUsers();
+                    // Refresh data to get latest state
+                    await refreshData();
                 } else {
                     const error = await response.json();
                     alert('Error: ' + error.error);
                 }
             } catch (error) {
+                console.error('[USERS] Save user error:', error);
                 alert('Network error. Please try again.');
             }
         }
@@ -602,7 +642,7 @@
             if (!confirm(`Are you sure you want to ${currentStatus ? 'deactivate' : 'activate'} this user?`)) {
                 return;
             }
-            
+
             try {
                 const response = await fetch(`/api/admin/users/${userId}/status`, {
                     method: 'PATCH',
@@ -610,14 +650,17 @@
                         'Content-Type': 'application/json'                    },
                     body: JSON.stringify({ active: !currentStatus })
                 });
-                
+
                 if (response.ok) {
-                    loadUsers();
+                    console.log('[USERS] User status toggled successfully');
+                    // Refresh data to get latest state
+                    await refreshData();
                 } else {
                     const error = await response.json();
                     alert('Error: ' + error.error);
                 }
             } catch (error) {
+                console.error('[USERS] Toggle status error:', error);
                 alert('Network error. Please try again.');
             }
         }
@@ -684,33 +727,41 @@
                 });
                 
                 if (response.ok) {
+                    console.log('[GRANTS] Grant added successfully');
                     document.getElementById('grantClinicSelect').value = '';
-                    loadUserGrants(userId);
+                    await loadUserGrants(userId);
+                    // Refresh user data to sync state
+                    await loadUsers();
                 } else {
                     const error = await response.json();
                     alert('Error: ' + error.error);
                 }
             } catch (error) {
+                console.error('[GRANTS] Add grant error:', error);
                 alert('Network error. Please try again.');
             }
         }
 
         async function removeGrant(userId, clinicId) {
             if (!confirm('Remove this clinic access?')) return;
-            
+
             try {
                 const response = await fetch(`/api/admin/grants/${userId}/${clinicId}`, {
                     method: 'DELETE',
                     headers: {}
                 });
-                
+
                 if (response.ok) {
-                    loadUserGrants(userId);
+                    console.log('[GRANTS] Grant removed successfully');
+                    await loadUserGrants(userId);
+                    // Refresh user data to sync state
+                    await loadUsers();
                 } else {
                     const error = await response.json();
                     alert('Error: ' + error.error);
                 }
             } catch (error) {
+                console.error('[GRANTS] Remove grant error:', error);
                 alert('Network error. Please try again.');
             }
         }
@@ -759,9 +810,21 @@
         }
 
         // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
-            loadUsers();
-            loadClinics();
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('[USERS] Initializing user management page...');
+
+            // Initial load
+            await refreshData();
+
+            // Auto-refresh every 30 seconds to keep state in sync
+            setInterval(() => {
+                if (!isLoading && !document.querySelector('.modal.show')) {
+                    console.log('[USERS] Auto-refreshing data...');
+                    refreshData();
+                }
+            }, 30000);
+
+            console.log('[USERS] Initialization complete');
         });
     </script>
 </body>
